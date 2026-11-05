@@ -489,3 +489,7 @@ The proposed source-authority and reconciliation contract is now in [ADR-0005 �
 ## SPEC-007 compatibility checkpoint — 2026-11-05
 
 [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) documents physical console-family, firmware, LAN/Remote Play and HA OS compatibility evidence. All twelve release gates remain unpassed; no PS5 hardware has been tested by this project. The next step is formal review of proposed ADR-0004–0010 and closure of P0 blockers, not unsupported release claims.
+
+## Formal architecture review checkpoint — 2026-11-05
+
+The [formal review of ADR-0004–0010](formal-architecture-review-adr-0004-0010.md) consolidates 18 consistency findings, separates LAN, Remote Play and PSN release gates, and proposes WP-00–WP-08. This does not change ADR status or close hardware, storage, PSN authorization or Remote Play byte-level blockers.
