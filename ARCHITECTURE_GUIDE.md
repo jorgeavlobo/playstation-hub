@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.0 — 2026-11-05  
+> **Document version:** 0.38.1 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2379,3 +2379,21 @@ The [07-remote-play-commands specification](docs/protocols/07-remote-play-comman
 **Decisions:** Confirm state transitions through LAN, not command send or socket closure; do not wake unexpectedly; keep actions permission-checked, idempotent where appropriate and serialized per console. Do not claim full shutdown or arbitrary console buttons without separately sourced protocols.
 
 **Status:** Source-grounded specification, no live validation or implementation. Next: [08-psn-authentication.md](docs/protocols/08-psn-authentication.md).
+
+## Protocol 08 research checkpoint — PSN authentication and credential lifecycle (2026-11-05)
+
+**Status: source-reviewed architecture research, not implementation or live Sony validation.** Detailed evidence, threat analysis, reference paths and full test matrix are maintained in [Protocol 08](docs/protocols/08-psn-authentication.md), sections 12–16. This paragraph is a top-level checkpoint, not a duplicate protocol specification.
+
+1. **Product requirement:** Make optional PSN linking as automated as provider authorization and browser security permit; support an assisted NPSSO entry route if needed. Do not require Sony credentials for basic LAN functionality, and do not introduce mandatory separate browsers, browser extensions, add-ons or MQTT.
+2. **Sony authorization gap:** A third-party authorized Sony OAuth client, acceptable redirect URI and scopes have not been established. Community NPSSO and mobile-app OAuth exchanges are evidence of upstream behavior but not permission to distribute another application's client credentials. This remains a PSN release blocker.
+3. **Browser limitation:** A Sony-authenticated user's browser can open the NPSSO endpoint, but HA-origin JavaScript cannot assume it may read Sony cookies or responses under same-origin/CORS restrictions. The psn-mcp browser-controlled Chrome DevTools capture is not an HA OS in-browser solution. Provider-authorized callback remains a possible future path.
+4. **Library baseline:** PyPI currently lists PSNAWP 3.0.3 (2026-03-07). Development branch constructors accept a saved `token_response`; do not assume this API is present in the released package. Official HA Core uses PSNAWP 3.0.3 and NPSSO config/reauth; the Emkraan custom integration additionally persists rotated tokens in a config entry and restores them after restart.
+5. **Concurrency and error handling:** Emkraan's reference lock prevents concurrent refresh-token rotation races and distinguishes OAuth string-valued `invalid_grant` bodies. Implement per-account single-flight refresh and explicit typed error mapping without global monkey patches; never reload the integration merely because a token changed.
+6. **Durability:** Persist new refresh-token generations promptly, with storage acknowledgement before declaring persistence successful. Provider rotation plus local disk commit cannot be fully atomic. A crash in the gap may require reauth. Recovered backups may contain invalidated tokens, and restore must preserve LAN operation and gaming history.
+7. **Storage and backups:** Keep PSN secrets out of the dashboard, public repo, history SQLite and diagnostics. HA config entries and Store are not automatically encrypted vaults; storage API, runtime permissions, HA backup coverage, encryption/key handling, and credential removal remain separate security design gates. Official HA backups are encrypted by default but backup options/export must be checked.
+8. **Time:** Refresh and access lifetimes are derived from actual response fields; roughly one-hour access and two-month refresh are community observations only. A restart does not renew a refresh token. Use an initial 60-second early-refresh margin, shared by scheduled and on-demand renewal.
+9. **Implementation:** No PSN authentication implementation, live console/account test, or Sony-side OAuth callback validation has taken place. Only `main` documentation has been updated. `next` and `develop` remain untouched.
+
+**Decision boundaries:** Approved project direction = independent HACS integration, optional PSN support, low-intervention UX, modular secure per-account token management and resilient LAN fallback. Proposed engineering mechanisms = token restoration, single-flight refresh, persistence and recovery. **Blocked/unverified** = Sony-sanctioned client credentials, endpoint permissions, automatic browser NPSSO capture, final secret storage architecture and real-world compatibility.
+
+Sources: [Official Home Assistant PlayStation Network](https://github.com/home-assistant/core/tree/dev/homeassistant/components/playstation_network), [Emkraan](https://github.com/Emkraan/homeassistant-playstationnetwork), [PSNAWP](https://github.com/isFakeAccount/psnawp), [PSNAWP PyPI](https://pypi.org/project/psnawp/), [psn-mcp browser-login](https://github.com/tmrp/psn-mcp/blob/main/src/psn/browser-login.ts), [Home Assistant backups](https://www.home-assistant.io/common-tasks/general/backups).
