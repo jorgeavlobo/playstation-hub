@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.19.0 — 2026-11-05  
+> **Document version:** 0.20.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1680,3 +1680,57 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 6. Reproducible backup/restore and upgrade tests.
 
 **Next official documentation research:** Locate current Home Assistant backup developer documentation and verify custom integration storage backup semantics. Then review current Core \`Store\` APIs against a supported release tag.
+
+## 16. Official backup scope and asynchronous persistence — verified review (2026-11-05)
+
+**Scope:** Four official pages. This review resolves the previously missing backup documentation reference, but does not prove application-consistent backup of a live SQLite file.
+
+### DOC-037 — Home Assistant common tasks: backup and restore
+- **Source:** https://www.home-assistant.io/common-tasks/general/
+- **Reviewed:** 2026-11-05.
+- **Direct official finding:** Full backups include config, share, addons (locally installed apps), ssl, and media. Partial backups include selected directories and apps.
+- **Implication:** A PlayStation Hub-owned SQLite file stored under the Home Assistant configuration directory is within the documented config scope of a full backup. A partial backup excluding config does not cover it.
+- **Critical limitation:** File inclusion does not guarantee a transactionally consistent backup while SQLite is being written, especially when WAL is enabled. This must be tested.
+- **Official guidance:** Keep backups regularly, including a copy outside the Home Assistant device and ideally off-site. Restore may overwrite selected configuration.
+
+### DOC-038 — Backup integration
+- **Source:** https://www.home-assistant.io/integrations/backup
+- **Reviewed:** 2026-11-05.
+- **Direct official finding:** Backup supports all Home Assistant installation types and provides backup.create and backup.create_automatic actions.
+- **Project consequence:** Do not require a Supervisor-specific backup mechanism or a separate app for normal PlayStation Hub operation.
+- **Limitation:** The page does not specify a hook for quiescing third-party SQLite files during backups.
+
+### DOC-039 — Blocking operations with asyncio
+- **Source:** https://developers.home-assistant.io/docs/asyncio_blocking_operations/
+- **Reviewed:** 2026-11-05.
+- **Direct official finding:** Blocking I/O must not execute on the Home Assistant event loop. The official integration helper is hass.async_add_executor_job.
+- **Direct official warning:** Moving only the file open operation to an executor is insufficient; reads and writes must also be moved.
+- **Project requirement:** All synchronous SQLite open, query, commit, backup and filesystem work must execute off-loop. Entity properties must not perform database I/O.
+- **Engineering option, not official mandate:** Use a serialized database worker with bounded queries and an explicit shutdown lifecycle.
+- **Test:** Enable Home Assistant asyncio debug and check for blocking-operation warnings.
+
+### DOC-040 — Thread safety with asyncio
+- **Source:** https://developers.home-assistant.io/docs/asyncio_thread_safety/
+- **Reviewed:** 2026-11-05.
+- **Direct official finding:** Many Home Assistant async APIs must be called on the event-loop thread; their non-async counterparts or scheduled callbacks are used from executor threads.
+- **Specific example:** hass.config_entries.async_update_entry must execute on the event-loop thread.
+- **Project requirement:** SQLite worker threads may not directly mutate Home Assistant entities, registries, config entries or asyncio objects. Schedule results safely back onto the event loop.
+- **Test:** Concurrent source updates, unload/reload and shutdown must not produce thread-safety errors.
+
+### ADR-DATA-001 — Updated recommendation, still provisional
+
+**Preferred candidate:** One application-owned SQLite database under the Home Assistant configuration directory, outside the HACS-managed integration code directory, with normalized multi-console/player/session data and serialized off-loop I/O.
+
+**Evidence:** The official backup guide includes config in full backups; Recorder detailed state retention does not provide the required arbitrary multi-year session ledger; Home Assistant async guidance forbids blocking database operations on the event loop.
+
+**Before approval:**
+1. Choose the path using supported Home Assistant configuration APIs and verify permissions on all supported installation types.
+2. Inspect a real full backup and a partial backup, then restore to an isolated instance.
+3. Verify SQLite consistency during backup, including WAL handling; implement a safe standalone export using SQLite backup facilities.
+4. Benchmark multi-year queries, migrations and multiple-console writes.
+5. Specify schema versioning, recovery, retention and non-destructive removal behavior.
+6. Keep SQLite files and exports out of GitHub and the HACS integration package.
+
+**Status:** Proposed, not implemented or recovery-tested. DOC-036's old URL remains documented as unavailable; DOC-037 provides the verified replacement for directory coverage.
+
+**Next official review:** Supported Home Assistant configuration-path APIs and database concurrency patterns, then a storage architecture decision record.
