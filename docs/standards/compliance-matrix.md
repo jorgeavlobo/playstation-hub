@@ -67,3 +67,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## Legacy frontend availability checkpoint
 
 [Frontend source inventory and UX research](../research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) records blocker UX-001: actual legacy Lovelace frontend code was not available at expected `develop/frontend` paths. The legacy README's claimed 80 local tests have not been independently verified. Native one-panel UX requirements can be documented, but a component-by-component code audit remains NOT_STARTED.
+
+## Corrected legacy frontend source audit — UX-001 resolved
+
+[Source-backed `develop` frontend audit](../research/legacy-frontend-source-audit-2026-11.md) verifies 21 frontend files and exactly 80 test declarations in ten test files, correcting the earlier mistaken “frontend unavailable” result. The initial source access blocker **UX-001 is RESOLVED**; the current automated test state remains **NOT_RUN**. The legacy card is one-console Lovelace over MQTT-via-HA-WebSocket; do not port its fixed entity IDs, source-derived power OFF assumptions, CSS/theme or browser-local calendar without redesign. The approved new UI remains one sidebar panel, with ADR-0010 implementation pending.
