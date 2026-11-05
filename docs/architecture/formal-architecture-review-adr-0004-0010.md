@@ -170,3 +170,7 @@ Do not mark these decisions approved simply because they appear in the review. T
 - [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md)
 
 **Outcome:** Formal documentation-level review complete, with 18 findings and a conditional decision register. No ADR was accepted, no P0 blocker closed, and no implementation or hardware validation performed.
+
+## WP-00 follow-up
+
+The [WP-00 readiness plan](WP-00-implementation-readiness-and-decision-closure.md) defines explicit maintainer decision closure, stable HA baseline selection, contract candidates, ten scoped blockers and WP-01 entry requirements. Its creation does not accept any ADR or authorize implementation.
