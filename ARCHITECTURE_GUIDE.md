@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.31.0 — 2026-11-05  
+> **Document version:** 0.32.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2307,3 +2307,11 @@ The transport modules will expose typed interfaces to the integration domain lay
 **Canonical policy:** The root guide remains the architecture decision and historical research register. Specialized files contain the current working specification. Never silently delete DOC-001 through DOC-080 or claim that a source-derived design has been live-validated.
 
 **Next documentation work:** Expand each protocol's exact messages, failure codes, state machines, security model and fixture links. Validate against a real console only when implementation begins, as directed by the owner. Keep the source register current.
+
+## 28. Protocol specification progress — 2026-11-05
+
+The [LAN discovery specification](docs/protocols/01-lan-discovery.md) has been expanded from an initial research outline into a source-grounded technical document with UDP ports, discovery version, exact SRCH wire formatting, response fields, source parser limitations, state/identity design, multi-interface network behavior, failure handling, and implementation-stage test cases.
+
+**Source references:** playactor discovery model, transport, formatter, parser, orchestrator and PS5-MQTT multi-interface discovery (all linked in the specialized document). The root guide retains the historical research; the specialized document is now the working specification.
+
+**Evidence status:** Source-derived and planned; not yet live validated, as agreed with the owner. Next: expand 02-console-status.md, then continue protocol by protocol.
