@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.3 — 2026-11-05  
+> **Document version:** 0.38.4 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2426,3 +2426,19 @@ Sources: [Official Home Assistant PlayStation Network](https://github.com/home-a
 - **Branch policy:** Documentation-only changes on `main`; `develop` and `next` remain unchanged.
 
 Sources: [Protocol 09 source register](docs/protocols/09-psn-presence.md#17-source-register), [Home Assistant PlayStation Network](https://www.home-assistant.io/integrations/playstation_network/), [Sony PSN privacy](https://www.playstation.com/en-us/support/account/privacy-settings/), [PSNAWP presence](https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/models/user.py).
+
+## Protocol 10 — Game identity, metadata, library and artwork checkpoint (2026-11-05)
+
+**Status: source-derived research and design only.** The canonical detailed 17-section specification, evidence inventory and test matrix are [docs/protocols/10-game-metadata.md](docs/protocols/10-game-metadata.md). No PlayStation Hub game catalog adapter, database model, Sony authentication or live-device implementation has occurred.
+
+1. **Separate six data concepts:** PSN currently reported game, recently played list, provider played-game history, digital-library entitlements, catalog metadata, and PlayStation Hub's locally observed physical-console/player sessions. Neither a digital entitlement nor a provider playtime aggregate establishes a specific currently installed/running game, permanent purchase or locally measured duration.
+2. **Source findings:** PS5-MQTT and HA Core extract names, PSN title IDs and cover URLs from `gameTitleInfoList`. Community `psn-api` supports distinct played titles, recently played GraphQL and purchased/entitlement GraphQL queries; `psn-mcp` joins purchased titles to played records by exact title ID. PSNAWP separates `title_id` from trophy `np_communication_id` and exposes optional localized catalog details and legacy icon methods.
+3. **Identity:** `titleId/npTitleId`, `npCommunicationId`, `conceptId`, `productId` and `entitlementId` are different namespaces; deduplicate only through evidence-backed, potentially one-to-many crosswalks. Preserve format vs launch platform, region, edition and disc/subscription distinctions.
+4. **Artwork:** `conceptIconUrl` and `npTitleIconUrl` have different context/quality; upstream applications do not agree on priority. Proposed image service validates provider and allowed HTTPS host, redirects/resolved addresses, bounded bytes, supported MIME/image dimensions, lazy cache, negative-cache, source attribution and placeholder fallback. Avoid token leakage, SSRF and assumptions about copyright permission.
+5. **Localization and lifecycle:** Cache metadata by title identity and locale with provenance and staleness. Optional enrichment failures must not block local LAN monitoring or erase known history. Keep game metadata and provider account entitlements separate from session ledger and secret storage; any dedicated SQLite schema remains subject to ADR approval.
+6. **Legal and reliability gates:** Sony's April 2026 Portugal Terms of Service and PlayStation Plus help explain limitations on automated use/content and changing catalog access. A public community reverse-engineered GraphQL query or artwork URL does not itself authorize API use, credential reuse, image redistribution or scraping. Protocol 08's client permission gate applies. Query hashes and schemas can change and must be pinned/tested when legally permitted.
+7. **Tests:** Cover platform generation/edition and multiple IDs, missing or stale provider data, distinct account ownership, source playtime not double-counted, paginated libraries, expired PS Plus entitlements, safe image fetching, Home Assistant lifecycle and security/privacy rules. Only authorized synthetic/live testing may be used.
+
+**Documentation workflow:** Research changes are committed to `main`. No `next` implementation or `develop` legacy modifications were made.
+
+Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP GameTitle](https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/models/game_title.py), [psn-api purchased titles](https://github.com/achievements-app/psn-api/blob/main/src/graphql/getPurchasedGames.ts), [Sony Portugal terms](https://www.playstation.com/pt-pt/legal/terms-of-service/).
