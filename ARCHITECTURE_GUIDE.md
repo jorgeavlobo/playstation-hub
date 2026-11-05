@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.5 — 2026-11-05  
+> **Document version:** 0.38.6 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2464,3 +2464,17 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Scope unchanged:** One HACS integration and multilingual sidebar, LAN independence, optional PSN and Remote Play, no external MQTT/PS5-MQTT/add-on dependency, no blank release. All research changes remain on `main`; `develop` stays legacy reference; `next` stays unimplemented.
 
 **Reference:** [docs/architecture/cross-protocol-review-01-10.md](docs/architecture/cross-protocol-review-01-10.md), [compliance matrix](docs/standards/compliance-matrix.md), [review history](docs/standards/review-history.md), and each protocol's own evidence/test register.
+
+## ADR-0004 — Identity and Multi-Console Ownership proposal (2026-11-05)
+
+**Status: Proposed, not approved; architecture guide version 0.38.6.** The complete 19-section design is [docs/decisions/ADR-0004-identity-and-multi-console-ownership.md](docs/decisions/ADR-0004-identity-and-multi-console-ownership.md).
+
+**Preferred candidate:** A `playstation_hub` integration with separate Home Assistant config entries for individually validated physical consoles and separately authorized PSN accounts, plus optional many-to-many account/console associations with attribution provenance. The integration remains one HACS repository, one custom component and one multilingual sidebar panel, not multiple add-ons.
+
+**Identity boundaries:** Validate an upstream LAN `host-id` as a candidate console key; do not claim its stability across firmware, interfaces or resets without test evidence. DHCP MAC/hostname and IP are discovery hints or mutable locators; a PSN account ID is not a console ID. Never merge two consoles or transfer pairing credentials solely because their IP, name or account matches. HA device and entity registry identities must stay stable and distinguish physical consoles from PSN service accounts.
+
+**Discovery behavior:** Implement a dedicated multi-console DHCP config-flow pathway, corroborate candidates with the LAN protocol before user confirmation, deduplicate concurrent/manual/discovered flows, handle IP changes and unverified identity, and preserve manual directed discovery when DHCP or broadcast is unavailable. The official PSN integration's discovery prompt is not sufficient proof of per-console identification.
+
+**Security and lifecycle:** Remote Play credentials bind to a validated console and authorized pairing principal; NPSSO/OAuth credentials bind to PSN account identity. Console unload must not stop another console, and PSN unlink must not break LAN status/history. History/data removal, secret-store ownership and backup effects await ADR-0007/0008. Attribution of a PSN game to a physical console remains governed by ADR-0005/0006 and must not be presented as directly confirmed from platform presence alone.
+
+**Before acceptance:** Confirm host-id uniqueness/stability through synthetic and eventual actual device tests; confirm minimum supported HA Core entry/discovery behavior; decide supported hardware generations, canonical ID format, account association UX, and retention policy. Nothing was implemented on `next` or altered on `develop`.
