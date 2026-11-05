@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.42.0 — 2026-11-05  
+> **Document version:** 0.42.1 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -13,6 +13,8 @@
 > **WP-00A technical checkpoint (2026-11-05):** [Core 2026.11.0 and LAN-first interface contracts](docs/architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) sets the source-verified development target Core `2026.11.0` / Python `>=3.14.2`, recommends (but does not yet approve) this as the first minimum supported HA version, and specifies 20 synthetic LAN acceptance cases. No executable tests, hardware checks or implementation authorization have occurred.
 
 > **Official Quality/Discovery checkpoint (2026-11-05):** [Batch 02 source audit](docs/research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md) and [54-rule applicability matrix](docs/standards/internal-quality-scale-applicability.md) add HA discovery ownership, runtime data, coordinator/update/error policies, safe diagnostics, stale-device handling and actual Marketplace installation limits. These are documented requirements, not implemented/tested claims.
+
+> **Multi-console lifecycle research (2026-11-05):** [Pinned Core coordinator audit](docs/research/ha-core-2026-11-multi-console-runtime-source-audit.md) + [SPEC-008 (46 pending tests)](docs/specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) establish that ordinary DataUpdateCoordinator interval polling stops with its final listener. Historical monitoring requires a separate explicit per-console lifetime owner independent of dashboard/entity visibility; preferred proposal is one entry-owned LAN monitor feeding a push-only coordinator. A coordinator with a deliberate permanent internal listener is an alternative. No implementation started.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2745,4 +2747,22 @@ The new product remains one multilingual native Home Assistant sidebar panel wit
 **Coverage and documentation:** Core's Silver rule is **over 95% test coverage in every Python module**, not only aggregate coverage; adopt as voluntary project aspiration after implementation, with recorded CI evidence. Provide user-facing Marketplace README/docs for installation, remove, configuration/options, supported models, source/data-update semantics, actions/automations, troubleshooting, privacy and backups. Core documentation Jinja macros do not render automatically in an ordinary GitHub README.
 
 **Next documentation research:** Reconcile the complete 54-rule matrix with exact PlayStation Hub source/module contracts and future release variants; detail the first LAN config-flow lifecycle and audit the Marketplace `hacs.json` / manifest and Python dependency matrix against pinned 2026.11 source. No implementation branch or code was created, and `develop` remains unchanged.
+
+## Source-pinned multi-console ConfigEntry & DataUpdateCoordinator lifecycle research (2026-11-05)
+
+**Status: Research/contract specification, not an approved or implemented scheduler. Guide version 0.42.1.** The [Core 2026.11.0 source audit](docs/research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](docs/specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) extend Protocols 01–02, ADR-0004–0006/0009/0010 and WP-00A with **46 new deterministic test scenarios** (MC-CF01–12, MC-MON01–18, MC-LC01–16) and **12 unpassed approval gates**. Pinned official sources include `homeassistant/helpers/update_coordinator.py`, `homeassistant/config_entries.py`, `homeassistant/components/dhcp`, `homeassistant/helpers/discovery_flow.py` and the official PSN/Shelly integrations.
+
+**Critical official behavior:** In Core 2026.11.0, a normally polling `DataUpdateCoordinator` schedules its interval when the **first listener** registers and cancels it after the **last listener** unsubscribes. The coordinator also honors `ConfigEntry.pref_disable_polling`. Consequently, continuous per-console session observation cannot depend exclusively on HA enabled entities, the Recorder, a browser session or panel subscriptions. Never create a dedicated LAN poller and a separately polling coordinator for the **same** physical console.
+
+**Preferred architecture (pending ADR acceptance):** One explicit `ConsoleRuntime` per validated physical Config Entry, with one entry-owned background LAN monitor and a **push-only** `DataUpdateCoordinator` that projects accepted source-aware snapshots to native HA entities via `async_set_updated_data`. An alternative is one polling coordinator held alive by a deliberate entry-owned internal lifetime listener. Both must be compared through synthetic tests and an HA OS lifecycle exercise. The monitor should respect the user's disabled-polling preference and record historical gaps without backfill. The frontend only consumes cached snapshots/history and must not start its own polling.
+
+**Setup and cleanup:** Core's `ConfigFlow.async_step_dhcp` generic fallback has no unique ID and does not guarantee discovery of a second console after one is configured; implement a dedicated DHCP step using **HA's shared discovery** plus a bounded PlayStation protocol-directed validation probe. Validate stable physical unique ID before creating/deduplicating entries; do not use IP/MAC/hostname alone. `entry.async_create_background_task`, `entry.async_on_unload`, `async_forward_entry_setups` and `async_unload_platforms_or_raise` are available in pinned Core. `async_forward_entry_setups` must be awaited during setup. Core's unload processing currently waits up to 10 seconds for tasks, which is **not** proof uncooperative tasks cannot survive cancellation. Cleanup must close sockets, fence late generations and release shared resources without affecting other entries.
+
+**Intentional offline/sleeping devices:** Official `test-before-setup` guidance permits `async_refresh` to load an already configured, intentionally offline device in a degraded state; `async_config_entry_first_refresh` can raise `ConfigEntryNotReady` during initial setup. Distinguish a **never-identified setup candidate**, which cannot receive a fabricated durable ID, from an **already validated configured console** temporarily not responding. Its last-known power may remain historical, but current power must be unknown/unavailable, never asserted OFF by silence.
+
+**Ownership and release safety:** Per-entry typed `entry.runtime_data` is required for console/account coordinators; shared writer, identity registry, authorized WebSocket API and single sidebar panel need separately defined integration-scope ownership. A previously configured console's loss of response must not delete its native DeviceEntry/history. A PSN account is an independent identity and need not automatically create a synthetic account DeviceEntry. Shared SQLite/Python history and cloud permissions remain separate unvalidated ADR decisions.
+
+**Implementation status:** All 46 new test descriptions remain `NOT_RUN`; all 12 MC-gates remain proposed/blocked/unpassed. No code, GitHub Action, PS5 hardware test, new branch or change to legacy `develop` was created. The maintainer continues to request **documentation and source investigation only**, not programming.
+
+**Next research:** Compare preferred background monitor with the single polling-coordinator internal-listener alternative using exact lifecycle and disabled-polling semantics; specify failure-safe shared-services acquisition/unload ordering and the identity/reauth/retroactive-history behaviors before any implementation work package is approved.
 
