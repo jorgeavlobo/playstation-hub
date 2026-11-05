@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.20.0 — 2026-11-05  
+> **Document version:** 0.21.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1734,3 +1734,44 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 **Status:** Proposed, not implemented or recovery-tested. DOC-036's old URL remains documented as unavailable; DOC-037 provides the verified replacement for directory coverage.
 
 **Next official review:** Supported Home Assistant configuration-path APIs and database concurrency patterns, then a storage architecture decision record.
+
+## 17. Per-integration backup semantics and official backup hooks (2026-11-05)
+
+### DOC-041 — Backup developer platform
+- Source: https://contributors.home-assistant.io/core/integrations/backup/
+- Confirmed: An integration may implement a backup.py platform with async_pre_backup(hass) and async_post_backup(hass). These prepare/resume integration state around a Home Assistant backup.
+- These hooks do not create a separate Supervisor App backup item for a custom integration. Backup agents are a different feature for providing backup destinations.
+- Project decision: evaluate pre/post hooks for SQLite consistency; test their actual invocation and failure behavior on supported HA versions.
+
+### DOC-042 — Recorder backup.py reference implementation
+- Source: https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/backup.py
+- Confirmed: Recorder's pre-backup hook locks database writes; post-backup unlocks them. This is a useful reference, not a ready-made solution for our own database.
+- Project implication: design a coordinated write pause or verified SQLite snapshot, with exception-safe resumption, bounded wait and recovery.
+
+### DOC-043 — App persistent storage and backup contrast
+- Source: https://contributors.home-assistant.io/apps/how-apps-work/
+- Confirmed: A Supervisor App's private /data survives updates and is included in the App backup. Apps support hot/cold backup and pre/post commands.
+- Contrast: PlayStation Hub is a custom integration, not a Supervisor App; its backup scope is Home Assistant configuration, not a per-App /data volume.
+
+### DOC-044 — Home Assistant backup contents and selectable parts
+- Source: https://www.home-assistant.io/common-tasks/general/backups
+- Confirmed: On HA OS the backup UI distinguishes Home Assistant settings, History, Media, Share, local Apps and Apps. Settings include config. Backup before an App update is specific to Apps.
+- Project implication: do not promise a dedicated native PlayStation Hub backup button. Full or appropriately selected Home Assistant settings backups should cover files in config, subject to real archive and consistency testing.
+
+### ADR-DATA-001 update — private data path and recovery
+- Proposed code: config/custom_components/playstation_hub/ (HACS-managed, no mutable database).
+- Proposed data: an integration-owned subdirectory under config, outside custom_components. A possible .storage/playstation_hub/ path is NOT yet approved; verify HA conventions, backup exclusions and access rules first.
+- Proposed recovery: native Home Assistant backup with tested pre/post hooks, plus a separate PlayStation Hub export/import feature using SQLite's consistent backup API.
+- The import/export feature is our own design; it is not supplied automatically by HACS or the Backup integration.
+- The database should not be deleted silently when a config entry is removed.
+- Do not place user credentials, DB files, journals or exports in the public GitHub repository.
+
+### Release blockers
+- [ ] Confirm supported backup.py hook lifecycle, failure and timeout behavior.
+- [ ] Verify full and selected Home Assistant backups include the chosen database path.
+- [ ] Validate a live SQLite backup with WAL enabled and concurrent incoming events.
+- [ ] Restore in a separate HA test instance and run SQLite integrity and application-level checks.
+- [ ] Approve the final data path and independent export/import UX.
+- [ ] Define retention and removal behavior for multiple consoles.
+
+**Status:** Storage architecture remains provisional pending backup/restore tests.
