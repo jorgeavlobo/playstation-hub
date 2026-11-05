@@ -44,3 +44,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Credential lifecycle proposal (ADR-0007)
 
 [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) specifies separate per-account Sony NPSSO/OAuth token ownership and per-console Remote Play pairing keys, with no credentials exposed to frontend, entities or diagnostics. It proposes synchronized token refresh, versioned durable writes and safe reauth/unpair/unlink. Exact HA secure storage and backup policy belong to pending ADR-0008. PSN endpoint/client authorization is not yet established.
+
+## Storage architecture (proposed ADR-0008)
+
+[ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) recommends a **hybrid** persistence architecture: native Config Entries/Options for devices/accounts; Home Assistant Store for bounded JSON settings; independent credential store after security review; application-owned SQLite **candidate** for multi-year event/session evidence; Recorder only for HA native metrics and long-term statistics. The historical database and cache must be outside HACS-managed code. SQLite transactions, WAL backup snapshot strategy, HA OS backup inclusion and recovery remain **unvalidated**. The original provisional ADR-0003 is not yet approved.
