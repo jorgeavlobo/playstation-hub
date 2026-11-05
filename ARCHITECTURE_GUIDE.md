@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.8 — 2026-11-05  
+> **Document version:** 0.38.9 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2510,3 +2510,19 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Open approval gates:** choose maximum continuity threshold from actual polling/failure behavior, finalize when estimated intervals may be displayed, commit user/session attribution policy, choose durable storage and transactional/backup guarantees in ADR-0008, and define HA statistics entity/WebSocket output contracts in ADR-0009/0010. No live PS5 tests or implementation were performed.
 
 **Research workflow:** Documentation only on `main`; `next` and `develop` unchanged.
+
+## ADR-0007 — Credential isolation and token persistence checkpoint (2026-11-05)
+
+**Status: Proposed, not approved; guide version 0.38.9.** Full 16-section proposal: [docs/decisions/ADR-0007-credentials-and-token-persistence.md](docs/decisions/ADR-0007-credentials-and-token-persistence.md). This checkpoint does not authorize implementing Sony's unofficial OAuth-client credentials or claim actual encrypted credential storage.
+
+**Distinct trust domains:** PlayStation Network NPSSO, OAuth authorization/access/refresh tokens are account-scoped; Remote Play pairing PIN, RP-Key, PS5-RegistKey and derived control credentials are scoped to a verified physical console and authorized pairing context. Do not cross-use or expose any secret to the browser panel, entity state, logs, diagnostics or history database. LAN discovery and monitoring never require either credential class.
+
+**PSN automation goal:** Open Sony sign-in/browser flow and minimize intervention, with assisted NPSSO input fallback. A Sony-sanctioned OAuth client/redirect remains unverified and a shipping blocker; same-origin rules prevent unrestricted HA browser capture. Do not collect Sony passwords/passkeys/2FA in Home Assistant.
+
+**Token manager direction:** Per-account single-flight refresh, expiry based on actual response metadata, conservative early-refresh margin, validated account identity, versioned durable replacement before reporting success, no unnecessary config-entry reload, typed OAuth errors and bounded retries. A Sony-side refresh-token rotation plus local persistence cannot be fully atomic; crash in the gap may require reauth and cannot destroy local console/history state.
+
+**Remote Play:** Explicit user-initiated pairing to validated physical console identity, transient PIN/session nonces, persisted only validated per-console registration secrets, and command target revalidation before wake/standby. Do not automatically transfer keys when IP/host changes or declare a partially saved pairing operational.
+
+**Storage/security still open:** HA Config Entries and Store are persistence mechanisms but not automatically an encrypted secrets vault. Compare permissions, backups, key custody, schema migrations, atomicity, deletion and runtime encryption in ADR-0008 before selecting. Backup-stored tokens may be stale/rotated; restore must preserve LAN/history regardless of cloud login.
+
+**Policy status:** Proposed repository interfaces and safety requirements are documented. No Sony account token tests, live PS5 pairing, code implementation or credential storage validation occurred. `main` documentation only; `next` and `develop` unchanged.
