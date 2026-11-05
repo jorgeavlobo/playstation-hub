@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.23.0 — 2026-11-05  
+> **Document version:** 0.24.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1902,3 +1902,61 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 - [ ] Confirm behavior with Home Assistant backup include_database disabled.
 
 **Status:** Pinned Core backup hook ordering is now source-verified. Database location and snapshot/restore design remain unapproved until practical tests.
+
+## 20. Direct PlayStation integration — remove third-party runtime bridges
+
+**Owner decision:** 2026-11-05. PlayStation Hub must not require PS5-MQTT, a separate PlayStation add-on, a dedicated Docker service or an external MQTT broker as a mandatory runtime dependency. This supersedes earlier PS5-MQTT-as-transport assumptions. Ordinary audited Python protocol libraries may still be considered; a strict ban on all third-party libraries has not been approved.
+
+### Legacy implementation audit (our develop branch)
+- **Source:** https://github.com/jorgeavlobo/playstation-hub/tree/develop/backend/app
+- `mqtt_client.py`: consumes already normalized JSON from a configured MQTT topic: power, activity, device_status, players, title_id, title_name, title_image. It does NOT communicate directly with the console.
+- `config.py`: requires MQTT broker credentials/topic and a single player name; this is not a suitable generic multi-console configuration model.
+- `mqtt_publisher.py`: publishes discovery and statistics through MQTT; these should become native HA entities and internal data APIs where appropriate.
+- `main.py`: coordinates MQTT, history worker, SQLite and session tracker; preserve concepts, not its container/thread architecture.
+- `requirements.txt`: pins paho-mqtt==2.1.0; remove as a mandatory dependency if direct native integration replaces MQTT.
+
+### DOC-052 — PS5-MQTT upstream
+- **Source:** https://github.com/FunkeyFlo/ps5-mqtt
+- **Observed upstream features:** LAN discovery, wake/standby, a web pairing flow, PSN activity matching and MQTT publication. Its README requires an MQTT broker and an add-on.
+- **Research objective:** Inspect actual TypeScript modules, pairing/authentication, LAN discovery, wake/rest control, PSN presence and normalization. Do not copy code without verifying licenses and attribution.
+
+### DOC-053 — Direct PS5 protocol library candidate
+- **Source:** https://github.com/iharosi/ps5-remoteplay
+- **Observed features:** Async Python LAN discovery/status, wake, standby and pairing via PSN OAuth plus Remote Play PIN.
+- **Known constraints:** Discovery broadcast requires local subnet; pairing binds UDP 9295; project states AGPL-3.0-only. License compatibility must be reviewed before importing, vendoring or copying code.
+- **Decision:** Reference implementation only until license, maturity, platform compatibility and protocol tests are complete.
+
+### DOC-054 — Alternative architecture for game activity
+- **Source:** https://github.com/g0urav2410/ps5-ha-bridge
+- **Observed claim:** Combines local LAN discovery/power with PSN account presence to identify home screen versus game/title. Neither data source alone provides all the desired details.
+- **Critical design implication:** Local PS5 status and PSN account activity are separate sources with different failure and privacy characteristics. Never infer a player's identity or an active game solely from console power.
+
+### Proposed first-party architecture (not yet implemented)
+
+```text
+PlayStation Hub custom integration
+  ├── LAN discovery/status adapter
+  ├── Pairing + credentials manager (if protocol requires)
+  ├── Console command adapter (wake/rest when supported)
+  ├── PSN presence adapter (optional and separately authorized)
+  ├── State fusion + confidence/freshness model
+  ├── Multi-console/player domain logic
+  ├── Native Home Assistant entities and actions
+  ├── Dedicated session persistence and statistics
+  └── One multilingual sidebar panel
+```
+
+### Protocol research and release gates
+- [ ] Inspect PS5-MQTT upstream implementation at a pinned commit, not only its README.
+- [ ] Document exact source of every field currently supplied by MQTT, including title image and player mapping.
+- [ ] Determine what works entirely on LAN and what needs a PSN account, OAuth, network access or proprietary service.
+- [ ] Review Sony/PSN API terms, authentication/credential handling, rate limits and potential unsupported/private APIs.
+- [ ] Test LAN discovery across VLANs, broadcast restrictions, IPv4 and Home Assistant Container/OS installation types.
+- [ ] Design pairing and token renewal without exposing credentials or depending on a separate web service.
+- [ ] Separate observed state from inferred state; represent unknown/stale/offline explicitly.
+- [ ] Confirm wake/rest capabilities and limits; do not promise arbitrary power-on from fully off.
+- [ ] Review licenses and compatibility before incorporating any upstream source or derivative code.
+- [ ] Define multi-console and multi-player test vectors and permission boundaries.
+- [ ] Compare direct implementation against legacy observations on a test console before retiring PS5-MQTT.
+
+**Current status:** Direction approved; protocols, APIs, licenses and implementation not yet fully audited. No direct-connection capability is claimed as working.
