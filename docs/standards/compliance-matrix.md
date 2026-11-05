@@ -55,3 +55,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## Home Assistant 2026.11 / Marketplace source re-audit
 
 [Official-source Bible re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) records 18 findings and 32 official source references. Core 2026.11.0 with Python >=3.14.2 is a **source-verified research baseline**, not yet approved as the minimum supported version. Future code must account for DeviceInfo dataclasses, per-entry device ownership, flow `step_id`, modern config-entry errors, 2026.11 naming/entity lifecycle, scoped repairs, Marketplace packaging, `media_entertainment.gaming`, complete custom translation files and panel theme changes. The existence of official backup hooks is source-verified; SQLite snapshot/restore remains untested. All implementation/release gates remain unpassed.
+
+## WP-00A technical baseline and initial LAN contracts
+
+[WP-00A](../architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) fixes the source-reviewed **development reference** at Core `2026.11.0` / Python `>=3.14.2`; the proposed minimum supported Core version is not yet approved or tested. Exact source-tag behavior reviewed: DHCP generic fallback, DeviceInfo dataclass/registry, explicit flow `step_id`, entity ID change hooks, custom panel/WebSocket and Store flags. Twenty deterministic LAN cases are specified, with **zero tests executed**. WP-01 implementation remains NOT_READY pending maintainer approval and chosen toolchain.
