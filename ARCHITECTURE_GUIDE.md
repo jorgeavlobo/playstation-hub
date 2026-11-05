@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.29.0 — 2026-11-05  
+> **Document version:** 0.30.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2246,3 +2246,49 @@ The transport modules will expose typed interfaces to the integration domain lay
 - [ ] Keep LAN-only monitoring operational if Remote Play pairing is unavailable.
 
 **Status:** Documentation expanded. Direct Python implementation has not started, and the protocol is not yet proven on a live PS5.
+
+## 26. Cryptographic test-vector audit and login failure semantics (2026-11-05)
+
+**Scope:** Targeted review of upstream test fixtures and parser code in `dhleong/playactor`. No real console, credentials or live network used. The files are publicly available upstream references, not an implementation of PlayStation Hub.
+
+### DOC-076 — Base crypto known-answer tests
+- https://github.com/dhleong/playactor/blob/main/test/remoteplay/crypto/base-test.ts
+- Confirms an upstream known-answer vector for PS5 `generateIv` with a fixed 16-byte nonce and counter zero. This is usable as a deterministic reference test for a future Python implementation.
+- **Project decision:** Port the vector into a standalone synthetic test fixture, independently compute HMAC-SHA256, and assert exact IV bytes. Avoid copying sensitive production material.
+
+### DOC-077 — Modern PS5 key-derivation tests
+- https://github.com/dhleong/playactor/blob/main/test/remoteplay/crypto/modern-test.ts
+- Includes a PS5 PIN-derived seed known-answer vector, but its nonce transformation and authentication seed tests in the inspected file cover PS4 only.
+- **Gap:** PS5 authentication seed/nonce derivation requires independent test vectors before being considered verified. Do not claim complete PS5 cryptographic test coverage.
+
+### DOC-078 — PS5 registration fixture and cleanup tests
+- https://github.com/dhleong/playactor/blob/main/test/remoteplay/registration-test.ts
+- Contains a deterministic PS5 registration payload fixture, explicitly attributed in upstream comments to Chiaki, and a timeout test asserting UDP discovery socket cleanup.
+- **Project decision:** Independently validate fixture provenance and licensing, then implement positive/negative registration vectors, timeout cleanup and no-secret logging.
+
+### DOC-079 — Remote Play login result parser
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/packets/login-result.ts
+- Reads a result byte from the login response; nonzero results map to typed failures, including passcode mismatch.
+- **Project decision:** Translate user-facing authentication errors and distinguish missing passcode, incorrect passcode, rejected credentials and transport timeout.
+
+### DOC-080 — RPC response/error handling
+- https://github.com/dhleong/playactor/blob/main/src/socket/helpers.ts
+- `performRpc` sends a packet, waits for one of the expected response types and rejects nonzero result codes.
+- **Project decision:** Set explicit bounded deadlines and cancellation behavior; never wait indefinitely for a reply or leak a socket on failure.
+
+### Source-quality observations
+1. The upstream test suite supplies concrete PS5 registration and IV vectors, but not exhaustive PS5 session/authentication test coverage.
+2. The full `keys.ts` lookup tables have not been manually verified against an independent specification.
+3. Public fixture values must be treated as test-only. No real PSN account credentials, PINs or registration keys belong in the guide or GitHub.
+4. A separate review of Chiaki/Chiaki-ng source and licensing is required before adopting or adapting its protocol constants.
+5. Source-derived claims must remain separate from live interoperability evidence.
+
+### Required verification gates
+- [ ] Independently reproduce the PS5 IV and registration payload vectors with a Python test harness.
+- [ ] Obtain or derive independent PS5 auth-seed and transformed-nonce vectors.
+- [ ] Verify all crypto modes, nonce sizes, counters and packet boundaries.
+- [ ] Exercise malformed login packets, wrong passcodes, timeouts and cancellation.
+- [ ] Review licensing and attribution for protocol constants and test fixtures.
+- [ ] Verify real PS5 pairing and standby on a disposable test configuration.
+
+**Status:** More source evidence collected; no protocol implementation started. Do not mark direct Remote Play support as verified.
