@@ -47,3 +47,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## Formal architecture review checkpoint
 
 [Formal ADR-0004–0010 review](../architecture/formal-architecture-review-adr-0004-0010.md) records 18 consistency findings and implementation dependencies. All seven ADRs remain proposed pending explicit approval and relevant evidence. WP-00–WP-08 are recommendations, not authorized implementation. PSN permission and Remote Play wire gaps remain separately blocked.
+
+## WP-00 implementation readiness checkpoint
+
+[WP-00](../architecture/WP-00-implementation-readiness-and-decision-closure.md) records pending HA baseline, canonical identity, observation/session contracts, storage, Remote Play, Sony authorization and API security. **Status: PROPOSED/NOT_READY; no ADR acceptance or executable validation.**
