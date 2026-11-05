@@ -19,7 +19,7 @@
 | Gate | Priority | Status | Reference |
 | --- | --- | --- | --- |
 | Physical-console/account identity + entry ownership | P0 | ADR-0004 proposed, not approved; hardware identity unverified | [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownership.md) |
-| Source authority / freshness / reconciliation | P0 | Open | Review X-002 and X-008 |
+| Source authority / freshness / reconciliation | P0 | ADR-0005 proposed, not approved; TTL and device behavior unverified | [ADR-0005](../decisions/ADR-0005-observation-and-state-reconciliation.md) |
 | Session ledger and uncertainty policy | P0 | Open | Review X-003 |
 | Remote Play credential / crypto verification | P0 | Hardware unverified | Review X-004 |
 | Sony PSN client/API entitlement | P0 for PSN | Blocked, optional LAN scope remains | Review X-005 |
