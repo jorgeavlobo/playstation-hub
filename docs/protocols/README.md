@@ -43,3 +43,5 @@ One HACS custom integration with Python protocol adapters, native HA entities, i
 ## Cross-protocol architecture review
 
 Before implementation, consult [Cross-protocol architecture review (Protocols 01–10)](../architecture/cross-protocol-review-01-10.md): 22 findings and prioritized ADR/spec prerequisites address device/account identity, source authority and freshness, conservative history, Remote Play byte contracts, Sony API permission, persistence and backups, Home Assistant discovery/entity/action/sidepanel lifecycles and release acceptance. **Detailed protocol documents are not equivalent to an approved or working integration.**
+
+**Cross-source state contract:** The proposed [ADR-0005 Observation Envelope and State Reconciliation](../decisions/ADR-0005-observation-and-state-reconciliation.md) unifies observation identity, ordering, freshness, fact-specific authority and command confirmation across protocols. It remains proposed; no source is declared live validated.
