@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.7.0 — 2026-11-05  
+> **Document version:** 0.8.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -645,4 +645,63 @@ This document **does not** establish HACS inclusion requirements, database archi
 - [ ] Keep feature PRs small and separately testable.
 - [x] Verify the document URL from official navigation and record Core-vs-HACS applicability.
 
-**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/creating_platform_code_review/ — verify through the official Platform checklist navigation before treating it as a reviewed source.
+**DOC-007 reviewed:** https://developers.home-assistant.io/docs/creating_platform_code_review/ — see the dedicated section below.
+
+
+### DOC-007 — Home Assistant: Checklist for creating a platform
+
+- **Official source:** https://developers.home-assistant.io/docs/creating_platform_code_review/
+- **Page title:** Checklist for creating a platform
+- **Source last updated:** 2026-06-15
+- **Reviewed:** 2026-11-05
+- **Scope:** All five numbered areas and the common section of this single page: Common, External requirements, Configuration, Setup platform, Entity, and Communication with devices/services.
+- **Applicability:** Written as a Home Assistant **Core platform development checklist**. Adopt applicable quality standards for our HACS custom integration, without falsely labeling Core-only or YAML-only practices as mandatory HACS rules.
+
+#### Source-derived requirements and project decisions
+
+| ID | Official finding | Applicability and PlayStation Hub decision |
+| --- | --- | --- |
+| HA-PLAT-001 | Follow Home Assistant style guidelines. | **Adopt.** Apply official style conventions; inspect the dedicated style documentation separately. |
+| HA-PLAT-002 | Prefer existing Home Assistant constants. Keep new constants at platform level unless broadly reused; prefer \`CONF_MONITORED_CONDITIONS\` to \`CONF_MONITORED_VARIABLES\`. | **Adopt conditionally.** Use standard constants and avoid unnecessary global constants. |
+| HA-PLAT-003 | Declare external requirements in \`manifest.json\`, not the deprecated \`REQUIREMENTS\` constant. | **Adopt.** Validate manifest with official tools. |
+| HA-PLAT-004 | Pin external dependency versions and use PyPI rather than GitHub-hosted dependencies; meet official library requirements. | **Adopt.** Verify portability and distribution of each selected dependency. |
+| HA-PLAT-005 | Directly configurable YAML platforms need Voluptuous validation, platform-schema extension, schema defaults, and standard configuration keys. | **Conditional.** No YAML platform is currently planned; follow Config Flow guidance instead. |
+| HA-PLAT-006 | Do not depend on users modifying \`customize\` to configure platform behavior. | **Adopt.** All supported options should have explicit configuration semantics. |
+| HA-PLAT-007 | Verify credentials, host and other passed configuration during setup. | **Adopt.** Provide meaningful setup errors without exposing credentials. |
+| HA-PLAT-008 | Group calls to \`add_entities\` where possible. | **Adopt.** Avoid unnecessary repeated platform entity registration. |
+| HA-PLAT-009 | Register extra actions under the **integration's** domain, and verify permissions. | **Adopt.** Future controls should use \`playstation_hub.*\` with appropriate authorization. |
+| HA-PLAT-010 | Extend the appropriate entity type for the platform. | **Adopt.** Use native \`SensorEntity\`, \`BinarySensorEntity\`, \`ButtonEntity\` or other suitable entity classes as supported by current HA APIs. |
+| HA-PLAT-011 | Do not pass \`hass\` into entity constructors; it is provided when an entity is added. | **Adopt.** Use \`self.hass\` only after attachment to HA. |
+| HA-PLAT-012 | Do not perform \`update()\` in an entity constructor; the page illustrates \`update_before_add=True\` when needed. | **Adopt principle.** Initial data retrieval belongs in the correct setup/update lifecycle; verify current async conventions separately. |
+| HA-PLAT-013 | Do not perform I/O inside entity properties. Cache values during updates. | **Mandatory project quality policy.** Properties must be fast, deterministic and side-effect free. |
+| HA-PLAT-014 | Store UTC timestamps rather than relative elapsed-time strings in entity state/attributes. | **Adopt.** Derive presentation durations in the frontend from absolute times; retain timezone-aware conversions for calendar aggregation. |
+| HA-PLAT-015 | Use entity lifecycle callbacks for attaching listeners and cleaning up connections. | **Mandatory project quality policy.** Test setup, unload, reload and reconnect for leaked subscriptions/tasks. |
+| HA-PLAT-016 | Core platforms should isolate API-specific communication in a third-party library hosted on PyPI. | **Core requirement / HACS architecture target.** Keep a transport abstraction; independently decide whether to publish/use a dedicated library. |
+
+#### Concrete PlayStation Hub implementation implications
+
+1. **Sensor properties are read-only projections.** They return cached coordinator/runtime data; they never query SQLite, MQTT, the network, or disk.
+2. **Event-driven source updates:** MQTT callbacks or transport tasks update the runtime model, and the entity platform publishes state changes through supported HA lifecycle mechanisms.
+3. **Timestamps:** Keep session starts, ends, and observations as absolute UTC times. Render a running duration from a timestamp in the frontend; do not persist continuously changing formatted elapsed strings.
+4. **Controls:** Power, standby and other commands require verified capabilities and appropriate permission checks. Select entity platforms by semantics, not by convenience.
+5. **Safe cleanup:** Register listeners on entity addition and unregister them on removal. Unload must not leave orphan subscriptions or tasks.
+6. **No I/O in properties:** Enforce via code review and tests, especially for any history/analytics sensors.
+7. **Config validation:** Do not introduce YAML solely because this checklist includes YAML examples; the config-flow review remains pending.
+
+#### Acceptance checklist (not yet implemented)
+
+- [ ] Each entity platform uses the appropriate HA entity base and lifecycle.
+- [ ] Entity property access never performs disk, database, MQTT or network I/O.
+- [ ] Initial setup validates connection details without logging secrets.
+- [ ] External dependencies are declared in \`manifest.json\` and pinned appropriately.
+- [ ] Actions are registered under \`playstation_hub\` with appropriate permission checks.
+- [ ] UTC timestamps and timezone-aware aggregations are tested.
+- [ ] Repeated setup/unload/reload leaves no listeners, tasks or resources behind.
+- [ ] Tests verify cached-state semantics and disconnected-source behavior.
+- [x] Document scope and Core-vs-HACS applicability.
+
+#### Not established by DOC-007
+
+This document does **not** select our database architecture, specify SQLite storage paths, define frontend packaging/registration, or replace the official Config Entries / Data Entry Flow documentation. Those topics remain open until separately researched.
+
+**Next document recommended (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/ — verify current page and examine its scope before deriving requirements.
