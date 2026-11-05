@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.7 — 2026-11-05  
+> **Document version:** 0.39.8 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2622,3 +2622,11 @@ No executable code or live credentials were used; documentation only on main.
 **Evidence rules:** Every gate begins NOT_RUN or BLOCKED; no CI workflow, code, benchmark, Home Assistant OS or hardware test was performed. Do not call a feature tested because it has source citations or a test specification. The Sony authorization gate from SPEC-003 continues to block PSN distribution; independently verified LAN-only capability may ship if all its own release gates pass. No required MQTT, PS5-MQTT, add-on or separate server.
 
 **Next documentation:** SPEC-006 Security & Privacy Threat Model and SPEC-007 Supported Console/Firmware Matrix, followed by explicit ADR review and closure of P0 blockers. Changes are restricted to main; next and develop remain untouched.
+
+## SPEC-006 — Security & Privacy Threat Model (2026-11-05)
+
+**Status: Proposed, untested; guide version 0.39.8.** [SPEC-006](docs/specifications/SPEC-006-security-privacy-threat-model.md) inventories nine trust boundaries, thirty specific threats, thirty corresponding synthetic security tests and twelve security gates. It covers LAN discovery spoofing and identity collisions, console-targeted Remote Play, Sony OAuth/NPSSO, credential rotation, backend WebSocket permissions, XSS/SSRF, SQLite integrity and WAL backup, history and child privacy, release supply chain, and incident response.
+
+**Release posture:** No implementation or security tests were performed. Credential leakage, unauthorized console control, privacy bypass and silent history corruption block affected releases. Sony client/endpoint authorization remains BLOCKED for PSN; LAN-only functionality may be separately validated. Credentials must never be exposed in frontend, logs, entity attributes or diagnostics. Do not assume HA Store is encrypted, or that discovery host-id is cryptographically authenticated.
+
+**Next:** SPEC-007 Supported Console & Firmware Compatibility Matrix, then explicit architectural decision review. Only main documentation changed; develop and next untouched.
