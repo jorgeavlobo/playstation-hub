@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.1 — 2026-11-05  
+> **Document version:** 0.38.2 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2397,3 +2397,17 @@ The [07-remote-play-commands specification](docs/protocols/07-remote-play-comman
 **Decision boundaries:** Approved project direction = independent HACS integration, optional PSN support, low-intervention UX, modular secure per-account token management and resilient LAN fallback. Proposed engineering mechanisms = token restoration, single-flight refresh, persistence and recovery. **Blocked/unverified** = Sony-sanctioned client credentials, endpoint permissions, automatic browser NPSSO capture, final secret storage architecture and real-world compatibility.
 
 Sources: [Official Home Assistant PlayStation Network](https://github.com/home-assistant/core/tree/dev/homeassistant/components/playstation_network), [Emkraan](https://github.com/Emkraan/homeassistant-playstationnetwork), [PSNAWP](https://github.com/isFakeAccount/psnawp), [PSNAWP PyPI](https://pypi.org/project/psnawp/), [psn-mcp browser-login](https://github.com/tmrp/psn-mcp/blob/main/src/psn/browser-login.ts), [Home Assistant backups](https://www.home-assistant.io/common-tasks/general/backups).
+
+## Official Home Assistant PlayStation Network integration deep audit — 2026-11-05
+
+**Research-only checkpoint, version 0.38.2.** The detailed 13-section review and traceable source register is [docs/research/home-assistant-core-playstation-network-audit.md](docs/research/home-assistant-core-playstation-network-audit.md). This companion document must be consulted when designing discovery, PSN config flows, account/console identity, entity representation and tests. It is not an implementation or source-license authorization.
+
+**Important confirmed finding:** The Home Assistant Core `playstation_network` integration declares DHCP MAC/hostname matchers in `manifest.json` but the reviewed `config_flow.py` lacks a specialized `async_step_dhcp`. Home Assistant's base config flow falls back to the generic `async_step_user` for a DHCP discovery when no specialized handler is present, subject to the no-existing-entry/in-progress restrictions. Consequently the official integration can appear under **Settings > Devices & services > Discovered** without validating an individual PS5 through a console-specific local network probe.
+
+**Project requirement:** PlayStation Hub should be discoverable when a compatible PlayStation is detected, support separately identifiable multiple physical consoles and offer a manual LAN setup fallback. Proposed mechanisms combine HA-managed DHCP candidate discovery with independent PlayStation LAN protocol validation and a custom discovery/config flow. A DHCP hostname or MAC prefix is a lead, **not proof** of console identity, state, ownership or pairing. Final per-console unique IDs, entries, manual fallback and rediscovery rules remain open implementation gates.
+
+**Product differentiation:** The official PSN component provides account/platform-level presence, game and trophy information, friend subentries, messaging and HA entity platforms using PSNAWP. It does not establish separate physically unique PS5 power/Remote Play and detailed multi-year local sessions in the code reviewed. Our design must keep local console hardware identity distinct from PSN account and platform identity; one PSN account may use several physical devices, and a PSN `offline` state does not prove the console is powered off.
+
+**Implementation and release gates:** Review supported HA Core discovery APIs and test custom integration DHCP matching, user confirmation, stable IDs, repeated discovery with existing entries, ignored devices, concurrent flow deduplication, DHCP/host changes, VLAN and manual-setup conditions, unknown hardware and coexistence with `playstation_network`. Confirm all proposed behaviors through tests before claiming them. Consult the detailed audit's per-platform source and synthetic test matrices.
+
+**Research scope:** Only `main` documentation was modified. `develop` legacy reference and `next` implementation branch remain unchanged.
