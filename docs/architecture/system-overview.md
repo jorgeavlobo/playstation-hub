@@ -24,3 +24,7 @@ No PS5-MQTT, Mosquitto, Node.js or separate App is required by design. External 
 - Supported minimum Home Assistant release and frontend registration lifecycle.
 
 See [protocol index](../protocols/README.md) and [architecture guide](https://github.com/jorgeavlobo/playstation-hub/blob/main/ARCHITECTURE_GUIDE.md).
+
+## Cross-protocol review checkpoint
+
+The [Protocols 01–10 architecture audit](cross-protocol-review-01-10.md) identifies the shared contracts required before implementation: identity/config-entry ownership, source observation and reconciliation, session uncertainty, Remote Play credential/cipher interoperability, PSN legal authorization, storage and backup approval, HA native discovery/entities/actions, versioned WebSocket panel API, error policy and release CI. Current designs remain research specifications; see the review's finding register and ADR backlog. **Dedicated SQLite remains provisional.**
