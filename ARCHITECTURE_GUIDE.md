@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.6.0 — 2026-11-05  
+> **Document version:** 0.7.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -594,4 +594,55 @@ The previous guide referred to this URL as if it were Hassfest documentation. Th
 
 This document **does not** establish HACS inclusion requirements, database architecture, dashboard distribution, GitHub Release rules, or the exact Python integration skeleton. These remain governed by other documents and our explicit project decisions.
 
-**Next document to review (not yet reviewed):** https://developers.home-assistant.io/docs/development_checklist/component/ — confirm the exact live URL and review that page independently.
+**DOC-006 reviewed:** The previously proposed URL is not the actual destination. The official navigation links to https://developers.home-assistant.io/docs/creating_component_code_review/ (see DOC-006).
+
+
+
+### DOC-006 — Home Assistant: Checklist for creating a component
+
+- **Verified official source:** https://developers.home-assistant.io/docs/creating_component_code_review/
+- **Official page title:** Checklist for creating a component
+- **Source last updated:** 2024-08-27
+- **Reviewed:** 2026-11-05
+- **Scope:** All seven sections of this single document: Common, External requirements, Configuration, Component/platform communication, Communication with devices/services, Pull request scope, Event names, Tests.
+- **URL correction:** The previously proposed \`/docs/development_checklist/component/\` did not resolve. This URL was obtained from the official Development Checklist navigation.
+- **Applicability caveat:** Written for Home Assistant **Core contributions**. We adopt transferable quality practices for our independent HACS integration, but do not misrepresent Core-only processes as HACS mandates.
+
+#### Requirements and project decisions
+
+| ID | Source rule or recommendation | Applicability and PlayStation Hub policy |
+| --- | --- | --- |
+| HA-COMP-001 | Follow Home Assistant style guidelines. | **Adopt.** Research the dedicated style guide before implementing lint configuration. |
+| HA-COMP-002 | Reuse existing constants from \`homeassistant.const\`; add widely shared constants to integration \`const.py\`, keeping local-only constants close to their users. | **Adopt.** Avoid a monolithic constants file. |
+| HA-COMP-003 | Declare external requirements in \`manifest.json\`; legacy \`REQUIREMENTS\` constant is deprecated. | **Adopt.** No \`REQUIREMENTS\` global; validate manifest against current HA docs. |
+| HA-COMP-004 | Pin each external requirement to a specific version (example: \`phue==0.8.1\`). | **Adopt.** Explicit pinned runtime dependency versions, compatibility and update reviews. |
+| HA-COMP-005 | Requirements must satisfy Home Assistant library requirements. | **Adopt as quality goal.** Inspect the linked official library-requirements document separately. |
+| HA-COMP-006 | Validate YAML configuration with Voluptuous, with defaults in the schema rather than \`setup()\`; prefer shared HA keys. | **Conditional.** We plan a UI-first config flow, not a YAML schema. Research config-flow guidance separately. |
+| HA-COMP-007 | Platforms use \`PLATFORM_SCHEMA\` rather than \`CONFIG_SCHEMA\`; for \`EntityComponent\` inherit the appropriate base. | **Conditional / legacy YAML platform path.** Do not introduce platform YAML just to satisfy this checklist. |
+| HA-COMP-008 | Do not require users to configure behavior through \`customize\`. | **Adopt.** Use proper integration configuration and options. |
+| HA-COMP-009 | \`hass.data[DOMAIN]\` can share data with platforms; dispatcher can notify platform entities of changes. | **Documented option, not a mandate.** Prefer per-config-entry runtime data and current official APIs after reviewing Config Entries. |
+| HA-COMP-010 | Device/service API-specific communication should be in a separate PyPI library. | **Core contribution requirement; voluntary architecture target for HACS.** Isolate communication in a transport adapter. Assess whether to create/use a PyPI library based on the final source protocol. |
+| HA-COMP-011 | Keep PRs small: one platform and only the minimum valuable functionality; do not mix unrelated cleanup and features, multiple issues, or depend on unmerged work. | **Adopt.** Build a minimal useful first integration, then add monitoring, persistence, analytics and frontend in small reviewable increments. |
+| HA-COMP-012 | Prefix emitted event names with the integration domain. | **Adopt.** Events, if introduced, must use \`playstation_hub_...\` and documented event data. |
+| HA-COMP-013 | Add tests to minimize regressions. | **Adopt as mandatory project policy.** Test setup, config flows, reload/unload, failure handling, transport, storage, entity behavior and frontend where applicable. |
+
+#### Important architecture implications
+
+1. **The first submission must be useful, not an empty skeleton.** The Core checklist advocates the smallest functional feature set; we will use that approach without claiming a HACS reviewer is bound by the Core PR checklist.
+2. **Dependencies are pinned** in \`manifest.json\`. Do not put dependency declarations in a legacy \`REQUIREMENTS\` constant.
+3. **Config-flow-first remains the plan.** YAML-specific rules only apply if we later support YAML.
+4. **Runtime sharing and updates must be lifecycle-safe.** \`hass.data\` and dispatcher are described as possibilities; the current best practice for config-entry runtime data must be verified in a separate source review.
+5. **One GitHub repository and one HACS integration** remain our chosen architecture. This document does not prescribe packaging of the Lovelace frontend, SQLite location or Marketplace update behavior.
+6. **Naming and testing become acceptance gates.** Domain-prefixed events and automated tests are non-negotiable project standards.
+
+#### Verification plan
+
+- [ ] Review Home Assistant style guidelines and apply Ruff/static checks.
+- [ ] Review manifest and library requirements; pin dependencies.
+- [ ] Review config entries/data entry flows and choose correct per-entry runtime data model.
+- [ ] Implement first real platform with minimal useful behavior and full tests.
+- [ ] Verify all emitted event names are domain-prefixed.
+- [ ] Keep feature PRs small and separately testable.
+- [x] Verify the document URL from official navigation and record Core-vs-HACS applicability.
+
+**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/creating_platform_code_review/ — verify through the official Platform checklist navigation before treating it as a reviewed source.
