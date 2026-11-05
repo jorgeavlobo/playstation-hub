@@ -458,3 +458,9 @@ HAProjection / SidebarApi
 - https://github.com/achievements-app/psn-api
 
 **Outcome:** A detailed, cross-protocol state reconciliation contract and error/test policy has been proposed. All direct Sony device facts still require implementation and live validation. No executable code, credentials or PS5 operations were performed.
+
+## Core 2026.11 coordinator and observation ownership checkpoint (2026-11-05)
+
+[Official source audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) identify a key domain/lifecycle invariant: the authoritative stream of console observations must **not** depend on browser tabs or HA entity-listener count. In pinned Core 2026.11, a normally polling DataUpdateCoordinator schedules refresh with the first listener and unschedules when the last disappears. A per-console entry-owned monitor feeding a **push-only** DataUpdateCoordinator is the preferred proposal; a polling coordinator intentionally retained by a scoped internal listener is an alternate pending testing. **Never run both automatic polling systems for one console.**
+
+Keep independent physical power, reachability, source health, observation freshness, last-known historic state, command state and persistence health. `async_set_updated_data` marks coordinator delivery/update success, but that does not establish that a LAN probe succeeded or that the ledger was written; the immutable domain snapshot needs explicit evidence/durability fields. If HA polling is disabled, the proposed policy pauses automatic observation and records coverage gaps. One source failure must not contaminate another console or PSN account.
