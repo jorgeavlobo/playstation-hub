@@ -241,3 +241,24 @@ Preferred `host-id` normalization must be defined from observed byte format and 
 - https://www.home-assistant.io/integrations/dhcp/
 
 **Research outcome:** Discovery acceptance is defined with synthetic/HA/hardware matrices and nine release gates. No implementation, live test or automatic discovery result is claimed.
+
+## 14. Home Assistant discovery ownership and stale-device policy — official-source update (2026-11-05)
+
+The current official [Discovery](https://contributors.home-assistant.io/core/integrations/discovery/) and [Network discovery](https://contributors.home-assistant.io/core/integrations/network-discovery/) guidance assigns DHCP host discovery to Home Assistant's shared `dhcp` integration. PlayStation Hub's UDP `SRCH` transport is **a validation/status protocol**, not a second DHCP implementation. Integrate an explicit `async_step_dhcp`, stable deduplication and directed candidate validation before offering setup. Only scan or broadcast beyond directed verification when a separately approved, bounded protocol-specific use case requires it.
+
+The official [stale-devices](https://contributors.home-assistant.io/core/quality-scale/stale-devices/) rule does not allow removal solely on uncertain absence. For a physical console, no LAN packet may mean standby, fully off, routing loss, radio loss or unplugged power. **Do not automatically remove its DeviceEntry, configuration or historical ledger after a timeout.** Provide user-authorized removal with explicit history preservation/purge options.
+
+### Additional synthetic/HA tests (all NOT_RUN)
+
+| ID | Scenario | Expected |
+| --- | --- | --- |
+| HA-019 | HA DHCP matcher reports candidate, fake UDP validation fails | No confirmed physical console entry |
+| HA-020 | Already configured physical console responds at new address | Same unique ID; address updated, history retained |
+| HA-021 | Device stops responding for 30 days | Device unavailable, **not automatically deleted** |
+| HA-022 | Two new consoles detected after one installed | Two separate user-confirmed config entries |
+| HA-023 | One HA Core DHCP event and one manual probe in flight | Dedupe without double UDP storm |
+| HA-024 | Reconfigure changes IP but returns different host identity | Reject update and protect keys |
+| NET-016 | Broadcast-capable network disabled; directed host works | Manual setup without custom DHCP enumerator |
+| NET-017 | HA has multiple interface addresses | Bounded protocol probe routing and no repeated network-wide scans |
+
+See [Batch 02 official audit](../research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md). These are test definitions, not test outcomes.
