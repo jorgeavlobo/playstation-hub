@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.4 — 2026-11-05  
+> **Document version:** 0.38.5 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2442,3 +2442,25 @@ Sources: [Protocol 09 source register](docs/protocols/09-psn-presence.md#17-sour
 **Documentation workflow:** Research changes are committed to `main`. No `next` implementation or `develop` legacy modifications were made.
 
 Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP GameTitle](https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/models/game_title.py), [psn-api purchased titles](https://github.com/achievements-app/psn-api/blob/main/src/graphql/getPurchasedGames.ts), [Sony Portugal terms](https://www.playstation.com/pt-pt/legal/terms-of-service/).
+
+## Cross-protocol architecture audit — Protocols 01–10 (2026-11-05)
+
+**Status: research and design audit, not implementation; document version 0.38.5.** Read the full [18-section cross-protocol review](docs/architecture/cross-protocol-review-01-10.md) before creating runtime modules. Its finding register identifies **22 issues** (seven P0, ten P1 and five P2); these counts are architecture/documentation categories, not code defects or validated hardware faults.
+
+**Most important open P0 design gates:**
+
+1. Physical console IDs, PSN account identifiers, account-to-console associations and HA config-entry ownership / multi-console DHCP discovery.
+2. A single source authority, observation/freshness/uncertainty model spanning LAN, Remote Play, cloud presence and game metadata.
+3. Session/event accounting across missing observations, restarts, DST, unknown player attribution and multi-console activity.
+4. Remote Play registration/credential mapping, wake secret derivation, crypto vectors, session framing and command confirmation.
+5. Sony authorization for PSN client credentials, OAuth scopes and undocumented presence/catalog endpoints; these features remain blocked for distribution pending acceptable permission.
+6. Storage and backup architecture, including confidential token management and history durability; **ADR-0003 SQLite is still proposed, not approved**.
+7. A dedicated discovery flow that supports more than one console, with safe unique IDs and deduplication. The official PSN integration's generic DHCP fallback is not a substitute for authenticated physical-console discovery.
+
+**Broader P1 work:** common errors, async task ownership, coordinator/rate policy, Home Assistant entities/actions and lifecycle, backend WebSocket contracts, one sidebar frontend registration/security/i18n, diagnostics, removal/unpair/unlink behavior, minimum HA version and tested HACS releases.
+
+**Next documentation sequence proposed:** Identity/ownership ADR-0004; observation/authority ADR-0005; session uncertainty ADR-0006; credential ADR-0007; storage ADR-0008; entity/action ADR-0009; frontend/backend ADR-0010; associated protocol byte contracts and acceptance fixtures. These ADR filenames/decisions are **proposed**; they do not currently exist as approved documents.
+
+**Scope unchanged:** One HACS integration and multilingual sidebar, LAN independence, optional PSN and Remote Play, no external MQTT/PS5-MQTT/add-on dependency, no blank release. All research changes remain on `main`; `develop` stays legacy reference; `next` stays unimplemented.
+
+**Reference:** [docs/architecture/cross-protocol-review-01-10.md](docs/architecture/cross-protocol-review-01-10.md), [compliance matrix](docs/standards/compliance-matrix.md), [review history](docs/standards/review-history.md), and each protocol's own evidence/test register.
