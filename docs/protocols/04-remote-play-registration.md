@@ -1,47 +1,134 @@
-# Remote Play registration
+# Protocol 04 — PS5 Remote Play registration
 
-**Document status:** Initial specification — source research, not live validated  
-**Last reviewed:** 2026-11-05  
-**Implementation:** Not started  
-**Primary proposed Python module:** `custom_components/playstation_hub/transport/remote_play/registration.py`
+**Status:** Source-derived technical specification; validation during implementation  
+**Reviewed:** 2026-11-05  
+**Reference:** playactor tree `93ee087445db368acaba9ad50099bce56ca9141d`  
+**Proposed module:** `custom_components/playstation_hub/transport/remote_play/registration.py`
 
 ## 1. Objective and scope
 
-Pair a console using a user-authorized Remote Play flow.
+Pair a user-selected PlayStation 5 for authenticated Remote Play operations, notably standby and credentialed wake. Registration is not required for unauthenticated LAN discovery. This document describes the observed upstream sequence; it is not official Sony protocol documentation.
 
-## 2. Source-confirmed upstream behavior
+## 2. Required prerequisites
 
-Upstream PS5 flow sends SRC3 over UDP 9295 and expects RES3, derives a PIN-based encrypted registration payload, POSTs to the PS5 Remote Play registration endpoint on port 9295 and decrypts a response containing RP-Key and registration material.
+- Console identified through validated LAN discovery and reachable on its local network.
+- User explicitly starts pairing while the console is awake and obtains a Remote Play registration PIN from its interface.
+- A PlayStation Network account identifier used by the registration request, not merely an arbitrary username.
+- Network access to PS5 UDP/TCP port 9295.
+- Secure persistent storage for per-console registration results.
 
-## 3. PlayStation Hub architecture decision
+**Design:** Distinguish the Remote Play registration PIN from a later console-user login passcode. Never silently attempt pairing on an unknown device.
 
-Registration must be an explicit UI step; PIN, account ID, registration keys and responses are sensitive. Handle wrong PIN, timeout, firmware mismatch, revocation and re-pairing. Do not assume pairing is necessary for LAN-only status.
+## 3. Registration discovery handshake
 
-## 4. Proposed interface contract
+The upstream PS5 registration process sends the exact ASCII bytes `SRC3` to the selected console's IPv4 address on UDP port **9295**, using a local UDP socket bound to port **9295**. It waits up to **30 seconds** for a response beginning with `RES3`, closes the socket, and delays **100 ms** before the HTTP registration request.
 
-The module must expose typed, async-compatible operations and return normalized domain objects or explicit typed errors. Transport I/O must not block the Home Assistant event loop. No Home Assistant entity or frontend component may perform protocol I/O directly. Each observation must record its source and UTC timestamp. Details of function signatures remain **to be specified**, not implemented.
+The corresponding PS4 values are `SRC2` and `RES2`. They are not interchangeable with PS5.
 
-## 5. Failure, privacy and lifecycle policy
+```mermaid
+sequenceDiagram
+    participant HA as PlayStation Hub
+    participant PS5 as PlayStation 5
+    HA->>PS5: UDP SRC3 :9295
+    PS5-->>HA: UDP RES3
+    HA->>HA: Derive PIN-based encrypted payload
+    HA->>PS5: HTTP POST :9295 /sie/ps5/rp/sess/rgst
+    PS5-->>HA: Encrypted registration response
+    HA->>HA: Decrypt, validate and persist keys
+```
 
-All network operations need bounded timeouts and cancellation-safe cleanup. Invalid or stale data must never be reported as confirmed current state. Secrets must not enter logs, diagnostics or frontend assets. The integration must unload cleanly and handle multiple consoles without shared mutable protocol state.
+**Source limitation:** Upstream accepts a datagram with the expected prefix; our implementation should also validate source IP, payload size and response freshness to avoid accepting unrelated datagrams.
 
-## 6. Source references
+## 4. Registration HTTP request
 
-- https://github.com/dhleong/playactor/blob/main/src/remoteplay/registration.ts
-- https://github.com/dhleong/playactor/blob/main/test/remoteplay/registration-test.ts
+The source constructs a registration payload containing `Client-Type` and `Np-AccountId` fields, encrypts it using PIN-derived cryptographic material, and sends it via HTTP POST to:
 
-## 7. Open questions and implementation-stage verification
+`http://<validated-console-ip>:9295/sie/ps5/rp/sess/rgst`
 
-- [ ] Finalize precise wire-format details and edge cases from the upstream source.
-- [ ] Review licenses and any Sony service restrictions before reuse.
-- [ ] Specify Python data models, error types and async lifecycle.
-- [ ] Add synthetic positive/negative protocol fixtures and tests.
-- [ ] Validate behavior on a test PS5 during implementation.
-- [ ] Record firmware compatibility and recovery behavior.
+The request includes `RP-Version: 1.0` for the upstream PS5 Remote Play version mapping. The upstream HTTP helper supplies a Remote Play user-agent and processes response status and `RP-Application-Reason` errors.
 
-## 8. Related documents
+**Important:** The registration endpoint uses HTTP as a transport for an encrypted payload; do not assume TLS protects the outer HTTP request. Sensitive data handling must rely on correct protocol encryption, local-network trust assumptions and secure storage.
 
-- [Protocol index](README.md)
-- [Architecture guide](https://github.com/jorgeavlobo/playstation-hub/blob/main/ARCHITECTURE_GUIDE.md)
+## 5. Cryptographic preparation
 
-**Evidence boundary:** This document records source findings and intended design. It does not claim the protocol is officially documented by Sony or proven functional in PlayStation Hub.
+The source uses a cryptographically random 16-byte nonce, a PS5-specific modern crypto strategy, PIN-dependent seed derivation and AES-128-CFB with HMAC-SHA256-derived IV. Its registration preface is 480 bytes and includes protocol-specific signed/derived fields.
+
+The complete algorithm and independent vectors belong in [05 — Remote Play cryptography](05-remote-play-cryptography.md). Do not duplicate lookup tables here or implement custom cryptography from memory.
+
+## 6. Registration response and credentials
+
+After decrypting the response, the upstream parser reads CRLF-separated key/value records. Relevant fields in its credential model include:
+
+| Field | Meaning / handling |
+| --- | --- |
+| `RP-Key` | Required 16-byte key represented as 32 hex characters; validate before accepting |
+| `RP-KeyType` | Registration key type; retain only if needed |
+| `PS5-RegistKey` | PS5 registration key used for later session initialization |
+| `PS5-Mac` | Optional console identifier metadata |
+| `PS5-Nickname` | Optional console nickname |
+| `AP-Bssid`, `AP-Name` | Additional upstream registration metadata |
+
+**Design:** Require the fields needed for the actual PS5 session and wake operation; never log decrypted response bodies or raw registration keys. A syntactically valid response is not proof of future session compatibility.
+
+## 7. Proposed registration state machine
+
+`NOT_PAIRED → PRECHECK → AWAITING_PIN → REGISTRATION_DISCOVERY → ENCRYPTING → REGISTERING → VALIDATING → PAIRED`
+
+Any stage can transition to `FAILED` or `CANCELLED`. Persist credentials only after complete validation; clean up UDP sockets, HTTP connections and transient secrets on failure. Never leave a partially paired configuration entry appearing ready.
+
+## 8. Error categories and recovery
+
+- `CONSOLE_UNREACHABLE`: selected console cannot be contacted.
+- `REGISTRATION_DISCOVERY_TIMEOUT`: no valid RES3 response.
+- `PIN_REJECTED`: explicit registration rejection, if confirmed by response.
+- `PSN_ACCOUNT_INVALID`: invalid account identifier or authorization failure.
+- `REMOTE_PLAY_IN_USE`: upstream error category for an occupied session.
+- `REMOTE_PLAY_VERSION_MISMATCH`: protocol version rejection.
+- `INVALID_REGISTRATION_RESPONSE`: missing/invalid key fields.
+- `REGISTRATION_CANCELLED`: user or integration cancellation.
+
+These are proposed application error categories, not a complete official Sony error-code list.
+
+## 9. Multi-console and Home Assistant integration decisions
+
+- Pairing is scoped to the selected stable console ID and authorized account.
+- Credentials for different consoles must not overwrite one another.
+- Use a native Home Assistant Config Flow/reauthentication flow and translated errors.
+- Do not place keys in the sidebar panel configuration, diagnostics or static JavaScript.
+- Pairing and account unlinking must not delete game history automatically.
+- LAN-only discovery/status remains available without registration.
+- The user must explicitly authorize any future power-control operation.
+
+## 10. Security and license considerations
+
+The upstream source uses protocol-specific crypto tables and behavior influenced by reverse-engineered Remote Play clients. Review their provenance and licenses before reusing source, tables or fixtures. Validate PIN format and limit retry attempts. Never log secrets or use a remote pairing proxy. All network destinations must be derived from the validated console identity, not arbitrary untrusted URLs.
+
+## 11. Implementation-stage test plan
+
+- [ ] Exact SRC3/RES3 datagrams, port and source-address validation.
+- [ ] Timeout and socket cleanup after no RES3.
+- [ ] Correct HTTP endpoint, RP-Version and encrypted payload framing.
+- [ ] Known-answer PS5 registration payload test.
+- [ ] Reject incorrect PIN and malformed/short encrypted response.
+- [ ] Require RP-Key and PS5-RegistKey as appropriate to selected session flow.
+- [ ] Handle cancellation, power loss and concurrent pairing attempts.
+- [ ] Keep credentials isolated between consoles.
+- [ ] Ensure redaction in exceptions, diagnostics and logs.
+- [ ] Verify paired wake/standby on a test PS5 during implementation.
+
+## 12. Sources
+
+- [Registration flow](https://github.com/dhleong/playactor/blob/main/src/remoteplay/registration.ts)
+- [Registration tests](https://github.com/dhleong/playactor/blob/main/test/remoteplay/registration-test.ts)
+- [Credential model](https://github.com/dhleong/playactor/blob/main/src/credentials/model.ts)
+- [Crypto entry point](https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto.ts)
+- [Modern PS5 crypto](https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto/modern.ts)
+- [Crypto base](https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto/base.ts)
+- [Remote Play version and errors](https://github.com/dhleong/playactor/blob/main/src/remoteplay/model.ts)
+- [Remote Play HTTP transport](https://github.com/dhleong/playactor/blob/main/src/remoteplay/protocol.ts)
+
+## 13. Open research
+
+Trace the precise construction of wake `user-credential` from the registration results, check PSN account ID acquisition and review the full crypto key-table provenance. Live firmware validation remains intentionally deferred.
+
+**Related:** [03 — Console wake-up](03-console-wakeup.md) · [05 — Cryptography](05-remote-play-cryptography.md) · [Protocol index](README.md).
