@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.12.0 — 2026-11-05  
+> **Document version:** 0.13.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1036,4 +1036,96 @@ The JSON fragment illustrates the \`strings.json\` source structure only; it is 
 
 The page does **not** prescribe our SQLite architecture, frontend language loader, exact translation build pipeline, dashboard resource registration, or GitHub Release procedure. Do not infer those from this rule.
 
-**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/exception-translations/
+**DOC-012 reviewed:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/exception-translations/ — see the section below.
+
+
+### DOC-012 — Home Assistant: Exception messages are translatable
+
+- **Official source:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/exception-translations/
+- **Official title:** Exception messages are translatable
+- **Last updated on official page:** 2026-08-02
+- **Reviewed:** 2026-11-05
+- **Scope:** Entire single page: reasoning, implementation example, \`strings.json\` example, additional resources, exceptions, and related rules.
+- **Quality scale:** Gold rule for Home Assistant Core integrations. The page explicitly says there are **no exceptions** to this rule.
+- **Project policy:** Adopt localized user-facing errors from day one, regardless of whether the integration has an official Core quality-scale grade.
+
+#### Requirements grounded in DOC-012
+
+| ID | Source-backed requirement | PlayStation Hub implementation / verification |
+| --- | --- | --- |
+| HA-EXC-I18N-001 | Home Assistant provides built-in translation support for errors derived from \`HomeAssistantError\`. | For user-facing service/action failures, use the Home Assistant exception hierarchy. Do not surface raw English exception text to users. |
+| HA-EXC-I18N-002 | Translatable errors pass \`translation_domain\` and \`translation_key\` when raised. | Use \`translation_domain=DOMAIN\` and a stable semantic key, independent of language. |
+| HA-EXC-I18N-003 | The example raises \`ServiceValidationError\` for invalid user-supplied service parameters. | Distinguish invalid user input from device/network failures; verify precise exception semantics in the dedicated raising-exceptions documentation. |
+| HA-EXC-I18N-004 | The example raises \`HomeAssistantError\` for communication failures and chains the underlying exception with \`from err\`. | Keep diagnostic cause for debugging while exposing a translated user-facing message; ensure logs and diagnostics do not leak credentials. |
+| HA-EXC-I18N-005 | Translation messages are declared in \`strings.json\` under \`exceptions.<translation_key>.message\`. | Centralize source-language exception messages under \`exceptions\` and supply locale translations via the official translation pipeline. |
+| HA-EXC-I18N-006 | The rule has no exceptions. | All applicable user-facing integration exceptions must be localizable. |
+| HA-EXC-I18N-007 | Related rules include \`entity-translations\` and \`action-exceptions\`. | Review \`action-exceptions\` separately; DOC-011 already covers entity-name translations. |
+
+#### Minimal official-pattern example adapted for PlayStation Hub
+
+\`\`\`python
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+
+from .const import DOMAIN
+
+
+async def async_set_console_mode(mode: str, client) -> None:
+    """Set the requested console mode using localized errors."""
+    if mode not in {"rest", "awake"}:
+        raise ServiceValidationError(
+            translation_domain=DOMAIN,
+            translation_key="invalid_console_mode",
+        )
+
+    try:
+        await client.async_set_mode(mode)
+    except ConnectionError as err:
+        raise HomeAssistantError(
+            translation_domain=DOMAIN,
+            translation_key="console_unreachable",
+        ) from err
+\`\`\`
+
+\`\`\`json
+{
+  "exceptions": {
+    "invalid_console_mode": {
+      "message": "The requested console mode is not supported."
+    },
+    "console_unreachable": {
+      "message": "Cannot communicate with the PlayStation console."
+    }
+  }
+}
+\`\`\`
+
+These snippets demonstrate the documented translation pattern. They are **illustrative only**: no such console-control transport or API has been implemented or verified.
+
+#### Architecture decisions for multilingual errors
+
+1. **Source language:** English source messages live in \`strings.json\`; translated equivalents belong to the supported locale catalogs after the official translation-file workflow is reviewed.
+2. **Stable keys:** Translation keys are immutable semantic identifiers, not localized display strings.
+3. **Typed errors:** Distinguish input validation, authentication/authorization, unavailable console, timeout, unsupported command, and internal failure. Use appropriate Home Assistant exception types after reviewing their dedicated documentation.
+4. **Safe chaining:** Preserve underlying causes with exception chaining where applicable; never expose tokens, passwords, device secrets, or sensitive MQTT payloads in translated messages.
+5. **Parameters:** Where error messages need dynamic values, use officially supported translation placeholders after checking the dedicated translation documentation. Avoid constructing translated strings with Python f-strings.
+6. **Backend/frontend separation:** Home Assistant's \`HomeAssistantError\` translation mechanism does not automatically translate arbitrary JavaScript dashboard errors. The frontend needs its own localized messages.
+7. **Lifecycle:** Exceptions must not leave monitoring tasks, listeners or persistence operations partially initialized. Test cleanup separately.
+8. **Consistency:** The same user-facing failure category should map to a consistent translation key and actionable explanation across integration entry points.
+
+#### Acceptance checklist (planned; not yet implemented)
+
+- [ ] Every user-facing service/action error is represented by a translated Home Assistant exception.
+- [ ] \`strings.json\` includes each \`exceptions\` key used by the Python code.
+- [ ] Locale catalogs cover the supported languages and fall back safely when incomplete.
+- [ ] Tests verify validation failures and transport failures use the correct translation domain/key.
+- [ ] Tests verify exception chaining retains diagnostic causes without exposing secrets.
+- [ ] Frontend errors have separate localized labels/messages.
+- [ ] Dedicated raising-exceptions documentation reviewed for the exact exception class contracts.
+- [ ] Translation placeholders and runtime locale resolution validated from official docs.
+- [x] Record that DOC-012 explicitly allows no exceptions to its Gold rule.
+
+#### Source boundaries
+
+This document does **not** specify how to implement PlayStation power control, the frontend translation loader, SQLite error recovery, or the exact Home Assistant translation build process. Those topics remain open for separate official-source reviews.
+
+**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/icon-translations/
