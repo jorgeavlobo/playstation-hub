@@ -262,3 +262,9 @@ The official [stale-devices](https://contributors.home-assistant.io/core/quality
 | NET-017 | HA has multiple interface addresses | Bounded protocol probe routing and no repeated network-wide scans |
 
 See [Batch 02 official audit](../research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md). These are test definitions, not test outcomes.
+
+## 15. Multi-entry and long-running monitoring acceptance overlay (2026-11-05)
+
+The [official Core 2026.11 multi-console source review](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) clarify that native HA DHCP dispatch is a setup/discovery feature; PlayStation UDP is a bounded identity/status probe, not an independently implemented DHCP watcher. In Core, the default DHCP ConfigFlow step is the generic no-unique-ID fallback, so our dedicated step is required for multi-console setup after the first Config Entry exists.
+
+New tests cover cross-source DHCP/manual in-flight deduplication; known unique ID with moved IP; explicit ignored entries; successful setup followed by a sleeping/nonresponding console; disabled polling behavior; multiple independent ongoing monitors with zero enabled entity listeners; and shutdown cancellation. The detailed MC-CF / MC-MON / MC-LC matrices and gate status are in SPEC-008. All remain NOT_RUN. Physical host-id stability and spoofing risk remain unverified.
