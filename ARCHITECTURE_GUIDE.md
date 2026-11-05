@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.41.2 — 2026-11-05  
+> **Document version:** 0.41.3 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2710,3 +2710,8 @@ This policy **supersedes historical references** throughout older research notes
 
 **Documentation programme:** Keep tracing exact source lines; next review the legacy frontend's information architecture without copying Lovelace code; specify bounded history/repository and continuity policy contracts; audit multi-console identity/migration and add synthetic *documented* timeline expectations. No new Python/JS modules, tests, CI workflows or changes to `develop`. Only `main` documentation may change until the user explicitly authorizes implementation.
 
+## Legacy frontend investigation — source availability and UX blueprint (2026-11-05)
+
+**Status: Documentation-only; guide version 0.41.3.** [Legacy frontend inventory and sidebar UX research](docs/research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) documents the actual evidence boundary: the `develop/README.md` describes a private Lovelace frontend snapshot and claims 80 tests passing locally, but attempted reads of expected `develop/frontend` source paths failed. No old UI components or tests were actually inspected, and no private operational snapshot should be committed. **UX-001** remains open pending a verified sanitized source-only frontend tree or exact Git path.
+
+The new product remains one multilingual native Home Assistant sidebar panel with console overview/details, bounded history and coverage, game/account views behind Sony permission gates, diagnostics, accessible mobile layout, theme support, sanitized authorized WebSocket DTOs and separate physical/PSN facts. These are **proposed new UI requirements**, not evidence of features in the old card. Continue research and documentation only; no implementation branch, code, frontend bundle or tests were created.
