@@ -52,3 +52,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Native Home Assistant integration (proposed ADR-0009)
 
 [ADR-0009](../decisions/ADR-0009-home-assistant-integration-entities-actions.md) specifies candidate `playstation_hub` config flows, DHCP discovery, physical-console and optional PSN service devices, semantic entities, explicit targeted wake/standby actions, coordinator lifecycle, translations and diagnostics. Physical power is not assumed binary and PSN offline does not imply a console is off. No native integration code or Home Assistant OS tests have yet been run.
+
+## Sidebar panel and backend API (proposed ADR-0010)
+
+[ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md) specifies one HACS-shipped Home Assistant sidebar Web Component, static frontend asset registration and a versioned authorized WebSocket API for source state, commands, games and bounded history. Frontend modules never access Sony credentials, transport sockets or SQLite. Shared snapshot/delta subscriptions prevent per-widget provider polling; backend ACL is required even when panel navigation is admin-only. The exact Home Assistant version compatibility, panel registration lifecycle, API schemas, i18n and mobile behavior require tests.
