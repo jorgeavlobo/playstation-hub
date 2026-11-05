@@ -918,7 +918,7 @@ Each rule starts at **Not assessed**. Allowed future statuses: **Applicable / pl
 **Status:** APPROVED BY PROJECT OWNER (2026-11-05). This is a PlayStation Hub policy, **not** a statement that HACS requires every custom integration to support multiple languages.
 
 1. **English is the source language.** Code, comments, internal identifiers, documentation and translation keys use English. UI text is translated at runtime.
-2. **Backend / Home Assistant:** Use Home Assistant's official \`strings.json\` and \`translations/\` model, after validating the exact file and key conventions against the dedicated official documentation.
+2. **Backend / Home Assistant (DOC-015 correction):** Use complete `translations/<language_code>.json` catalogs directly. `strings.json` is for Home Assistant Core build tooling and must not be used for custom integrations.
 3. **Frontend:** Keep an independent, modular localization layer for the bundled Lovelace card/panel; use the Home Assistant selected language when supported, and fall back to English. Determine the supported locale API from official frontend documentation before implementation.
 4. **No hardcoded UI strings:** Labels, buttons, errors, empty states, status messages, chart legends, units where appropriate, and accessibility text must be localizable.
 5. **Locale-aware presentation:** Use the user's locale and time zone for date/time and number formatting; retain UTC for persisted event timestamps and domain calculations.
@@ -981,7 +981,7 @@ custom_components/playstation_hub/
 | HA-ENTITY-I18N-001 | Entity names must be translated for users of different languages. | No hardcoded English entity display names for user-facing entities. |
 | HA-ENTITY-I18N-002 | Example sets \`_attr_has_entity_name = True\`. | Use the modern entity naming convention, also subject to the separate \`has-entity-name\` rule review. |
 | HA-ENTITY-I18N-003 | Example sets \`_attr_translation_key = "phase_voltage"\` on a \`SensorEntity\`. | Use stable English semantic keys for named entity types; never use language-dependent translation keys. |
-| HA-ENTITY-I18N-004 | English source names are under \`strings.json\` → \`entity\` → platform domain → translation key → \`name\`. | Build source translation entries under the correct platform, e.g. \`entity.sensor.console_playtime.name\`. |
+| HA-ENTITY-I18N-004 | Core's example shows the `entity` → platform → translation key → `name` schema in `strings.json`. | For our custom integration, use the same supported key structure in `translations/en.json` and other complete locale catalogs. |
 | HA-ENTITY-I18N-005 | When a \`binary_sensor\`, \`number\`, \`sensor\`, or \`update\` entity has a device class, the translation key may be omitted **if** the entity should use the device class name. | Prefer standard device-class names where they accurately express the entity; do not invent redundant translations. |
 | HA-ENTITY-I18N-006 | The rule explicitly lists **no exceptions**. | No blanket exemptions for user-visible entity names; decide whether device-class naming covers an entity. |
 | HA-ENTITY-I18N-007 | Entity naming is combined with the device name in the example (e.g. “My device Phase voltage”). | Avoid repeating device name in the entity's translated suffix; test rendered naming with multiple consoles. |
@@ -1012,7 +1012,7 @@ The JSON fragment illustrates the \`strings.json\` source structure only; it is 
 
 #### Architecture decisions and multilingual consequences
 
-1. **Backend localization:** Integration entity names must be supplied through Home Assistant's translation system, using \`strings.json\` and translated locale resources according to the separate translation documentation.
+1. **Backend localization (DOC-015 correction):** Custom integration entity names use standalone `translations/en.json` and other locale catalogs; `strings.json` is Core-only build input.
 2. **Stable IDs:** Translation keys are stable technical identifiers, independent of locale. Do not generate unique IDs from translated names.
 3. **Device naming:** Keep device identity separate from entity suffix translations. Do not embed a console's user-defined name into a translation key.
 4. **Device-class reuse:** Where a standard device class describes an entity accurately, use it rather than duplicating the device-class name translation.
@@ -1055,7 +1055,7 @@ The page does **not** prescribe our SQLite architecture, frontend language loade
 | HA-EXC-I18N-002 | Translatable errors pass \`translation_domain\` and \`translation_key\` when raised. | Use \`translation_domain=DOMAIN\` and a stable semantic key, independent of language. |
 | HA-EXC-I18N-003 | The example raises \`ServiceValidationError\` for invalid user-supplied service parameters. | Distinguish invalid user input from device/network failures; verify precise exception semantics in the dedicated raising-exceptions documentation. |
 | HA-EXC-I18N-004 | The example raises \`HomeAssistantError\` for communication failures and chains the underlying exception with \`from err\`. | Keep diagnostic cause for debugging while exposing a translated user-facing message; ensure logs and diagnostics do not leak credentials. |
-| HA-EXC-I18N-005 | Translation messages are declared in \`strings.json\` under \`exceptions.<translation_key>.message\`. | Centralize source-language exception messages under \`exceptions\` and supply locale translations via the official translation pipeline. |
+| HA-EXC-I18N-005 | Core's example declares exception messages under `exceptions.<translation_key>.message`. | For our custom integration, put complete messages in `translations/en.json` and other locale catalogs; never depend on Core's `strings.json` build pipeline. |
 | HA-EXC-I18N-006 | The rule has no exceptions. | All applicable user-facing integration exceptions must be localizable. |
 | HA-EXC-I18N-007 | Related rules include \`entity-translations\` and \`action-exceptions\`. | Review \`action-exceptions\` separately; DOC-011 already covers entity-name translations. |
 
@@ -1101,7 +1101,7 @@ These snippets demonstrate the documented translation pattern. They are **illust
 
 #### Architecture decisions for multilingual errors
 
-1. **Source language:** English source messages live in \`strings.json\`; translated equivalents belong to the supported locale catalogs after the official translation-file workflow is reviewed.
+1. **Source language (DOC-015 correction):** English runtime messages live in `translations/en.json`; translated equivalents use other standalone locale catalogs.
 2. **Stable keys:** Translation keys are immutable semantic identifiers, not localized display strings.
 3. **Typed errors:** Distinguish input validation, authentication/authorization, unavailable console, timeout, unsupported command, and internal failure. Use appropriate Home Assistant exception types after reviewing their dedicated documentation.
 4. **Safe chaining:** Preserve underlying causes with exception chaining where applicable; never expose tokens, passwords, device secrets, or sensitive MQTT payloads in translated messages.
@@ -1113,7 +1113,7 @@ These snippets demonstrate the documented translation pattern. They are **illust
 #### Acceptance checklist (planned; not yet implemented)
 
 - [ ] Every user-facing service/action error is represented by a translated Home Assistant exception.
-- [ ] \`strings.json\` includes each \`exceptions\` key used by the Python code.
+- [ ] `translations/en.json` includes each `exceptions` key used by the Python code.
 - [ ] Locale catalogs cover the supported languages and fall back safely when incomplete.
 - [ ] Tests verify validation failures and transport failures use the correct translation domain/key.
 - [ ] Tests verify exception chaining retains diagnostic causes without exposing secrets.
