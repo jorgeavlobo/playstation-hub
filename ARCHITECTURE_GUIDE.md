@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.21.0 — 2026-11-05  
+> **Document version:** 0.22.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1775,3 +1775,91 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 - [ ] Define retention and removal behavior for multiple consoles.
 
 **Status:** Storage architecture remains provisional pending backup/restore tests.
+
+## 18. Backup hooks, consistent SQLite snapshots and independent recovery — deeper source review
+
+**Reviewed:** 2026-11-05. **Decision state:** Design recommendation only; no integration code or recovery tests executed.
+
+### DOC-045 — Backup platform: exact contract
+- **Official source:** https://developers.home-assistant.io/docs/core/platform/backup/
+- **Verified:** backup.py supports two separate features: backup agents that store full Home Assistant backups elsewhere, and async_pre_backup(hass) / async_post_backup(hass) hooks to prepare and resume an integration.
+- **Confirmed limitation:** Implementing these hooks does not register a dedicated per-integration backup item, choose files to include, or create an integration-only restore button.
+- **Project decision:** Implement backup hooks only when a concrete consistent-backup strategy is designed and tested. No backup agent is needed for PlayStation Hub.
+- **Lifecycle research still required:** inspect the backup manager on a pinned supported Core release to establish ordering, timeout, exception/finally behavior and hooks during partial/full backups.
+
+### DOC-046 — Recorder's backup integration as reference
+- **Official source:** https://github.com/home-assistant/core/blob/dev/homeassistant/components/recorder/backup.py
+- **Verified:** Recorder locks its database for writes before backup and unlocks afterward. It refuses backup preparation while Core is not running or a migration is underway.
+- **Important:** Recorder's internal database-lock mechanism is not a public PlayStation Hub API. Do not import or manipulate Recorder internals.
+- **Design consequence:** A similar serialized write barrier may work for our database, but the barrier must account for queued writes, transactions, WAL and all writers, with guaranteed recovery.
+
+### DOC-047 — Backup manager implementation (verification pending for exact hook sequence)
+- **Official source:** https://github.com/home-assistant/core/blob/dev/homeassistant/components/backup/manager.py
+- **Verified source location:** Current Home Assistant Core backup manager implementation.
+- **Not yet confirmed:** Exact timing of pre/post hooks relative to filesystem archive capture, behavior if pre-hook raises, whether post-hook always runs, and how a timeout affects a paused integration. Do not assert these semantics without inspecting the relevant functions against a pinned release tag and testing them.
+- **Project rule:** Design hooks to be idempotent, bounded and failure-safe; avoid indefinitely freezing monitoring or writing if a backup fails.
+
+### DOC-048 — Backup archive scope and user selection
+- **Official source:** https://www.home-assistant.io/common-tasks/general/
+- **Verified:** Full backups include config, share, local addons, ssl and media. Partial backups may omit config. Home Assistant provides configurable automatic backups and backup destinations.
+- **Decision:** Keep the database under the Home Assistant configuration directory but outside custom_components. Explicitly document that backups must include Home Assistant settings/config.
+- **Limitation:** Filesystem inclusion is not a guarantee of a transactionally consistent SQLite snapshot.
+
+### DOC-049 — Backup integration
+- **Official source:** https://www.home-assistant.io/integrations/backup/
+- **Verified:** Native backup integration provides backup.create and backup.create_automatic and supports multiple installation types.
+- **Decision:** Avoid dependence on Supervisor-only backup APIs or a separate Docker App.
+
+### Comparison of candidate backup mechanisms
+
+| Strategy | Benefit | Risk / limitation | Decision |
+| --- | --- | --- | --- |
+| Copy live SQLite file directly | Simple | WAL/journal may contain uncheckpointed committed transactions; inconsistent capture | Reject as our own export method |
+| Hold writes for duration of HA backup | Inspired by Recorder | Long backups block event ingestion; queue pressure; failure cleanup required | Research and prototype |
+| Create consistent SQLite snapshot before backup | Can minimize write pause and provide portable snapshot | Must coordinate lifecycle, snapshot retention and archive inclusion | Preferred proof-of-concept |
+| Own export using SQLite backup API | Independent portable backup of our history | Does not automatically integrate with HA backup UI | Plan as separate user-facing feature |
+| Store detailed history in Recorder | Native backup integration | Short detailed retention and unsuitable session schema | Reject as sole detailed ledger |
+
+### Proposed SQLite backup state machine (project design, not official API)
+
+1. RUNNING: normal serialized writes and bounded history queries.
+2. PREPARING: block or queue new writes; drain active transaction safely; verify DB integrity and write a consistent snapshot to a temporary file in an integration-owned config subdirectory.
+3. READY_FOR_ARCHIVE: atomically publish the completed snapshot at a stable location that is included in config backups; resume normal writes when safe if snapshot consistency is independent of the live DB.
+4. POST_BACKUP: clean stale temporary files, record success/failure, ensure writes and monitoring are resumed.
+5. RECOVERY: on startup detect interrupted snapshot preparation, never overwrite the live database blindly, and remove only verified orphan temporary artifacts.
+
+**Caution:** The official docs do not guarantee pre/post hook ordering and failure semantics beyond their intended preparation/resumption purpose. This state machine is an engineering hypothesis requiring a real HA backup/restore test.
+
+### Proposed persistence paths (not final)
+
+```text
+<HA_CONFIG>/
+├── custom_components/playstation_hub/    # HACS-managed source; no mutable database
+└── .storage/playstation_hub/              # Candidate private data directory; verify path conventions
+    ├── history.sqlite3                   # Application-owned SQLite
+    └── backup_snapshot.sqlite3           # Consistent snapshot; temporary lifecycle TBD
+```
+
+**Path warning:** .storage is normally managed by Home Assistant and its helpers. A manually managed SQLite subdirectory here is not automatically an officially recommended convention. Compare an integration-owned directory elsewhere under config and validate backup coverage, permissions, and HA cleanup behavior before selecting a path.
+
+### Acceptance and recovery tests (mandatory before database architecture approval)
+
+- [ ] Determine the exact supported HA config path API and data directory conventions.
+- [ ] Inspect backup manager pre/post call sequence on a pinned supported HA Core release.
+- [ ] Test failed pre-hook, failed post-hook, cancelled backup and HA restart during backup.
+- [ ] Test SQLite WAL with concurrent writes and long-running transactions.
+- [ ] Test snapshot creation, atomic replacement, hash, integrity_check and foreign_key_check.
+- [ ] Inspect the backup archive and verify the snapshot is actually included when config is selected.
+- [ ] Restore to a separate disposable HA instance; verify row counts, session boundaries and schema migration.
+- [ ] Test backup with two consoles and multiple config entries, avoiding duplicate hooks.
+- [ ] Test no silent history deletion on integration uninstall or config-entry removal.
+- [ ] Measure backup time, disk overhead, write-queue growth and recovery from insufficient disk space.
+- [ ] Document independent export/import and user-visible recovery steps in multiple languages.
+
+### Architectural decision summary
+
+**Accepted principles:** one HACS custom integration; database outside HACS code; no direct writes to Recorder; HA config-inclusive backup; non-blocking DB I/O; portable SQLite export; no per-App backup claims.
+
+**Not yet approved:** SQLite location, backup-hook algorithm, automatic restore semantics, WAL/checkpoint policy, and whether a database snapshot should be the canonical backed-up file.
+
+**Next investigation:** inspect the official backup manager at a pinned Core release and prototype backup/restore on an isolated HA instance. Update this guide with measured evidence rather than assumptions.
