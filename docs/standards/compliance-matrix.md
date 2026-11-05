@@ -25,7 +25,7 @@
 | Sony PSN client/API entitlement | P0 for PSN | Blocked, optional LAN scope remains | Review X-005 |
 | SQLite/credential storage and backups | P0 | ADR-0007/0008 proposed, not approved; consistent HA backup unverified | [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md), [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) |
 | Multi-console DHCP onboarding | P0 | Dedicated flow needed, not implemented | Review X-007 |
-| HA runtime, entities, frontend and release baseline | P1 | Open | Review X-012, X-013, X-016 |
+| HA runtime, entities, frontend and release baseline | P1 | ADR-0009 proposed for native HA; frontend ADR-0010 pending | [ADR-0009](../decisions/ADR-0009-home-assistant-integration-entities-actions.md) |
 | Exact supported/released capability set | P1 | Undefined pending gates | Review section 16 |
 
 **Audit:** [Protocols 01–10 cross-protocol review](../architecture/cross-protocol-review-01-10.md) (22 findings; seven P0, ten P1 and five P2; this is documentation assessment, not tested code). The proposed ADR/spec backlog is not approved by inclusion here.
