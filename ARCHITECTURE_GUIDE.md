@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.24.0 — 2026-11-05  
+> **Document version:** 0.25.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1960,3 +1960,66 @@ PlayStation Hub custom integration
 - [ ] Compare direct implementation against legacy observations on a test console before retiring PS5-MQTT.
 
 **Current status:** Direction approved; protocols, APIs, licenses and implementation not yet fully audited. No direct-connection capability is claimed as working.
+
+## 21. Pinned-source reconnaissance of PS5-MQTT internals — 2026-11-05
+
+**Upstream repository:** https://github.com/FunkeyFlo/ps5-mqtt
+**Source tree SHA:** 7ab3075d276f3eeecd81a3322c72231af8cd51bd
+**License:** MIT according to repository metadata. This does not establish license compatibility of all transitive libraries.
+**Review status:** Targeted module inspection; not yet an exhaustive audit of all upstream source or underlying protocols.
+
+### DOC-055 — PS5-MQTT dependency and transport map
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/package.json
+- Runtime dependencies include playactor ^0.4.1 and psn-api ^2.18.0, alongside MQTT, Redux, Express and shelljs.
+- The upstream app is an orchestrator around LAN/Remote Play and PSN presence rather than a complete protocol implementation.
+- **Design decision:** Our integration must remove the MQTT intermediary and avoid requiring Node, a PS5-MQTT add-on or a broker. Evaluate well-maintained protocol libraries separately rather than copying the Node implementation.
+
+### DOC-056 — LAN discovery implementation
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/playactor/discovery.ts
+- Uses playactor Discovery with limited broadcast 255.255.255.255 plus per-interface subnet-directed IPv4 broadcast addresses unless user override is set.
+- Uses one Discovery instance with a multi-target network factory to avoid duplicate shared UDP listeners.
+- Deduplicates discovered devices by ID and can filter to PS5 devices.
+- **Design requirements:** Support multi-homed HAOS, configurable discovery targets, deduplication and safe listener cleanup. VLAN broadcasts do not automatically cross routers; manual IP fallback may be required.
+
+### DOC-057 — Local console control wrapper
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/playactor/client.ts
+- Uses playactor CLI for wake, standby and check; a separate child process executes each operation.
+- Wake command uses 5-second timeouts; standby uses a 10-second discovery timeout, 10-second connection timeout and 25-second shell timeout because it requires a full Remote Play handshake.
+- Checks exit codes to avoid treating killed commands as successful.
+- **Design requirements:** Use a Python-native async protocol client or a narrowly isolated transport, not shell commands; await acknowledgement/observation before reporting a command successful; distinguish wake from standby capability and failure semantics.
+
+### DOC-058 — PSN authentication and game activity
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/psn-account.ts
+- Uses psn-api NPSSO exchange to obtain OAuth tokens, refreshes stored credentials, and requests the authenticated account profile.
+- Queries an internal PSN presence endpoint for basic presence and gameTitleInfoList.
+- Active title fields include npTitleId, titleName, npTitleIconUrl/conceptIconUrl, format and launchPlatform.
+- **Risk:** Internal Sony endpoint behavior and authentication availability may change; investigate terms, authorization, rate limits and security before promising PSN features.
+- **Privacy:** Tokens, NPSSO and account identifiers are secrets. No logging or frontend exposure. Provide explicit account unlink and credential cleanup behavior.
+
+### DOC-059 — Power action orchestration
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/redux/sagas/turn-on-device.ts
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/redux/sagas/turn-off-device.ts
+- The sagas set transitioning state, call playactor wake/standby, and publish optimistic Home Assistant state updates.
+- **Project decision:** Our native integration must not assume an issued command proves a completed physical transition. Track requested, transitioning, observed and failed/unknown states separately.
+
+### Proposed source-to-feature matrix
+| Feature | Source identified | Confidence | Remaining work |
+| --- | --- | --- | --- |
+| Discover console | LAN discovery via playactor | Code-confirmed upstream behavior | Inspect underlying protocol and test HA network restrictions |
+| Check console power/status | playactor check | Code-confirmed upstream behavior | Inspect UDP/Remote Play status semantics |
+| Wake console | playactor wake | Code-confirmed upstream behavior | Validate pairing/credential requirements and supported power states |
+| Enter rest mode | playactor standby | Code-confirmed upstream behavior | Verify full handshake, PIN, timeouts and permissions |
+| Current game/title | PSN basic presence endpoint | Code-confirmed upstream behavior | Confirm reliability, privacy, endpoint policy and account scope |
+| Game cover URL | PSN presence gameTitleInfoList | Code-confirmed upstream behavior | Verify fallback, caching, copyright and invalid URL handling |
+| Multiple player attribution | PSN accounts and activity fusion | Not fully established | Define robust identity and ambiguity handling |
+
+### Security, legal and architecture gates
+- [ ] Inspect playactor and psn-api source and licenses at pinned revisions.
+- [ ] Determine which parts of PSN presence rely on undocumented/private endpoints and whether usage is appropriate for a public HACS integration.
+- [ ] Determine how credentials are provisioned and rotated using supported Home Assistant config-flow and storage practices.
+- [ ] Design a LAN-only baseline and optional PSN-enhanced features with graceful degradation.
+- [ ] Verify actual protocol behavior on a test PS5 without altering the production console integration.
+- [ ] Build protocol contract tests using captured synthetic fixtures rather than publishing personal console/account data.
+- [ ] Verify multi-console/multi-account state mapping before creating a session schema.
+
+**Status:** Research findings documented; no new integration code or direct PS5 transport implemented.
