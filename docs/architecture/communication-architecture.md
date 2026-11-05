@@ -53,3 +53,13 @@ Detailed source evidence, endpoint parameters, normalized DTO concepts, polling,
 **Research confirmed:** `psn-api` retrieves single-account `basicPresences?type=primary`; PSNAWP additionally uses platform filters, `withOwnGameTitleInfo` and an optional multi-account batch query. PS5-MQTT selects the first reported game. Official HA Core uses PSNAWP and refreshes user data approximately every 30 seconds; Sony privacy settings may restrict visibility and Home Assistant documents a rate budget of 300 requests per 15 minutes for its PSN integration. These are reference facts, not Sony-approved public API guarantees.
 
 **Unresolved:** third-party PSN authorization, physical-console attribution for shared accounts, eventual account-vs-console device registry modeling, measured TTL/polling, and private/social-data retention.
+
+## Game metadata, library and artwork research — Protocol 10 (2026-11-05)
+
+The detailed source inventory, game identifier taxonomy, source-annotated metadata model, artwork safety, caching, library relationships and test matrix are recorded in [Protocol 10](../protocols/10-game-metadata.md).
+
+**Critical data distinction:** Current game presence, provider recently played list, provider played-game history, digital entitlements, catalog details and locally measured Home Assistant sessions are six independent concepts. Purchased/PS Plus entitlements do not establish permanent ownership, installation or actual play; provider lifetime playtime cannot be silently added to local session totals.
+
+**Identity boundaries:** Preserve `titleId`/`npTitleId`, trophy `npCommunicationId`, catalog `conceptId`, commercial `productId` and account `entitlementId` as distinct namespaces with audited crosswalks; never deduplicate using title text or a shared image URL alone. `format` and `launchPlatform` are software/platform facts, not unique physical hardware identifiers.
+
+**Security/legal gates:** Optional PSN library/GraphQL access remains subject to Protocol 08's Sony-client authorization blocker. Remote artwork must pass host/size/type validation and licensing review; do not assume a remote cover URL permits copying or public redistribution. Preserve LAN-only operation regardless of Sony cloud or metadata failures.
