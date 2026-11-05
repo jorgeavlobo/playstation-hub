@@ -39,3 +39,7 @@ See [protocol index](../protocols/README.md).
 ## Credential architecture ADR-0007 checkpoint (2026-11-05)
 
 The detailed [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) proposes owner-scoped independent PSN and Remote Play repositories, per-account serialized OAuth refresh with durable generation control, console-bound pairing keys, explicit user consent, redaction and unlink/unpair behavior. Treat Home Assistant Config Entries and Store as persistence helpers, not automatically encrypted vaults. Provider token rotation and local disk commits cannot be made mutually atomic. Sony OAuth client authorization remains blocked and concrete secure storage, encryption/key custody, backup consistency and restoration remain open for ADR-0008. No security implementation was performed.
+
+## Formal threat-model checkpoint — SPEC-006 (2026-11-05)
+
+[SPEC-006 — Security & Privacy Threat Model](../specifications/SPEC-006-security-privacy-threat-model.md) inventories nine trust boundaries, sensitive credentials/history, thirty threats with mitigation/test mapping, twelve security gates and incident-response requirements. It covers LAN spoofing, Remote Play command target, Sony browser/OAuth/NPSSO, Home Assistant WebSocket authorization, SQLite/backup, child/account privacy, artwork SSRF and supply chain. **All controls remain proposed and untested; Sony permission is blocked.**
