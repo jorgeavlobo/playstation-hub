@@ -203,3 +203,134 @@ All HTTP responses and redirects must be validated and size bounded. Do not foll
 - [Architecture guide](../../ARCHITECTURE_GUIDE.md)
 
 **Research result:** The community token exchange, renewal, identity and persistence sequence is documented sufficiently to plan boundaries and synthetic tests. Sony authorization for third-party client use, permitted scopes/endpoints and a compliant account-linking UX remain unresolved. No network authentication was attempted.
+
+## 12. Follow-up research — OAuth client, browser handoff and initial NPSSO capture (2026-11-05)
+
+### 12.1 Product requirement versus demonstrated capability
+
+**PRODUCT REQUIREMENT:** Account linking should be as automatic as possible: from the PlayStation Hub sidebar, the user opens Sony's own sign-in experience; an existing Sony browser session should be reused if Sony allows; account linking and token renewal should complete with minimal intervention. Do not request the Sony password inside the Home Assistant UI. The account flow must support multiple accounts and reauthentication.
+
+**SOURCE-CONFIRMED:** Community libraries retrieve NPSSO by having a user open `https://ca.account.sony.com/api/v1/ssocookie` in a Sony-authenticated browser. The endpoint displays a JSON object containing the NPSSO when the browser's Sony session is valid. PSNAWP documentation describes this interactive procedure. A backend Home Assistant process does **not** inherit a user's browser cookies.
+
+**UNVERIFIED / BLOCKED:** No generally available Sony third-party PSN authorization/client-registration process was established for an independent Home Assistant integration. Sony partner/player APIs and third-party client permissions must not be conflated. An OAuth authorization endpoint being reachable does not itself grant permission to register an arbitrary redirect URI.
+
+**BROWSER SECURITY FACT:** Home Assistant-origin JavaScript cannot directly read the response body or cookies of an unrelated Sony origin without appropriate server/browser permissions. `window.open` or an iframe does not bypass the same-origin policy. A credentials-bearing cross-origin `fetch` additionally requires Sony's compatible CORS response and browser cookie policy; such Sony support is **not demonstrated**. Never design production around unsupported cross-origin access.
+
+**SOURCE-CONFIRMED reference:** `tmrp/psn-mcp/src/psn/browser-login.ts` launches its **own local browser instance** with an isolated temporary profile and a loopback Chrome DevTools Protocol endpoint, then uses `Storage.getCookies` to locate NPSSO. This is proof of concept for a locally controlled browser, **not** for remotely controlling a user's existing Edge/Chrome from Home Assistant OS. Our one-HACS-integration constraint excludes a mandatory companion browser, extension or service.
+
+**POTENTIAL FUTURE OPTION:** A legitimately registered Sony OAuth client, supported redirect URI and Home Assistant config-flow callback would provide the cleanest browser-based account linking without copying a secret. This remains a dependency on Sony authorization, not a current implementation guarantee. Bookmarklets/extensions/CDP are investigation references, not approved release dependencies.
+
+**ASSISTED FALLBACK:** Display the Sony NPSSO link, allow the user to sign in on Sony, and have the user explicitly paste the NPSSO into a Home Assistant reauth/config form. A valid pre-existing Sony browser session may remove the need for another login, but not the user-mediated transfer. Treat pasted NPSSO as an extremely sensitive bearer secret, never save it to browser localStorage or URLs.
+
+### 12.2 Community OAuth exchange and entitlement boundary
+
+The `psn-api`, PSNAWP and `psn-mcp` implementations use Sony account OAuth endpoints and parameters associated with a PlayStation mobile application. These findings establish **observed code paths only**, not a Sony-documented permission to distribute that application's OAuth client identifiers, embedded Basic credentials, scopes or custom redirect URI. No credentials or production account login were tested here.
+
+The PSN OAuth flow must remain a **shipping blocker** until an acceptable client/endpoint usage basis is established. A functional LAN-only release may be scoped separately.
+
+## 13. Follow-up research — official HA integration versus Emkraan and PSNAWP
+
+### 13.1 Implementations reviewed
+
+- **Official Home Assistant Core**: `homeassistant/components/playstation_network/config_flow.py`, `helpers.py`, `coordinator.py`, `__init__.py`, `manifest.json` on the `dev` branch, reviewed 2026-11-05. It accepts NPSSO through the HA config/reauth flow, uses PSNAWP 3.0.3, runs blocking calls through an executor and configures the user data coordinator at a 30-second interval. It does not persist its underlying PSNAWP `token_response` separately in the reviewed files.
+- **Emkraan custom integration**: `custom_components/playstation_network/{compat,helpers,coordinator,__init__,config_flow,diagnostics}.py`, reviewed 2026-11-05. Its manifest targets `PSNAWP>=3.0.3`, while the official HA manifest pins `PSNAWP==3.0.3`. It stores a full token response in config entry data and re-injects the saved response at setup.
+- **PSNAWP**: PyPI lists 3.0.3 released on 2026-03-07 as the latest package found on 2026-11-05. Current `master` source for `PSNAWP.__init__` and `Authenticator.__init__` supports optional `token_response` that preserves absolute expiry timestamps, but this development-branch functionality must **not** be assumed to exist in the released 3.0.3 constructor. The Emkraan code injects the token response into `authenticator.token_response` after initialization on the version it supports.
+- **Caution:** A version range such as `>=3.0.3` can install future behavior changes. Pin and test compatible dependency versions for the actual implementation and avoid undocumented/private internals where possible.
+
+### 13.2 Source-confirmed refresh race
+
+Emkraan `compat.py` documents that several Home Assistant executor threads can use one PSNAWP client. Near token expiry, more than one thread can try to refresh with the same token. Under its observed provider behavior the first refresh rotates the refresh token; a subsequent request with the old token may return `invalid_grant` and spuriously cause reauthentication.
+
+Emkraan installs a per-client `threading.Lock` wrapper around `fetch_access_token_from_refresh`, checks expiry again after acquiring the lock, and applies a 60-second early-refresh margin. On rotation, a callback schedules persistence back on the HA event loop via `hass.loop.call_soon_threadsafe`. The config entry is updated with `hass.config_entries.async_update_entry` **without a reload**, because reload would interrupt active coordinators and may compound races.
+
+**DESIGN DIRECTION:** Implement one serialized, single-flight renewal operation **per PSN account**. Every consumer waits for the same renewal result. Accept only credential generations newer than the current generation, prevent overwrites from late responses, and persist a newly rotated token before declaring the renewal durable. Prefer maintained public library interfaces or a wrapper over global monkey patching.
+
+**RISK IN REFERENCE IMPLEMENTATION:** Emkraan's `compat.py` also monkey-patches the global `PSNAWPError.__init__` to parse string-valued OAuth errors such as `invalid_grant`, whereas the upstream exception parser expects nested PSN-style errors. Do not apply a process-wide monkey patch in PlayStation Hub; validate provider error bodies and isolate errors at the adapter boundary.
+
+### 13.3 Persistence and crash window
+
+Emkraan stores the token response in `ConfigEntry.data`, copies it into PSNAWP on startup, compares before update, and redacts `token_response`, `access_token`, `refresh_token`, and `id_token` in its diagnostics. This is a demonstrated approach to **survive restarts**, not a guarantee that config entries are an encrypted vault.
+
+**DESIGN DIRECTION:** Keep non-secret account identity, preferences and versioned metadata in HA config entries. Choose secret persistence explicitly after a security and Home Assistant API review. Keep credentials outside HACS-managed integration sources and outside the game-history SQLite database. Make token writes durable and idempotent, and do not announce success before storage acknowledges the write. Choose any additional encryption at rest only alongside a realistic key-management, restore and recovery design.
+
+**UNAVOIDABLE FAILURE WINDOW:** If the provider rotates a refresh token and the host crashes *before* the new token is durably written, the old saved token might already be invalid. A post-response synchronous durable write narrows this window but cannot make Sony's response and the local disk update a distributed atomic transaction. Recovery may require a new authorized NPSSO.
+
+**LIFECYCLE RULE:** Token-only changes must not reload the integration. Cancel/await in-flight refreshes on unload and unlink. Reauthentication must check stable account ID and prevent a different Sony account from silently replacing an existing account.
+
+### 13.4 Timeouts, rotation and scheduling
+
+- Prefer one early-refresh policy (initial **60-second safety margin**) plus on-demand validation when a request is made; both paths share single-flight locking.
+- Use the returned `expires_in` / `refresh_token_expires_in` to compute UTC absolute expiries **once on receipt**. Persist those absolute timestamps; do not extend lifetime merely by reading tokens or restarting Home Assistant.
+- Reference community descriptions of access-token lifetime of roughly one hour and refresh-token lifetime of roughly two months are **observations, not guarantees**. Rotation, account changes, sign-outs and Sony policy can invalidate them sooner.
+- A 30-second HA data coordinator refresh interval is a **reference implementation**, not a reason to refresh OAuth tokens or PSN presence every 30 seconds. Rate control should be designed by endpoint, freshness requirement and privacy, with bounded backoff.
+- A network timeout or 5xx must not be classified as `invalid_grant`. A genuine `invalid_grant` requires safe reauth handling. HTTP 429 requires backoff and honoring trustworthy `Retry-After`. Avoid retry storms and indefinite automatic login attempts.
+
+## 14. Home Assistant OS backup and restore research
+
+**OFFICIAL source:** The current Home Assistant backup documentation says backups are encrypted by default, but settings allow configuration of encryption for backup locations. Home Assistant OS backups include the `config` directory in the Home Assistant settings selection; automatic backups include settings, while other selected categories depend on user configuration. An encrypted archive protects backups at rest/in transit; this does **not** imply locally running config entries or Store files are automatically encrypted.
+
+**DESIGN DIRECTION:** Verify the chosen credential file/config-entry store is inside the selected backup scope using a synthetic non-secret test record and a restore exercise. Never publish decrypted backups, raw `.storage` contents, access tokens, refresh tokens or NPSSO. A backup's token may be stale because Sony rotates refresh tokens after backup creation.
+
+**RECOVERY POLICY:** After backup restore, attempt the restored token only within bounded authorization rules; if definitively invalid, request account reauthentication without deleting local LAN devices or historical statistics. Notify the user of the difference between credentials restored from backup and currently accepted credentials. Do not claim that a backup can reverse remote token revocation.
+
+**FURTHER REVIEW REQUIRED:** Exact secret storage mechanism/API, permissions, HA Core restore behaviors across supported versions, automatic backup inclusion, removal/retention on unlink, and independent security review before implementation.
+
+## 15. Proposed design interfaces and test gates
+
+### Interfaces (architectural proposals, not implemented)
+
+- `PsnAuthorizationBootstrap` — obtains an initial credential from an authorized user-facing method; assisted NPSSO initially, full OAuth callback only if Sony permits.
+- `PsnTokenManager` — one account-scoped token lifecycle, early/on-demand refresh, single-flight, error classification and generation tracking.
+- `PsnCredentialRepository` — durable per-account persistence, atomic replacement, restore, redaction and deletion; implementation selected after ADR.
+- `PsnAccountRegistry` — provider-stable account identity, duplicate-account prevention, association with console records without treating presence as proof of console identity.
+- `PsnApiAdapter` — transport-independent access to provider APIs; consumers never touch bearer tokens or storage.
+- `PsnAuthenticationDiagnostics` — only sanitized state, refresh timing categories and errors, never secret values.
+
+### Required synthetic test cases
+
+- [ ] Five simultaneous calls with expired access token result in **one** refresh.
+- [ ] A second waiter sees the first renewal's persisted token, without another refresh.
+- [ ] A delayed old response cannot overwrite a newer credential generation.
+- [ ] Provider token rotation succeeds but credential persistence fails: clearly report non-durable state.
+- [ ] Crash injected between remote rotation and local write: reauth is safe; history is preserved.
+- [ ] Restart from current credentials and restart from an older backup (potentially invalid token).
+- [ ] Token-only persistence triggers no config entry reload, and leaves existing entity subscriptions intact.
+- [ ] Two accounts refresh independently without cross-account tokens or locking.
+- [ ] Provider `invalid_grant`, `invalid_client`, HTTP 401, HTTP 403, 429, 5xx, malformed JSON and network timeout are individually categorized.
+- [ ] A string-valued OAuth `error` JSON body does not crash exception handling.
+- [ ] Reauth with another `account_id` is rejected without replacing the linked identity.
+- [ ] Diagnostics, logs, exceptions, backups used in tests and frontend payloads contain **no real credentials**.
+- [ ] Losing PSN connectivity never changes a confirmed LAN console state to offline.
+- [ ] Browser already logged into Sony: assisted NPSSO can be retrieved manually; automatic cross-origin capture remains unverified.
+- [ ] Provider authorization/client registration and permitted API access gates have been reviewed before any live test or release.
+
+## 16. Additional source register (reviewed 2026-11-05)
+
+### Official product / platform documentation
+
+- Home Assistant PlayStation Network integration: https://www.home-assistant.io/integrations/playstation_network/
+- Home Assistant Core config flow: https://github.com/home-assistant/core/blob/dev/homeassistant/components/playstation_network/config_flow.py
+- Home Assistant Core main coordinator: https://github.com/home-assistant/core/blob/dev/homeassistant/components/playstation_network/coordinator.py
+- Home Assistant Core manifest: https://github.com/home-assistant/core/blob/dev/homeassistant/components/playstation_network/manifest.json
+- Home Assistant Config Entries documentation: https://developers.home-assistant.io/docs/config_entries_index/
+- Home Assistant application credentials: https://developers.home-assistant.io/docs/core/platform/application_credentials
+- Home Assistant backups: https://www.home-assistant.io/common-tasks/general/backups
+- Sony PlayStation partner program: https://partners.playstation.net/
+- Browser same-origin policy: https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy
+- CORS credentialed requests: https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS
+
+### Community source files (not Sony API authorization)
+
+- PSNAWP PyPI releases: https://pypi.org/project/psnawp/
+- PSNAWP source Authenticator: https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/core/authenticator.py
+- PSNAWP client initialization: https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/psnawp.py
+- PSNAWP NPSSO getting started: https://github.com/isFakeAccount/psnawp/blob/master/README.md
+- Emkraan refresh guard and error parser: https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/custom_components/playstation_network/compat.py
+- Emkraan token persistence: https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/custom_components/playstation_network/coordinator.py
+- Emkraan startup restore: https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/custom_components/playstation_network/__init__.py
+- Emkraan setup/reauth: https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/custom_components/playstation_network/config_flow.py
+- Emkraan secret redaction: https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/custom_components/playstation_network/diagnostics.py
+- Emkraan changelog: https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/CHANGELOG.md
+- psn-mcp browser-controlled NPSSO capture: https://github.com/tmrp/psn-mcp/blob/main/src/psn/browser-login.ts
+
+**Research checkpoint:** Authorization architecture, token lifecycle, race avoidance, HA Core/Emkraan differences, HA backups and browser security are documented. An independently authorized Sony OAuth callback, cross-origin NPSSO capture, approved secure persistence mechanism and live interoperability are **not confirmed**. No code was implemented and no Sony login attempted.
