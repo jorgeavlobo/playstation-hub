@@ -59,3 +59,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## WP-00A technical baseline and initial LAN contracts
 
 [WP-00A](../architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) fixes the source-reviewed **development reference** at Core `2026.11.0` / Python `>=3.14.2`; the proposed minimum supported Core version is not yet approved or tested. Exact source-tag behavior reviewed: DHCP generic fallback, DeviceInfo dataclass/registry, explicit flow `step_id`, entity ID change hooks, custom panel/WebSocket and Store flags. Twenty deterministic LAN cases are specified, with **zero tests executed**. WP-01 implementation remains NOT_READY pending maintainer approval and chosen toolchain.
+
+## Source-derived legacy code review — documentation only
+
+[Legacy code review and refactoring blueprint](../research/legacy-code-review-and-refactoring-blueprint-2026-11.md) documents 12 findings and 20 planned validation scenarios against five read-only `develop` backend files. No source code was edited and no tests were executed. A proven old transaction/checkpoint model may inform future modular design, but MQTT, Supervisor `/data`, one-player identity, fixed Lisbon timezone, a 30-second gap policy and synchronous sqlite3 must not be copied without explicit design and compatibility review.
