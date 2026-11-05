@@ -1,48 +1,176 @@
-# Console wake-up
+# Protocol 03 — PlayStation console wake-up
 
-**Document status:** Initial specification — source research, not live validated  
-**Last reviewed:** 2026-11-05  
-**Implementation:** Not started  
-**Primary proposed Python module:** `custom_components/playstation_hub/transport/wake.py`
+**Status:** Source-derived technical specification; real-device validation deferred to implementation  
+**Reviewed:** 2026-11-05  
+**Proposed Python module:** `custom_components/playstation_hub/transport/wake.py`  
+**Pinned upstream reference:** playactor source tree `93ee087445db368acaba9ad50099bce56ca9141d`
 
 ## 1. Objective and scope
 
-Wake a paired PS5 without PS5-MQTT.
+Wake a previously paired PlayStation 5 over the local network, without requiring PS5-MQTT, Mosquitto, Node.js, or a separate Home Assistant App. The wake operation must be authenticated where the upstream protocol requires it and must confirm the resulting console state using fresh LAN discovery.
 
-## 2. Source-confirmed upstream behavior
+**Evidence categories:** SOURCE = confirmed from inspected upstream implementation; DECISION = PlayStation Hub design; OPEN = requires further research or implementation-stage validation.
 
-The upstream Waker sends a credential-bearing WAKEUP message over UDP port 9302, then waits for discovery of the same host ID reporting AWAKE. Sending UDP successfully alone is not proof of power transition.
+## 2. Transport and protocol constants
 
-## 3. PlayStation Hub architecture decision
+| Property | Upstream value | Evidence |
+| --- | --- | --- |
+| Transport | IPv4 UDP | `src/waker/udp.ts` |
+| PS5 destination | UDP port `9302` | `wakePortsByType` |
+| PS4 destination | UDP port `987` | `wakePortsByType` |
+| Request method | `WAKEUP` | `src/waker.ts` |
+| PS5 discovery version | `00030010` | `src/discovery/model.ts` |
+| Recipient | Discovered device IPv4 address | `UdpWakerNetwork.sendTo` |
+| Local bind | Configured interface address, otherwise OS-selected | `UdpWakerNetwork.open` |
+| Response confirmation | Discovery of same host ID in `AWAKE` | `Waker.deviceAwakened` |
+| Default discovery timeout | 30 seconds in upstream discovery config | `src/discovery/model.ts` |
 
-Wake capability requires correct console credential state. Explicit timeout and confirmation; distinguish already awake, requested, confirmed and failed/unknown. Never claim wake from a fully powered-off state is guaranteed.
+These are reference values, not final PlayStation Hub scheduling decisions.
 
-## 4. Proposed interface contract
+## 3. Credential model and message format
 
-The module must expose typed, async-compatible operations and return normalized domain objects or explicit typed errors. Transport I/O must not block the Home Assistant event loop. No Home Assistant entity or frontend component may perform protocol I/O directly. Each observation must record its source and UTC timestamp. Details of function signatures remain **to be specified**, not implemented.
+**SOURCE:** The upstream `CredentialManager.getForDevice` retrieves credentials by the discovered console ID. If none exist, the source requires an `AWAKE` console before initiating registration.
 
-## 5. Failure, privacy and lifecycle policy
+The Remote Play credential model includes these outbound discovery fields:
 
-All network operations need bounded timeouts and cancellation-safe cleanup. Invalid or stale data must never be reported as confirmed current state. Secrets must not enter logs, diagnostics or frontend assets. The integration must unload cleanly and handle multiple consoles without shared mutable protocol state.
+| Field | Upstream Remote Play value / meaning |
+| --- | --- |
+| `app-type` | `r` |
+| `auth-type` | `R` |
+| `client-type` | `vr` |
+| `user-credential` | Credential material, **secret** |
+| `model` | Optional upstream model selector |
 
-## 6. Source references
+**SOURCE:** `formatDiscoveryMessage` serializes allowlisted credential fields as newline-separated text and appends `device-discovery-protocol-version`. It does not serialize arbitrary credential-object properties such as the nested registration structure.
 
-- https://github.com/dhleong/playactor/blob/main/src/waker.ts
-- https://github.com/dhleong/playactor/blob/main/src/waker/udp.ts
-- https://github.com/dhleong/playactor/blob/main/src/protocol.ts
+Illustrative wire structure, with placeholders **not real credentials**:
 
-## 7. Open questions and implementation-stage verification
+```text
+WAKEUP * HTTP/1.1
+app-type:r
+auth-type:R
+client-type:vr
+user-credential:<REDACTED>
+device-discovery-protocol-version:00030010
+```
 
-- [ ] Finalize precise wire-format details and edge cases from the upstream source.
-- [ ] Review licenses and any Sony service restrictions before reuse.
-- [ ] Specify Python data models, error types and async lifecycle.
-- [ ] Add synthetic positive/negative protocol fixtures and tests.
-- [ ] Validate behavior on a test PS5 during implementation.
-- [ ] Record firmware compatibility and recovery behavior.
+**OPEN:** Exact derivation of `user-credential` for a PS5 Remote Play registration must be documented from the credential requester/registration modules before this can be considered a complete wire-level specification. Do not invent its value.
 
-## 8. Related documents
+## 4. Source-confirmed wake sequence
 
-- [Protocol index](README.md)
-- [Architecture guide](https://github.com/jorgeavlobo/playstation-hub/blob/main/ARCHITECTURE_GUIDE.md)
+1. Inspect the known device status. If already `AWAKE`, return the upstream `ALREADY_AWAKE` result without sending a wake request.
+2. Resolve stored credentials by stable device ID; reject missing credentials if the console is not awake for initial registration.
+3. Create an IPv4 UDP socket bound to the configured local interface or an OS-selected interface.
+4. Format a credential-bearing `WAKEUP` message using the discovered device protocol version.
+5. Send the datagram to the device's IPv4 address on UDP port `9302`.
+6. Start LAN discovery with duplicate observations allowed and wait for an observation of the **same device ID** in `AWAKE`.
+7. Report success only after confirmation; if discovery ends without matching confirmation, report failure.
+8. Close the wake UDP socket in a `finally` block.
 
-**Evidence boundary:** This document records source findings and intended design. It does not claim the protocol is officially documented by Sony or proven functional in PlayStation Hub.
+```mermaid
+sequenceDiagram
+    participant UI as Home Assistant action
+    participant W as Wake controller
+    participant C as Credential store
+    participant PS5 as PS5
+    participant D as LAN discovery
+    UI->>W: Wake requested for console ID
+    W->>C: Resolve paired credentials
+    C-->>W: Credential reference
+    W->>PS5: UDP WAKEUP :9302
+    W->>D: Await fresh AWAKE observation
+    D->>PS5: UDP SRCH :9302
+    PS5-->>D: Status response
+    D-->>W: Same host ID, AWAKE
+    W-->>UI: Confirmed wake
+```
+
+The diagram is the intended happy path, not proof that every firmware/network configuration behaves identically.
+
+## 5. PlayStation Hub state machine (DECISION)
+
+| State | Meaning | Next state |
+| --- | --- | --- |
+| `IDLE` | No wake request pending | `CHECKING` |
+| `CHECKING` | Validate identity, fresh status and permissions | `ALREADY_AWAKE`, `SENDING`, `FAILED` |
+| `SENDING` | Sending authenticated UDP wake datagram | `VERIFYING`, `FAILED` |
+| `VERIFYING` | Await matching fresh LAN observation | `CONFIRMED`, `TIMEOUT`, `UNKNOWN` |
+| `CONFIRMED` | Fresh observation confirms awake | Terminal |
+| `ALREADY_AWAKE` | Fresh observation confirms no wake needed | Terminal |
+| `FAILED` | Explicit validation/transport failure | Terminal |
+| `TIMEOUT` | Confirmation deadline expired | Terminal |
+| `UNKNOWN` | Command may have been received but outcome cannot be established | Terminal |
+
+**DECISION:** A successful UDP send is only `SENDING` completed; it is not a confirmed wake. After a timeout, avoid claiming that the console remains in standby or that the packet was not delivered.
+
+## 6. Multi-console behavior
+
+- Use the stable console ID, not just IP address, to select credentials and confirm wake.
+- Isolate concurrent wake requests per console; deduplicate repeated requests for the same device.
+- Allow bounded parallel commands for different consoles.
+- Do not block other consoles' status polling during a wake transition.
+- If a console's address changes, rediscover it and verify its identity before using stored credentials.
+- Reject a response from a different host ID even when it arrives from the expected IP.
+
+## 7. Security and credential handling
+
+- Pairing must be explicit and user-authorized; no automatic credential registration against an unknown device.
+- Never log `user-credential`, registration keys, pairing PINs or raw wake datagrams.
+- Store credentials using an approved Home Assistant-compatible protected persistence strategy, outside frontend/static files and repository source.
+- Use Home Assistant permission checks for wake actions; do not rely on hiding a frontend button.
+- Limit destinations to the selected validated console and avoid arbitrary user-supplied broadcast destinations for authenticated wake.
+- Implement re-pairing, revocation and unlinking without silently deleting historical game sessions.
+
+## 8. Error taxonomy (proposed)
+
+| Error | Meaning |
+| --- | --- |
+| `CONSOLE_NOT_PAIRED` | No stored credential for selected console |
+| `INVALID_CREDENTIAL` | Stored credential is invalid or malformed |
+| `CONSOLE_IDENTITY_CHANGED` | Discovery identity no longer matches |
+| `NETWORK_SEND_FAILED` | UDP send returned a transport error |
+| `WAKE_CONFIRMATION_TIMEOUT` | No fresh matching awake observation |
+| `DISCOVERY_UNAVAILABLE` | Discovery transport could not be started |
+| `COMMAND_CANCELLED` | Integration unloading or user/system cancellation |
+
+These are internal application categories, not Sony wire-protocol error codes.
+
+## 9. Upstream behavior and planned improvements
+
+- **SOURCE:** `Waker.wake` uses `ALREADY_AWAKE` when the supplied device object is awake. **DECISION:** Check freshness; a stale awake snapshot cannot automatically prove the console is currently awake.
+- **SOURCE:** Upstream wake sends a single packet and then waits. **DECISION:** Any retry policy must be separately specified and bounded; avoid uncontrolled repeated wake requests.
+- **SOURCE:** `CredentialManager` stores credentials keyed by console ID. **DECISION:** Credentials must be isolated across consoles, accounts and config entries.
+- **SOURCE:** `UdpWakerNetwork` closes its socket; `Waker` closes in `finally`. **DECISION:** Ensure cancellation-safe cleanup for wake and discovery sockets.
+- **SOURCE:** Upstream tests simulate standby followed by awake discovery. **DECISION:** Expand tests to cover failures, stale state and identity mismatch.
+
+## 10. Implementation-stage test plan
+
+- [ ] Exact wake message field order/encoding with synthetic credential data.
+- [ ] Destination port 9302 and correct selected console IP.
+- [ ] Already-awake behavior with fresh versus stale observations.
+- [ ] Missing/invalid credential handling without leaking secrets.
+- [ ] Successful UDP send followed by confirmed awake response.
+- [ ] UDP send success but no confirmation: timeout/unknown, not success.
+- [ ] Wrong console ID response rejected.
+- [ ] Multiple consoles and overlapping wake requests.
+- [ ] Network-interface selection, IP changes and VLAN restrictions.
+- [ ] Cancellation and socket cleanup on unload.
+- [ ] Verify wake behavior from rest mode and limitations when fully powered off.
+- [ ] Confirm Home Assistant authorization and translated error messages.
+
+## 11. Sources
+
+- [Wake controller](https://github.com/dhleong/playactor/blob/main/src/waker.ts)
+- [UDP wake transport](https://github.com/dhleong/playactor/blob/main/src/waker/udp.ts)
+- [Credential manager](https://github.com/dhleong/playactor/blob/main/src/credentials.ts)
+- [Credential model](https://github.com/dhleong/playactor/blob/main/src/credentials/model.ts)
+- [Credential storage](https://github.com/dhleong/playactor/blob/main/src/credentials/disk-storage.ts)
+- [Discovery request formatter](https://github.com/dhleong/playactor/blob/main/src/protocol.ts)
+- [Wake test](https://github.com/dhleong/playactor/blob/main/test/waker-test.ts)
+- [PS5-MQTT wake wrapper](https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/playactor/client.ts)
+
+## 12. Remaining research
+
+Trace the `user-credential` derivation, inspect registration credential construction, review credential persistence safety and decide a bounded retry policy. These are documentation tasks; live tests will be performed during implementation.
+
+**Related:** [01 — LAN discovery](01-lan-discovery.md) · [02 — Console status](02-console-status.md) · [04 — Remote Play registration](04-remote-play-registration.md) · [Protocol index](README.md).
