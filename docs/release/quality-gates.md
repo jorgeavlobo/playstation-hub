@@ -41,3 +41,7 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## Verified legacy frontend test-source inventory (no execution)
 
 [Legacy frontend source audit](../research/legacy-frontend-source-audit-2026-11.md) confirms 80 `test(...)` declarations across ten JavaScript test files on `develop`. Their count does **not** establish a current pass result and does not substitute for new native-panel/WebSocket/HA OS tests. During future implementation, classify each old test as preserve/adapt/retire/replace and add accessibility, theme, multi-console and authorization evidence. No test suite was executed during this source audit.
+
+## Official Quality Scale and Marketplace evidence requirements — Batch 02
+
+[Batch 02 review](../research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md), [all 54 Core rule mappings](../standards/internal-quality-scale-applicability.md) and [SPEC-005 additional gates REL-13–REL-24](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) add: typed runtime_data, explicit platform concurrency, invalid-input versus transport action exceptions, source outage/recovery logs, allowlisted diagnostics, safe non-deletion of unreachable PS5s, multi-console dynamic discovery, loaded-entry system health, per-module Python coverage aspiration, Marketplace install rollback and limits (100 MiB / 50,000 files). **All new and old release tests remain NOT_RUN**, and Sony permission remains a separate blocked gate.
