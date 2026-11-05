@@ -392,3 +392,9 @@ An API failure must not blank the entire panel when independent LAN or cached hi
 - [Legacy frontend](https://github.com/jorgeavlobo/playstation-hub/tree/develop/frontend)
 
 **Outcome:** Sidebar delivery, WebSocket boundary, authorization, state subscriptions, query contracts, i18n, responsive UX and test gates are documented in depth. No executable code was produced; compatibility and security must be demonstrated in later implementation.
+
+## 19. Home Assistant 2026.11 frontend/Marketplace overlay (2026-11-05)
+
+The [official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) confirms that Home Assistant 2026.11 embeds HACS as the **Marketplace**. The project remains one custom integration package with bundled frontend assets, local `brand/icon.png` and full custom `translations/en.json` plus PT-PT localization. The single custom sidebar panel decision remains unchanged.
+
+The 2026.11 frontend removed `ha-md-list`, `ha-md-list-item` and `ha-formfield`. Use supported list/input elements and current `--ha-*` CSS tokens instead of old Material CSS names. The frontend paints backgrounds behind all panels; avoid forcing a custom-panel host `background-color: var(--primary-background-color)` and honor `--ha-panel-background`, `--ha-panel-toolbar-background` and `--ha-data-table-background`. Verify safe areas, mobile WebViews, user authentication and authorization against the pinned Core/frontend build. No JavaScript bundle or running panel was created.
