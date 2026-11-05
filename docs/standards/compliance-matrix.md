@@ -24,7 +24,7 @@
 | Remote Play credential / crypto verification | P0 | Hardware unverified | Review X-004 |
 | Sony PSN client/API entitlement | P0 for PSN | Blocked, optional LAN scope remains | Review X-005 |
 | SQLite/credential storage and backups | P0 | ADR-0007/0008 proposed, not approved; consistent HA backup unverified | [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md), [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) |
-| Multi-console DHCP onboarding | P0 | Dedicated flow needed, not implemented | Review X-007 |
+| Multi-console DHCP onboarding | P0 | SPEC-001 acceptance matrix documented; implementation and live validation pending | [SPEC-001](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) |
 | HA runtime, entities, frontend and release baseline | P1 | ADR-0009/0010 proposed; target HA baseline, APIs and tests open | [ADR-0009](../decisions/ADR-0009-home-assistant-integration-entities-actions.md), [ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md) |
 | Exact supported/released capability set | P1 | Undefined pending gates | Review section 16 |
 
