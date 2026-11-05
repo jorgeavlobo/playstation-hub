@@ -69,3 +69,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Security and privacy:** [SPEC-006](../specifications/SPEC-006-security-privacy-threat-model.md) covers the cross-protocol threat model, thirty tests and twelve unpassed security gates.
 
 **Console and firmware compatibility:** [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) defines the PS5 candidate models, deferred PS4 families, firmware and network test matrix, and twelve unpassed compatibility gates.
+
+**Initial implementation contracts:** [WP-00A](../architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) pins Home Assistant Core 2026.11.0 / Python >=3.14.2 as a research/test reference and defines the pure LAN discovery/status parser, identity candidate, observation ordering, fake transport and 20 pending tests. No implementation is authorized by the document.
