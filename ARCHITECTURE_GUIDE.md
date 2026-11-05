@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.5 — 2026-11-05  
+> **Document version:** 0.39.6 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2604,3 +2604,13 @@ The preferred seamless Sony OAuth callback requires a provider-authorized client
 Token management requires per-account single-flight refresh, durable versioned replacement, crash/backup recovery, permission-specific API access, privacy controls and bounded rate budgets. Provider cloud failure never changes physical LAN power facts. Sony authorization and endpoint/redirect permission are blockers for shipping PSN features; independently tested LAN-only operation remains a viable release scope.
 
 No executable code or live credentials were used; documentation only on main.
+
+## SPEC-004 — PSN presence and game metadata DTO mapping (2026-11-05)
+
+**Status: Proposed research; twelve release gates unpassed. Guide version 0.39.6.** Canonical [SPEC-004](docs/specifications/SPEC-004-psn-presence-game-metadata-dto-mapping.md) defines eighteen sections, 36 synthetic tests and twelve release gates across Protocols 08–10. No Sony API permission, live account tests or executable modules were established.
+
+**Normalized contracts:** Separate provider-stable PSN account identity from mutable online ID, account presence/availability and reported current titles; distinguish played titles, recently played, digital entitlements, trophies, catalog metadata and artwork. Preserve `npTitleId/titleId`, `npCommunicationId`, `conceptId`, `productId` and `entitlementId` as distinct namespaces with evidence-backed crosswalks. Game `format` and `launchPlatform` are separate and neither proves a physical console ID.
+
+**Source authority:** PSN provider-reported game is account-scoped, not proof of activity on a particular local PS5. Privacy restrictions and provider errors do not imply offline; absent provider duration is unknown, not zero, and Sony lifetime playtime must not be summed with local session durations. All records have source, freshness, UTC timestamps, version and partial-result semantics. Artwork requires rights and SSRF/size validation. HA entities and sidebar consume sanitized DTOs and cached reconciled state only.
+
+**Release blocker:** SPEC-003 Sony client/endpoint authorization remains unresolved. All SPEC-004 gates remain unpassed. LAN-only monitoring remains independent; no changes to `next` or `develop`.
