@@ -29,3 +29,7 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## Updated HA 2026.11 and Marketplace compatibility gates
 
 [Official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) adds validation targets for a pinned 2026.11.0/Python >=3.14.2 **research baseline** (minimum product support unapproved): DeviceInfo dataclass/UNDEFINED serializing, single-entry device registry ownership, `async_setup_entry`/unload/migrate exception behavior, explicit flow `step_id`, in-place entity ID renames, per-entry repairs, 2026.11 entity naming, frontend panel background/theme/removed components, and integrated Marketplace install/update behavior. HACS Action and Hassfest, `media_entertainment.gaming`, full `translations/en.json`, `brand/icon.png`, catalog release/version alignment and `hacs.json.homeassistant` need tests. Store/backup hook source review is not a passing SQLite restore test.
+
+## WP-00A baseline and pure LAN contract gate
+
+[WP-00A](../architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) selects Home Assistant Core `2026.11.0` and compatible Python `>=3.14.2` as source-verified reference, with formal product-minimum acceptance pending. The first 20 LAN contract tests are documented but all remain NOT_RUN. Later HA OS, actual console, Marketplace/HACS, backup, Remote Play and Sony permission gates retain their independent requirements. Do not claim source inspection is runtime compatibility.
