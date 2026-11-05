@@ -178,3 +178,7 @@ The [WP-00 readiness plan](WP-00-implementation-readiness-and-decision-closure.m
 ## Official-source re-audit follow-up (2026-11-05)
 
 [Home Assistant 2026.11 / Marketplace audit](../research/official-source-reaudit-home-assistant-2026-11.md) adds 18 source-prioritized findings and corrects active references to the old `next` branch, standalone-HACS-only installation, device typing/ownership, current config flow and entity lifecycle, local branding/custom translations, frontend themes and backup-hook evidence. The proposed WP-00 research baseline is Home Assistant Core 2026.11.0 with Python >=3.14.2; choosing that as the minimum supported release remains an explicit maintainer decision. No ADR changed status and no implementation/hardware tests were performed.
+
+## WP-00A pinned Core baseline and LAN contract checkpoint (2026-11-05)
+
+[WP-00A](WP-00A-home-assistant-baseline-and-lan-contracts.md) source-verifies Home Assistant Core `2026.11.0` with Python `>=3.14.2` as a reproducible initial technical reference. It proposes 2026.11.0 as the minimum supported release pending maintainer approval and installation tests. Twenty pure-LAN contract acceptance cases, fake transport boundaries and API checks have been defined; none have been executed. The original conditional ADR decisions remain Proposed; hardware identity and SQLite/Sony/Remote Play gates are not closed.
