@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.8 — 2026-11-05  
+> **Document version:** 0.39.9 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2630,3 +2630,11 @@ No executable code or live credentials were used; documentation only on main.
 **Release posture:** No implementation or security tests were performed. Credential leakage, unauthorized console control, privacy bypass and silent history corruption block affected releases. Sony client/endpoint authorization remains BLOCKED for PSN; LAN-only functionality may be separately validated. Credentials must never be exposed in frontend, logs, entity attributes or diagnostics. Do not assume HA Store is encrypted, or that discovery host-id is cryptographically authenticated.
 
 **Next:** SPEC-007 Supported Console & Firmware Compatibility Matrix, then explicit architectural decision review. Only main documentation changed; develop and next untouched.
+
+## SPEC-007 — Console and firmware compatibility (2026-11-05)
+
+**Status: Proposed, no hardware validation; guide version 0.39.9.** [SPEC-007](docs/specifications/SPEC-007-console-firmware-compatibility-matrix.md) defines PS5 original disc/Digital, revised slim disc/Digital and PS5 Pro as candidate hardware families; PS4 variants are deferred, and PlayStation Portal is not assumed to be a console host. None is claimed hardware-supported yet.
+
+The matrix distinguishes source-observed UDP discovery/status, wake and Remote Play profile values from actual hardware/firmware compatibility. It defines 12 power-state tests, 15 network topology cases, 15 Remote Play tests, HA Core/OS/HACS compatibility requirements, privacy-preserving evidence records and 12 unpassed release gates. Firmware changes require retesting. A missing LAN response never proves physical OFF; IP and host ID changes must not silently merge consoles or transfer keys. PSN cloud permissions remain separately blocked.
+
+**Next step:** Formal review and prioritization of ADR-0004–0010, P0 blocker ownership and release scope, before any implementation authorization. Documentation only on main; next/develop unchanged.
