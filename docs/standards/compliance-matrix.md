@@ -51,3 +51,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## WP-00 implementation readiness checkpoint
 
 [WP-00](../architecture/WP-00-implementation-readiness-and-decision-closure.md) records pending HA baseline, canonical identity, observation/session contracts, storage, Remote Play, Sony authorization and API security. **Status: PROPOSED/NOT_READY; no ADR acceptance or executable validation.**
+
+## Home Assistant 2026.11 / Marketplace source re-audit
+
+[Official-source Bible re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) records 18 findings and 32 official source references. Core 2026.11.0 with Python >=3.14.2 is a **source-verified research baseline**, not yet approved as the minimum supported version. Future code must account for DeviceInfo dataclasses, per-entry device ownership, flow `step_id`, modern config-entry errors, 2026.11 naming/entity lifecycle, scoped repairs, Marketplace packaging, `media_entertainment.gaming`, complete custom translation files and panel theme changes. The existence of official backup hooks is source-verified; SQLite snapshot/restore remains untested. All implementation/release gates remain unpassed.
