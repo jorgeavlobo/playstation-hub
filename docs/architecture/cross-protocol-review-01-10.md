@@ -477,3 +477,7 @@ The proposed source-authority and reconciliation contract is now in [ADR-0005 �
 ## ADR-0010 documentation update — 2026-11-05
 
 [ADR-0010 — Single Sidebar Panel, Authenticated Backend API and Frontend Delivery](../decisions/ADR-0010-sidebar-panel-and-backend-api.md) specifies the **proposed** unified sidebar/HACS frontend delivery using supported Home Assistant panel/static asset APIs, a namespaced authenticated WebSocket facade, ACL checks, bounded history/catalog pagination, snapshot/subscription revision guarantees, reconnect/error handling, locale/theme/accessibility, versioned frontend packaging and operation security. Home Assistant's KNX integration is a source-code precedent, not evidence of PlayStation Hub runtime compatibility. All API names/DTOs are project proposals. Runtime code and live HA OS tests remain pending.
+
+## SPEC-001 research checkpoint — 2026-11-05
+
+[SPEC-001 — LAN Discovery Acceptance Matrix](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) defines deterministic UDP parser fixtures, HA custom integration DHCP/discovery and multi-console setup tests, network-topology scenarios, canonical host identity migration constraints, security checks and nine sign-off gates. It does not approve ADR-0004 or claim a real Home Assistant OS discovery test has passed. The next protocol-specific validation specification is SPEC-002 Remote Play Byte Contract & Safety.
