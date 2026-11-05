@@ -65,3 +65,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **PSN DTO mapping:** [SPEC-004](../specifications/SPEC-004-psn-presence-game-metadata-dto-mapping.md) defines source-aware account, presence, current title, played/recent/library, trophy, catalog and artwork contracts with 36 synthetic tests and 12 unpassed gates. Sony API authorization remains a prerequisite.
 
 **End-to-end testing and release:** [SPEC-005](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) covers CI/CD, HACS/Hassfest, HA OS, real-console verification, security, persistence and twelve release gates. No tests have been executed.
+
+**Security and privacy:** [SPEC-006](../specifications/SPEC-006-security-privacy-threat-model.md) covers the cross-protocol threat model, thirty tests and twelve unpassed security gates.
