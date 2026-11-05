@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.41.3 — 2026-11-05  
+> **Document version:** 0.41.4 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2712,6 +2712,17 @@ This policy **supersedes historical references** throughout older research notes
 
 ## Legacy frontend investigation — source availability and UX blueprint (2026-11-05)
 
-**Status: Documentation-only; guide version 0.41.3.** [Legacy frontend inventory and sidebar UX research](docs/research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) documents the actual evidence boundary: the `develop/README.md` describes a private Lovelace frontend snapshot and claims 80 tests passing locally, but attempted reads of expected `develop/frontend` source paths failed. No old UI components or tests were actually inspected, and no private operational snapshot should be committed. **UX-001** remains open pending a verified sanitized source-only frontend tree or exact Git path.
+**Historical finding corrected (2026-11-05):** The original [legacy frontend inventory](docs/research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) incorrectly reported `develop/frontend` unavailable because a file-only GitHub tool was used on a directory. Direct GitHub Contents/Tree inspection has now **verified** the folder, its source and tests. **UX-001 RESOLVED.** The authoritative [source-backed frontend audit](docs/research/legacy-frontend-source-audit-2026-11.md) inventories 21 frontend files, 80 test declarations and 20 source-derived modernization findings. Tests were not executed.
 
-The new product remains one multilingual native Home Assistant sidebar panel with console overview/details, bounded history and coverage, game/account views behind Sony permission gates, diagnostics, accessible mobile layout, theme support, sanitized authorized WebSocket DTOs and separate physical/PSN facts. These are **proposed new UI requirements**, not evidence of features in the old card. Continue research and documentation only; no implementation branch, code, frontend bundle or tests were created.
+The new product remains one multilingual native Home Assistant sidebar panel with console overview/details, bounded history and coverage, game/account views behind Sony permission gates, diagnostics, accessible mobile layout, theme support, sanitized authorized WebSocket DTOs and separate physical/PSN facts. The new requirements must be distinguished from actual old-card features now documented in the corrected source audit. Continue research and documentation only; no implementation branch, code, frontend bundle or tests were created.
+
+## Verified legacy frontend source and tests — corrected research (2026-11-05)
+
+**Status: Read-only source audit completed; guide version 0.41.4.** The [legacy frontend source audit](docs/research/legacy-frontend-source-audit-2026-11.md) corrects the earlier false “frontend source unavailable” conclusion. The `develop` branch contains `frontend/ps5-dashboard-card.js` and 20 additional files: two components, seven services, one CSS stylesheet and ten JavaScript test files. The recursive Git tree is [f4a8b76c5c0221fb3cd3671a4c631f5d275beb96](https://api.github.com/repos/jorgeavlobo/playstation-hub/git/trees/f4a8b76c5c0221fb3cd3671a4c631f5d275beb96?recursive=1). **Exactly 80 test declarations were counted, but none was executed.**
+
+**Reusable legacy UX and engineering concepts:** PlayStation-style hero/dashboard layout; daily/monthly/6–36-month charts; month navigation that skips empty history; live status; game library/rankings; monthly history and calendar rollover; cryptographically random request IDs, correlated/cancellable request clients, 36-month index, generation fencing, safe `textContent`, lazy image loading and incremental UI updates. The old frontend uses **Home Assistant's authenticated WebSocket to call MQTT subscription and publishing**, not a direct MQTT socket. However, it still depends on an MQTT producer and fixed `sensor.ps5_monitoring_service_ps5_*` entities.
+
+**Changes needed for new product:** Replace MQTT request/response topics with authorized, versioned `playstation_hub/*` backend WebSocket APIs; remove single-PS5 and single-player assumptions; make local physical power, PSN account activity and source freshness independent; never equate `!console_active` with confirmed physical OFF; remove duplicated 90-second frontend freshness constants; use explicit HA/user timezone instead of browser-local report assumptions; adopt EN/PT-PT translations, HA 2026.11 responsive/theme CSS and accessibility; preserve rendering focus and prevent unbounded lists. Direct HTTPS image URLs require provenance/rights and safe handling beyond a prefix check. The existing 80 tests offer behavior references, not production validation.
+
+**Scope:** This review updated only documentation in `main`, with `develop` retained unchanged as legacy reference. No implementation branch, executable files or automated test run were created. Next documentation research can map the old MQTT message contracts and all 80 behavior tests to ADR-0010's proposed WebSocket DTOs.
+
