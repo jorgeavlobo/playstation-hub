@@ -23,7 +23,7 @@
 | Session ledger and uncertainty policy | P0 | ADR-0006 proposed, not approved; gap thresholds unverified | [ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) |
 | Remote Play credential / crypto verification | P0 | Hardware unverified | Review X-004 |
 | Sony PSN client/API entitlement | P0 for PSN | Blocked, optional LAN scope remains | Review X-005 |
-| SQLite/credential storage and backups | P0 | Proposed, not approved | ADR-0003; Review X-006 |
+| SQLite/credential storage and backups | P0 | Credential lifecycle ADR-0007 proposed; storage/backup ADR-0008 pending | [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md); ADR-0003 |
 | Multi-console DHCP onboarding | P0 | Dedicated flow needed, not implemented | Review X-007 |
 | HA runtime, entities, frontend and release baseline | P1 | Open | Review X-012, X-013, X-016 |
 | Exact supported/released capability set | P1 | Undefined pending gates | Review section 16 |
