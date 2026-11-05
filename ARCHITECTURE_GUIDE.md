@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.41.1 — 2026-11-05  
+> **Document version:** 0.41.2 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2701,4 +2701,12 @@ This policy **supersedes historical references** throughout older research notes
 **Pure LAN contract candidates:** Versioned immutable discovery/status observations, opaque protocol-level `host-id` candidates, synthetic SRCH UDP 9302 serialization, strict bounded parsing, safe identity collisions, generation/ordering guards, fresh vs last-known state and injectable fake UDP transport. The source-observed 620 code is a standby candidate; non-620 must **not** be blindly promoted to AWAKE. Timeout is not physical OFF. WP-01 will implement and test these only after authorization, with no Sony/Remote Play dependencies. **Twenty test scenarios were specified; zero executed.**
 
 **Decision state:** The planning subtask for a concrete technical source baseline and interfaces is complete, but WP-00 is **NOT_READY for implementation** until the recommended minimum, toolchain and `feature/<scope>` branch/work-package scope are approved. No code, GitHub Actions workflows, physical PlayStation tests, PSN login, or branch creation was performed.
+
+## Legacy code audit — research-only improvement programme (2026-11-05)
+
+**Status: Read-only code analysis completed for five legacy backend files; guide version 0.41.2.** Source-based [legacy code review and refactoring blueprint](docs/research/legacy-code-review-and-refactoring-blueprint-2026-11.md) records 12 findings and 20 proposed test cases, none executed. The maintainer has explicitly chosen to **continue improving documentation and reviewing source code without beginning programming**, implementing WP-01, opening a feature branch or modifying executable code.
+
+**Reusable legacy concepts:** Transactional checkpoint/event/session writes, recovery of open sessions at last persisted evidence, UTC half-open interval accounting and transition-event deduplication. **Not portable unchanged:** The old Supervisor App uses MQTT, `/data/options.json`, a configured single `player_name`, `Europe/Lisbon` hardcoded reporting and synchronous `sqlite3` behind a thread `RLock`. `main.py` explicitly passes `max_gap_seconds=30.0`; the larger 90-second defaults in some helper methods are not runtime policy. `Database.get_sessions` uses an unbounded `fetchall()` and the ordered shutdown may early-exit after exceptions. These are design/portability observations rather than reproduced bugs in the legacy environment.
+
+**Documentation programme:** Keep tracing exact source lines; next review the legacy frontend's information architecture without copying Lovelace code; specify bounded history/repository and continuity policy contracts; audit multi-console identity/migration and add synthetic *documented* timeline expectations. No new Python/JS modules, tests, CI workflows or changes to `develop`. Only `main` documentation may change until the user explicitly authorizes implementation.
 
