@@ -57,3 +57,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Frontend and backend API:** Proposed [ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md) defines the one-sidebar-panel delivery, Home Assistant WebSocket access, message versions, bounded data queries, state subscriptions, command permission checks, frontend translation and HACS packaging. No frontend/server endpoint is implemented yet.
 
 **Discovery acceptance:** [SPEC-001](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) specifies parser, DHCP Discovered, multi-console, identity and network reliability acceptance tests. No acceptance gate has passed; live firmware behavior remains unverified.
+
+**Remote Play acceptance:** [SPEC-002](../specifications/SPEC-002-remote-play-byte-contract-and-safety.md) consolidates Protocols 03–07 byte contracts, crypto vectors, safe command handling and twelve unpassed release gates. No live interoperability is claimed.
