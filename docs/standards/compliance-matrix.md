@@ -31,3 +31,7 @@
 **Audit:** [Protocols 01–10 cross-protocol review](../architecture/cross-protocol-review-01-10.md) (22 findings; seven P0, ten P1 and five P2; this is documentation assessment, not tested code). The proposed ADR/spec backlog is not approved by inclusion here.
 
 No official Home Assistant quality-scale tier is claimed for this custom integration.
+
+## SPEC-005 release evidence checkpoint
+
+[SPEC-005](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) defines twelve release gates, separate LAN/Remote Play/PSN scopes, reproducible test evidence and CI/CD requirements. **Status: documented, no test evidence or release approval.** Sony PSN authorization remains blocked; HACS/Hassfest and HA OS backup/restore remain untested.
