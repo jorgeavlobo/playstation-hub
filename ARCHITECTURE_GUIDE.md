@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.6 — 2026-11-05  
+> **Document version:** 0.38.7 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2478,3 +2478,19 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Security and lifecycle:** Remote Play credentials bind to a validated console and authorized pairing principal; NPSSO/OAuth credentials bind to PSN account identity. Console unload must not stop another console, and PSN unlink must not break LAN status/history. History/data removal, secret-store ownership and backup effects await ADR-0007/0008. Attribution of a PSN game to a physical console remains governed by ADR-0005/0006 and must not be presented as directly confirmed from platform presence alone.
 
 **Before acceptance:** Confirm host-id uniqueness/stability through synthetic and eventual actual device tests; confirm minimum supported HA Core entry/discovery behavior; decide supported hardware generations, canonical ID format, account association UX, and retention policy. Nothing was implemented on `next` or altered on `develop`.
+
+## ADR-0005 — Observation envelope and state reconciliation proposal (2026-11-05)
+
+**Status: Proposed, not approved. Document version 0.38.7.** Canonical [ADR-0005](docs/decisions/ADR-0005-observation-and-state-reconciliation.md) is a 19-section source-authority and observation contract; research only, no live hardware validation or implementation.
+
+**Preferred approach:** Preserve LAN discovery/status, Remote Play session/command progress, PSN account presence and game/catalog observations as independent versioned, immutable, target-scoped source snapshots. A pure deterministic reconciler computes fact-specific projections without assigning one global source precedence. A PSN account being online or a game reported does not prove any local physical PlayStation is awake, and an offline PSN account or failed LAN poll is not a confirmed hardware OFF. Only a fresh, valid, identity-matched console response supports a local awake/standby assertion.
+
+**Proposed shared observation envelope:** schema and observation IDs, source and source-instance, console/account target, source request generation and integration runtime ID, UTC reception/provider event timestamps, in-process monotonic freshness clock, typed normalized payload, validation status and redacted error category. Cross-source “last response wins” is forbidden. Old responses, replayed events and previous lifecycle tasks must not update the current source snapshot.
+
+**Separate dimensions:** current fact, source reachability, transport health, freshness, and last-known history. Source-specific TTLs remain **open** pending measured behavior; a restored backup observation cannot count as current until refreshed. Conflicting LAN and PSN claims may be simultaneously true in their own scopes. Player-to-physical-console attribution is a separate claim, labeled confirmed/inferred/ambiguous/unknown, never silently elevated through an association alone.
+
+**Commands and accounting:** Standby/wake are not confirmed merely because UDP/TCP send succeeded or a socket closed; a credible confirmed post-command observation is needed. The reconciler produces accepted domain events, but **ADR-0006** will define the actual session/time ledger, uncertainty intervals, recovery and non-double-counting. No game duration is inferred solely from PSN polling. **ADR-0008** controls durability; SQLite remains provisional.
+
+**Still open:** approve ADR-0004 identity plan, accept ADR-0005 source/clock policies, calibrate TTL, prove response/command states on hardware, define HA entities and permissions in ADR-0009, finalize backend API and i18n in ADR-0010, and review optional PSN permissions under Protocol 08.
+
+**Branch discipline:** Only research documentation updated in `main`; `next` implementation branch and `develop` legacy reference are untouched.
