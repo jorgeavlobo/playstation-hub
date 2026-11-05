@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.9.0 — 2026-11-05  
+> **Document version:** 0.10.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -765,4 +765,118 @@ The scaled tiers are cumulative: each tier requires its own rules and those of l
 - [ ] Document how rule compliance is verified without claiming official Home Assistant certification.
 - [x] Record the difference between Core scaled tiers and the Custom category.
 
-**Next document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/checklist/
+**DOC-009 reviewed:** https://developers.home-assistant.io/docs/core/integration-quality-scale/checklist/ — see below.
+
+### DOC-009 — Home Assistant: Integration Quality Scale Checklist
+
+- **Official source:** https://developers.home-assistant.io/docs/core/integration-quality-scale/checklist/
+- **Official page title:** Checklist
+- **Page last updated:** 2024-11-20 (as displayed on the source)
+- **Reviewed:** 2026-11-05
+- **Scope:** Complete page, including all named rule identifiers in Bronze, Silver, Gold and Platinum. The individual detailed rule pages are **not yet reviewed**.
+- **Applicability:** This checklist is the required evidence list when proposing an official **Home Assistant Core** quality-scale change. For PlayStation Hub (HACS custom integration) it is adopted as an **internal engineering matrix**, not a claim of official certification.
+
+#### Complete rule inventory
+
+**Exact rule counts:** Bronze: 20, Silver: 10, Gold: 21, Platinum: 3; **total 54 named rules**. The source additionally includes two nested checks under `config-flow` (field `data_description` and correct use of `ConfigEntry.data` / `ConfigEntry.options`).
+
+##### Bronze — 20 rules
+
+| Official rule ID | Tracking | Planned evidence / note |
+| --- | --- | --- |
+| `action-setup` | Not assessed | Register integration actions in `async_setup` when actions exist; read detailed rule. |
+| `appropriate-polling` | Not assessed | Only relevant if integration polls; event-driven MQTT may not require polling. |
+| `brands` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `common-modules` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `config-flow-test-coverage` | Not assessed | Test all configuration flow paths; detailed coverage semantics pending. |
+| `config-flow` | Not assessed | UI configuration; include `data_description` and correct `ConfigEntry.data` vs `options` handling. |
+| `dependency-transparency` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-actions` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-triggers` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-conditions` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-high-level-description` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-installation-instructions` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-removal-instructions` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-event-setup` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-unique-id` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `has-entity-name` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `runtime-data` | Not assessed | Use `ConfigEntry.runtime_data`; review dedicated rule before designing setup lifecycle. |
+| `test-before-configure` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `test-before-setup` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `unique-config-entry` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+
+##### Silver — 10 rules
+
+| Official rule ID | Tracking | Planned evidence / note |
+| --- | --- | --- |
+| `action-exceptions` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `config-entry-unloading` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-configuration-parameters` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-installation-parameters` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-unavailable` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `integration-owner` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `log-when-unavailable` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `parallel-updates` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `reauthentication-flow` | Not assessed | Conditional on an authentication-bearing source; assess rule exemptions. |
+| `test-coverage` | Not assessed | Official checklist explicitly says **above 95%** coverage of all integration modules; define measurable CI gate. |
+
+##### Gold — 21 rules
+
+| Official rule ID | Tracking | Planned evidence / note |
+| --- | --- | --- |
+| `devices` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `diagnostics` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `discovery-update-info` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `discovery` | Not assessed | Assess feasibility of discovery for supported PlayStation source. |
+| `docs-data-update` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-examples` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-known-limitations` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-supported-devices` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-supported-functions` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-troubleshooting` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `docs-use-cases` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `dynamic-devices` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-category` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-device-class` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-disabled-by-default` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `entity-translations` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `exception-translations` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `icon-translations` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `reconfiguration-flow` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `repair-issues` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+| `stale-devices` | Not assessed | Detailed rule document pending; implementation and test evidence pending. |
+
+##### Platinum — 3 rules
+
+| Official rule ID | Tracking | Planned evidence / note |
+| --- | --- | --- |
+| `async-dependency` | Not assessed | Choose async-capable dependency; applicability depends on selected external transport. |
+| `inject-websession` | Not assessed | HTTP/websession requirement may be inapplicable to MQTT-only transport; assess via detailed rule. |
+| `strict-typing` | Not assessed | Adopt strict typing; confirm official rule details and tooling. |
+
+#### Critical implementation consequences
+
+1. **Configuration:** Plan UI config flow, duplicate-entry prevention, connection validation before saving and before setup, and full config-flow tests. Distinguish immutable config-entry data from user-changeable options.
+2. **Runtime state:** Prefer `ConfigEntry.runtime_data` rather than ad-hoc global data for per-entry runtime objects; confirm implementation in the detailed official rule.
+3. **Entity identity and lifecycle:** Unique IDs, `has_entity_name = True`, correct event listener lifecycle, availability and unload behavior.
+4. **Quality coverage:** The Silver checklist specifies **above 95% test coverage** for integration modules. This is an internal target, not yet a passed test or an HACS admission requirement.
+5. **Localization and support:** Translatable entities/exceptions/icons, diagnostics, troubleshooting, supported devices, known limitations, repair issues and reconfiguration.
+6. **Efficiency:** Platinum asks for async dependencies, injectable web sessions, and strict typing. Applicability of HTTP/websession requirements to a potentially MQTT-only integration must be justified using detailed rule pages.
+7. **Conditional and non-applicable rules:** Document evidence-based exemptions; do not invent polling, reauthentication or websession code just to satisfy a checklist.
+8. **Publication:** None of these Core quality-scale rules substitutes for the HACS catalog requirements established in DOC-001–003.
+
+#### Tracking convention
+
+Each rule starts at **Not assessed**. Allowed future statuses: **Applicable / planned**, **Implemented / unverified**, **Verified** (with code and test links), or **Not applicable** (with written justification). No rules are currently claimed complete.
+
+#### Document-specific acceptance checklist
+
+- [x] All official rule IDs transcribed into this guide by tier.
+- [x] Nested `config-flow` requirements recorded.
+- [x] Above-95% test coverage threshold recorded exactly.
+- [x] Custom-integration versus Core grading distinguished.
+- [ ] Read detailed rules individually to establish applicability and testable criteria.
+- [ ] Implement a machine-checkable quality tracker after confirming the official `quality_scale.yaml` format.
+- [ ] Link every Verified rule to evidence.
+
+**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/ — the rules index, then each rule individually.
