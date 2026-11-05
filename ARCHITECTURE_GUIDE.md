@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.22.0 — 2026-11-05  
+> **Document version:** 0.23.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1863,3 +1863,42 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 **Not yet approved:** SQLite location, backup-hook algorithm, automatic restore semantics, WAL/checkpoint policy, and whether a database snapshot should be the canonical backed-up file.
 
 **Next investigation:** inspect the official backup manager at a pinned Core release and prototype backup/restore on an isolated HA instance. Update this guide with measured evidence rather than assumptions.
+
+## 19. Pinned Core 2026.11.0 backup-manager verification (2026-11-05)
+
+### DOC-050 — Home Assistant Core 2026.11.0 backup manager
+- **Pinned official source:** https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py
+- **Inspected:** 2026-11-05; exact pinned source retrieved and relevant functions examined.
+- **Verified:** BackupManager.async_pre_backup_actions invokes registered platforms' async_pre_backup concurrently via asyncio.gather(return_exceptions=True), then raises BackupManagerError on any returned Exception.
+- **Verified:** BackupManager.async_post_backup_actions invokes registered platforms' async_post_backup concurrently via asyncio.gather(return_exceptions=True), then raises BackupManagerError on any returned Exception.
+- **Verified:** Core backup creation calls the pre-backup actions before assembling the Home Assistant archive, and executes post-backup actions in a finally block after the archive/upload phase.
+- **Verified:** If both the main backup operation and post-backup actions fail, the manager combines the failures in an exception group rather than silently discarding one.
+- **Important qualification:** The presence of finally does not prove post-backup can never be interrupted by process termination, OS crash, or task cancellation. Recovery must also occur on next startup.
+- **Important qualification:** Pre-backup actions are invoked across platforms concurrently; do not assume the PlayStation Hub hook runs before or after Recorder's hook.
+- **Important qualification:** The Core backup manager has an include_database flag relating to Home Assistant's database backup behavior; do not assume this controls our private SQLite file. Confirm archive inclusion independently.
+
+### DOC-051 — Backup platform contract, checked against pinned manager
+- **Official docs:** https://developers.home-assistant.io/docs/core/platform/backup/
+- **Verified:** backup.py exposes async_pre_backup(hass) and async_post_backup(hass); separate Backup Agent APIs exist for backup destinations and are not needed for our integration.
+- **Design implication:** Our backup.py must use one integration-global storage coordinator, not independent hooks per console/config entry.
+
+### ADR-DATA-001 — Preferred backup algorithm refinement
+- **Recommendation:** Prefer a consistent SQLite snapshot created by SQLite's supported backup API during pre-backup, saved atomically to a stable config-contained snapshot path. Do not freeze normal event ingestion throughout a potentially lengthy Home Assistant backup when a safe snapshot can avoid that.
+- **Critical unresolved issue:** Snapshot and live DB both inside config may cause redundant backups, growth and inconsistencies if raw live WAL files are also archived. Investigate supported backup exclusions and restore semantics before finalizing.
+- **Alternative:** Temporarily quiesce all writers during archive capture, like Recorder. This has queue-overflow and prolonged-backup risks; prototype only if snapshot approach cannot be made reliable.
+- **State safety:** Any temporary pause must have a bounded timeout and an independent recovery path at startup. Do not depend exclusively on async_post_backup.
+- **Concurrency:** Hooks from other integrations may execute concurrently; no cross-integration ordering assumption.
+- **Failure semantics:** An exception in our pre-hook can abort backup creation. Treat it as a high-severity condition and provide actionable diagnostics; do not suppress a failed snapshot as success.
+- **No automatic per-integration restore:** Native backups restore selected HA configuration content. An individual PlayStation Hub export/import is an additional feature we must build.
+
+### Acceptance tests (required before approving storage)
+- [ ] Verify archive entries for live DB, WAL, SHM and consistent snapshot under both full and partial config-inclusive backups.
+- [ ] Simulate pre-hook failure and assert backup reports failure without leaving PlayStation Hub stuck.
+- [ ] Simulate post-hook failure and verify errors propagate and restart recovery works.
+- [ ] Simulate process termination between pre and post; recover automatically at next startup.
+- [ ] Verify concurrent backup platforms do not deadlock.
+- [ ] Run SQLite integrity_check, foreign_key_check and application-level data checks after restore.
+- [ ] Validate multi-console writes during backup and bounded queue memory.
+- [ ] Confirm behavior with Home Assistant backup include_database disabled.
+
+**Status:** Pinned Core backup hook ordering is now source-verified. Database location and snapshot/restore design remain unapproved until practical tests.
