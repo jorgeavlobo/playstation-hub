@@ -1,12 +1,14 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.40.2 — 2026-11-05  
+> **Document version:** 0.41.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
 > **Distribution target:** One HACS **Integration**, including its frontend  
 > **Languages:** Code, comments, identifiers, and repository documentation in English.
+
+> **Current authoritative source checkpoint (2026-11-05):** The [official-source re-audit for Home Assistant Core 2026.11 and integrated Marketplace](docs/research/official-source-reaudit-home-assistant-2026-11.md) supersedes outdated *active instructions* in earlier DOC-001–DOC-080 historical notes. Source research baseline is Core 2026.11.0 / Python >=3.14.2; minimum supported version remains to be approved. New `feature/<scope>` branches are created on demand; the maintainer deleted `next`. The product remains one HACS/Marketplace custom integration with one sidebar panel, direct LAN access, optional Remote Play/PSN, and no mandatory MQTT. Historical sections are retained for traceability.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -14,7 +16,7 @@ This document is our single source of truth for the planned architecture, public
 
 - Build a **new Home Assistant custom integration from scratch** using current official conventions.
 - Preserve the previous app/card code on the `develop` branch **as reference only**; never merge it wholesale into the new integration.
-- Develop the replacement on `next`, and release reviewed, tested code through `main`. The branching policy can be revised before the first release.
+- Create purpose-specific short-lived `feature/<scope>` branches from `main` only when implementation is explicitly authorized; merge after review and CI. The obsolete `next` branch has been deleted by the maintainer. The frozen `develop` branch remains a legacy reference.
 - One GitHub repository, one HACS integration, one shared release version for Python and JavaScript.
 - **Approved frontend decision (2026-11-05):** Exactly one supported UI: a full-page custom Home Assistant sidebar panel. No Lovelace custom card, dashboard strategy, or parallel card distribution is planned. Keep the frontend modular internally.
 - No requirement for a separate Supervisor App/add-on.
@@ -30,8 +32,8 @@ This document is our single source of truth for the planned architecture, public
 | Branch | Responsibility | Rule |
 | --- | --- | --- |
 | `develop` | Frozen legacy Python add-on + Lovelace implementation | Reference only; no automatic merges to the new integration |
-| `next` | Clean-room-style reimplementation and integration tests | Feature branches / PRs encouraged |
-| `main` | Release-ready integration and public documentation | Merge only after CI and review |
+| `feature/<scope>` | One authorized implementation task at a time, branched from `main` | Short-lived, tested, reviewed through PR; do not recreate `next` |
+| `main` | Authoritative research and documentation now; reviewed stable integration later | Documentation commits during research; code after approved PR/CI |
 
 - **Project decision (mandatory):** Use GitHub Releases with semantic versioning (first version TBD); keep the released integration `manifest.json` version aligned with its release. Create a full GitHub Release **only after** HACS Action and Hassfest have passed. This is both our selected quality policy and an explicit prerequisite for inclusion in the HACS default catalog (DOC-002).
 - GitHub commits alone do not imply installed upgrades. HACS uses its repository/release update mechanism.
@@ -74,7 +76,7 @@ playstation-hub/
 │       ├── switch.py                     # Only for appropriate reversible controls
 │       ├── services.yaml                 # Document integration actions when added
 │       ├── transport/                    # External communication and adapters
-│       │   └── ...                       # MQTT and/or other supported source, TBD
+│       │   └── ...                       # Native LAN / optional Remote Play / optional authorized PSN adapters
 │       ├── domain/                       # Pure business logic, without HA dependencies
 │       │   ├── sessions.py
 │       │   ├── statistics.py
@@ -127,7 +129,9 @@ playstation-hub/
 - [ ] Functional `async_setup_entry`, safe unload/reload, errors and reconnect handling.
 - [ ] A working UI configuration flow when applicable; no unnecessary YAML configuration.
 - [ ] Correct translations, entity identifiers, device information and diagnostics.
-- [ ] Brand assets provided. HACS's Integration publication page explicitly requires a repository brand directory containing at least `icon.png`; exact acceptable placement, naming, dimensions and alternate routes await a separate branding-source review.
+- [ ] Brand assets: ship `custom_components/playstation_hub/brand/icon.png` (official custom-integration path since HA 2026.3); check image specifications and rights.
+- [ ] Include a valid `categories` manifest entry, preferably `media_entertainment.gaming`; custom integrations may omit it, but the HACS Action warns when it is missing.
+- [ ] Ship complete `translations/en.json` and PT-PT `translations/pt.json` with no unresolved translation references, validated by Hassfest.
 - [ ] Frontend resources are registered only once and versioned consistently.
 
 ### Gate B — Quality and CI
@@ -142,9 +146,9 @@ playstation-hub/
 
 ### Gate C — Distribution
 
-- [ ] Install as a **custom repository in HACS** and verify it can be installed/updated.
+- [ ] Install as a **custom repository in the built-in Home Assistant Marketplace (Core 2026.11+)** and test updates; document legacy standalone-HACS compatibility when supporting earlier Core versions.
 - [ ] Verify one release updates both Python and dashboard assets.
-- [ ] **Required for default HACS catalog inclusion (DOC-002) and our project policy:** Create a full GitHub Release (not merely a tag) **after** HACS Action and Hassfest pass. DOC-001 alone makes releases optional for a manually added custom repository; this distinction is now verified.
+- [ ] **Required for Marketplace/HACS catalog inclusion (DOC-002) and our project policy:** Create a full GitHub Release (not merely a tag) **after** HACS Action and Hassfest pass. For a manually added custom repository, a GitHub release is not universally required; our release-first policy still applies to public releases.
 - [ ] Submit a truthful, complete PR to **`hacs/default` → `integration`**, sorted alphabetically, from a new branch based on the fork's `master`; the PR must remain editable (DOC-002).
 - [ ] Catalog admission is subject to review; it does **not** reserve exclusive ownership of the name/domain.
 
@@ -262,7 +266,7 @@ For each official website / subsection:
 
 1. Open the current page, inspect all relevant child pages and last-updated dates.
 2. Extract explicit **MUST**, **SHOULD**, **MAY**, and **not applicable** rules.
-3. Record the exact URL, requirement, interpretation, proof/test, and date in `docs/standards-review-log.md`.
+3. Record the exact URL, requirement, interpretation, proof/test, and date in `docs/standards/review-history.md` or a dedicated sourced research audit under `docs/research/`.
 4. Update this guide's affected section and identify any changed architecture decision.
 5. Write a test or CI check where practical; don't claim a rule is met without evidence.
 6. Note uncertainty and version dependencies; revisit at each significant HA/HACS release.
@@ -284,13 +288,13 @@ Source links: sections 6.2–6.4 above.
 - [ ] Supported Home Assistant versions / Python version.
 - [ ] Multi-console and multi-player modeling and attribution.
 - [ ] Recorder/statistics vs private SQLite proof-of-concept (see section 5).
-- [ ] Whether the interface is a custom Lovelace card, sidebar panel, or both.
+- [x] Frontend scope: one multilingual full-page sidebar panel; no Lovelace card (accepted ADR-0002).
 - [ ] Exact frontend serving, resource lifecycle, versioning and cache policy.
 - [ ] Integration unloading / uninstall storage retention and cleanup policy.
 - [ ] Branding/logo, license, release automation, screenshots, documentation translations.
 - [ ] Minimum real feature set needed for the first acceptable catalog submission.
 
-**Next action:** Exhaustively review the official documentation page by page, then refine this guide **before** constructing the initial integration skeleton.
+**Current action:** Follow the [2026.11 official-source re-audit](docs/research/official-source-reaudit-home-assistant-2026-11.md), select an approved HA Core baseline, and close conditional ADR gates before constructing the initial integration skeleton.
 
 ## 9. Official document review register
 
@@ -2660,3 +2664,15 @@ The matrix distinguishes source-observed UDP discovery/status, wake and Remote P
 **Current authoritative policy; guide version 0.40.2.** The maintainer decided there is no need for an empty permanent `next` branch. Research and documentation remain on `main` during the present phase. When implementation begins with explicit authorization, create a short-lived, descriptive `feature/<scope>` branch from current `main` (for example `feature/lan-discovery`), use PR review and tests, and merge validated work back into `main`. Keep `develop` as the untouched legacy project reference. The `next` branch, if present remotely, is **not part of the future workflow**; its deletion has not been requested or performed.
 
 This policy **supersedes historical references** throughout older research notes that call `next` the implementation branch. Such references are historical descriptions, not active instructions. The canonical implementation readiness document is [WP-00](docs/architecture/WP-00-implementation-readiness-and-decision-closure.md). No implementation code was created.
+
+## Official-source re-audit checkpoint — Home Assistant 2026.11 and Marketplace (2026-11-05)
+
+**Guide version 0.41.0; source-reviewed, not implemented or approved as production baseline.** Full audit: [docs/research/official-source-reaudit-home-assistant-2026-11.md](docs/research/official-source-reaudit-home-assistant-2026-11.md). It records 18 prioritized findings and an official-source register OS-001–OS-032.
+
+**Marketplace:** Home Assistant 2026.11 (released 2026-11-04) integrates HACS as the native Marketplace; the current contributor guides at `contributors.home-assistant.io/marketplace/` are the preferred publishing reference. Custom repository installation and default catalog admission remain distinct; the latter still requires clean HACS Action/Hassfest, full GitHub release and the `hacs/default` submission process. New repo releases must align `manifest.json.version` with release version; `hacs.json.homeassistant` expresses the Marketplace minimum HA Core release once approved. Proposed `manifest.json.categories`: `media_entertainment.gaming`. Include local `custom_components/playstation_hub/brand/icon.png` and a complete custom integration `translations/en.json` with PT-PT `pt.json`. `hacs.json.persistent_directory` exists but should not replace the separately reviewed storage/backup architecture without tests.
+
+**API and runtime baseline:** Official Core 2026.11.0 source `pyproject.toml` specifies `requires-python >=3.14.2`. This is a **research and test candidate**, not an approved minimum supported version. DeviceInfo and ChildDeviceInfo are dataclasses; device registry ownership is one config entry per device. Prefer `async_setup_entry/async_unload_entry/async_migrate_entry -> None` and translated `ConfigEntry*` failures (custom integrations still support booleans). Explicitly set `step_id` for relevant flows (required for custom integrations from Core 2027.5). In-place entity-ID changes require an `async_entity_id_changed` lifecycle policy. Entity names should be translated, context-free labels under the 2026.11 naming model; stable `unique_id` remains independent from human names. Repairs may now be scoped to a config entry and refreshed without churn.
+
+**Frontend and backup:** The 2026.11 frontend removes `ha-md-list`, `ha-md-list-item` and `ha-formfield`, changes CSS token names and supports panel-level theme backgrounds via `--ha-panel-background`, `--ha-panel-toolbar-background` and `--ha-data-table-background`. Do not hardcode a panel background that conceals the theme. The Bible already verified the official Core 2026.11.0 backup manager's pre/post hooks; do **not** regress to saying the hooks do not exist. The outstanding decision is a real SQLite WAL-safe backup snapshot, archive inclusion, restore, permissions and storage path. No code, HACS install, HA OS test, hardware or Sony account test has been run.
+
+**Branch precedence:** The maintainer deleted `next`; only `main` research and on-demand `feature/<scope>` branches are planned. Earlier mentions of using `next`, an MQTT backend or choosing between sidebar/Lovelace are historical and are superseded by this checkpoint and accepted product decisions. The `develop` branch remains untouched as a reference.
