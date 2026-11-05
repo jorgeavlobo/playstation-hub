@@ -325,3 +325,9 @@ Names are **proposals**. Avoid creating empty scaffold files, runtime dependenci
 - [Official-source Bible re-audit](../research/official-source-reaudit-home-assistant-2026-11.md)
 
 **Outcome:** Specific source-pinned Core/Python baseline recommendation and pure LAN contracts recorded. No executable implementation, tests, Home Assistant installation, live PS5, PSN login, release or permanent feature branch was created.
+
+## 19. Multi-console runtime and monitoring ownership handoff (2026-11-05)
+
+The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) identify a crucial boundary after the pure LAN parser: an ordinary polling DataUpdateCoordinator stops scheduling when it loses its final listener, but our planned session history must continue whenever monitoring is enabled, regardless of HA UI state. The preferred **proposed** design is an entry-owned background LAN sampler with one UDP probe owner per configured console, feeding a push-only coordinator. A single polling coordinator held alive by a deliberate entry-scoped internal listener is an alternative; implementing both at once is forbidden.
+
+`entry.async_create_background_task`, `entry.async_on_unload` and `async_unload_platforms_or_raise` exist in pinned Core 2026.11.0, with cancellation and exception semantics requiring tests. A previously validated sleeping console may load degraded rather than failing its entire entry, as supported in the official test-before-setup guidance. An external monitor must respect user-disabled polling and preserve historical coverage gaps. These are requirements for later WP-02/03/04 and **not** an instruction to implement WP-01 now. No new code, branches or test execution is authorized by this document.
