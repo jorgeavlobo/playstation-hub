@@ -21,3 +21,7 @@ Internal target is Platinum-style engineering, not an official quality-scale rat
 ## Architecture review prerequisite
 
 The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010.md) recommends conditional acceptance of ADR-0004–0010 only after explicit maintainer approval and evidence. All existing release gates remain in force; no test is marked passed by this documentation review.
+
+## WP-00 prerequisite
+
+[WP-00](../architecture/WP-00-implementation-readiness-and-decision-closure.md) defines the approval and evidence needed before WP-01 implementation on `next`. No test or release gate has passed by writing the readiness plan.
