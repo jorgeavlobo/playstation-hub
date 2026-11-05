@@ -61,3 +61,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Remote Play acceptance:** [SPEC-002](../specifications/SPEC-002-remote-play-byte-contract-and-safety.md) consolidates Protocols 03–07 byte contracts, crypto vectors, safe command handling and twelve unpassed release gates. No live interoperability is claimed.
 
 **PSN permission and availability:** [SPEC-003](../specifications/SPEC-003-psn-authorization-and-availability.md) documents OAuth/NPSSO handoff, token lifecycle, privacy and rate budgets, 30 synthetic tests and 12 unpassed release gates. Sony client and endpoint permissions remain unresolved; LAN monitoring is independent.
+
+**PSN DTO mapping:** [SPEC-004](../specifications/SPEC-004-psn-presence-game-metadata-dto-mapping.md) defines source-aware account, presence, current title, played/recent/library, trophy, catalog and artwork contracts with 36 synthetic tests and 12 unpassed gates. Sony API authorization remains a prerequisite.
