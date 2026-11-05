@@ -38,9 +38,9 @@ The formal review recommended conditional acceptance of ADR-0004–0010 but did 
 **Compatibility record:**
 ```yaml
 status: TBD
-ha_core_minimum: null
+ha_core_minimum: null # Candidate 2026.11.0; approval pending
 ha_core_latest_tested: null
-python_version: null
+python_version: ">=3.14.2" # Pinned Core 2026.11.0 source baseline; CI not validated
 hacs_version: null
 hassfest_revision: null
 frontend_api_baseline: null
@@ -176,8 +176,8 @@ maintainer_approval: null
 approval_date_utc: null
 architecture_guide_version: "0.40.0"
 target_branch_for_implementation: null # create feature/<scope> from main when authorized
-ha_core_baseline: null
-python_baseline: null
+ha_core_baseline: "2026.11.0" # Proposed technical target; product minimum unapproved
+python_baseline: ">=3.14.2" # Source-verified Core requirement, not a passed CI check
 accepted_adrs: []
 conditional_adrs: ["0004", "0005", "0006", "0007", "0008", "0009", "0010"]
 blocking_issues: ["BLK-001", "BLK-002", "BLK-003", "BLK-004", "BLK-005", "BLK-006", "BLK-007"]
@@ -225,3 +225,7 @@ The maintainer has rejected using an empty permanent `next` implementation branc
 ## Official-source re-audit alignment (2026-11-05)
 
 The [official HA 2026.11 / Marketplace re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) provides a pinned **research baseline** of Core 2026.11.0 with Python >=3.14.2; final `ha_core_minimum` remains subject to explicit approval and compatibility tests. WP-00 must also validate DeviceInfo dataclasses, one-config-entry-per-device registry ownership, setup/unload/migrate `-> None` or translated errors, explicit `step_id` in flows, in-place entity-ID changes, config-entry-scoped repairs, 2026.11 entity naming, Marketplace `hacs.json.homeassistant`, local branding, custom translations and the new single-panel theme tokens. The validated manifest category candidate is `media_entertainment.gaming`. No implementation was authorized and no readiness gate is marked passed.
+
+## WP-00A source-pinned baseline and LAN contract handoff (2026-11-05)
+
+[WP-00A — Core 2026.11 Baseline and LAN Interface Contracts](WP-00A-home-assistant-baseline-and-lan-contracts.md) documents the concrete research baseline Home Assistant Core `2026.11.0` / Python `>=3.14.2`, exact official tag source evidence for DHCP fallback, DeviceInfo dataclass, flow step IDs, entity lifecycle, panel/WebSocket, Store and backup. It recommends (but does not formally approve) Core 2026.11.0 as the first supported minimum. It freezes design-level pure LAN models, discovery/status parsing, source/identity ordering, injected fake transport and 20 deterministic acceptance cases. This closes the **source-documentation** subtask of WP-00, not implementation readiness: Core minimum, test harness/dependencies and feature branch still require explicit authorization; all executable and hardware gates remain NOT_RUN.
