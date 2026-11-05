@@ -55,3 +55,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Home Assistant integration interface:** Proposed [ADR-0009](../decisions/ADR-0009-home-assistant-integration-entities-actions.md) covers native config flows, multi-console discovery, device/entity registries, sensors, buttons, targeted actions, security, lifecycle and translations. Sidebar/WebSocket architecture follows in ADR-0010.
 
 **Frontend and backend API:** Proposed [ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md) defines the one-sidebar-panel delivery, Home Assistant WebSocket access, message versions, bounded data queries, state subscriptions, command permission checks, frontend translation and HACS packaging. No frontend/server endpoint is implemented yet.
+
+**Discovery acceptance:** [SPEC-001](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) specifies parser, DHCP Discovered, multi-console, identity and network reliability acceptance tests. No acceptance gate has passed; live firmware behavior remains unverified.
