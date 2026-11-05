@@ -501,3 +501,9 @@ Only the interval from 11:00 to 11:00:30 is bounded by accepted samples under th
 - https://www.home-assistant.io/common-tasks/general/backups
 
 **Outcome:** A detailed proposed multi-console session ledger, temporal uncertainty policy, statistics and tests are documented; no code, schema, real account or console validation was performed.
+
+## Historical monitoring independence — Core 2026.11 research checkpoint (2026-11-05)
+
+The [multi-console ConfigEntry/coordinator audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) add a requirement to ADR-0006: multi-year session evidence must not stop merely because the HA sidebar is closed or a power sensor is disabled. Core's normal DataUpdateCoordinator periodic refresh is listener-dependent; the source collection owner must have an explicit ConfigEntry lifetime, disabled-polling behavior and one probe lane per physical console.
+
+If a user disables automatic polling, HA stops, the console becomes unreachable or the durable writer fails, session continuity must conservatively stop at the most recent persisted checkpoint or mark a gap under the approved policy. No time may be backfilled on reconnection. Monitoring cadence, source TTL and session continuity gap are separate quantities and still require real measurement. No ledger algorithm or storage choice was implemented by this research.
