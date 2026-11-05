@@ -37,3 +37,7 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## Legacy source-to-new-code review matrix
 
 [Source code review blueprint](../research/legacy-code-review-and-refactoring-blueprint-2026-11.md) lists 12 audited legacy limitations and strengths, 20 proposed tests, and complete-file/code-review requirements. All 20 tests are NOT_RUN. Future implementations must show that source-derived design improvements are exercised by tests; no legacy App/MQTT code was merged or updated.
+
+## Verified legacy frontend test-source inventory (no execution)
+
+[Legacy frontend source audit](../research/legacy-frontend-source-audit-2026-11.md) confirms 80 `test(...)` declarations across ten JavaScript test files on `develop`. Their count does **not** establish a current pass result and does not substitute for new native-panel/WebSocket/HA OS tests. During future implementation, classify each old test as preserve/adapt/retire/replace and add accessibility, theme, multi-console and authorization evidence. No test suite was executed during this source audit.
