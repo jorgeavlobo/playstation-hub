@@ -9,3 +9,7 @@ Internal target is Platinum-style engineering, not an official quality-scale rat
 ## Formal test and release specification
 
 [SPEC-005 — End-to-End Testing, CI/CD & Release Quality Gates](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) defines the test pyramid, requirement traceability, CI/HA OS/hardware validation, synthetic security/fault tests, auditable evidence records and twelve release gates. All gates remain NOT_RUN or BLOCKED; documentation is not implementation evidence. Optional PSN features remain blocked by SPEC-003 Sony authorization; LAN-only release scope must pass its own tests.
+
+## Security release gate linkage
+
+[SPEC-006](../specifications/SPEC-006-security-privacy-threat-model.md) defines SEC-G01–SEC-G12 and SEC-T001–SEC-T030. Critical credential disclosure, unauthorized console commands, history corruption and privacy bypass block affected releases. Written controls are not passing tests.
