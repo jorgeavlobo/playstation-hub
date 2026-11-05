@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.25.0 — 2026-11-05  
+> **Document version:** 0.26.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2023,3 +2023,48 @@ PlayStation Hub custom integration
 - [ ] Verify multi-console/multi-account state mapping before creating a session schema.
 
 **Status:** Research findings documented; no new integration code or direct PS5 transport implemented.
+
+## 22. Underlying playactor and psn-api protocol source audit (2026-11-05)
+
+**Review status:** Selected upstream files inspected at pinned repository tree revisions. No live PlayStation, PSN account, credentials or Home Assistant production system accessed. This is source reconnaissance, not proof of protocol compatibility or authorization.
+
+### DOC-060 — playactor protocol source and licensing
+- Repository: https://github.com/dhleong/playactor
+- Source tree SHA: 93ee087445db368acaba9ad50099bce56ca9141d
+- package.json identifies version 0.4.1 and ISC license.
+- Source modules: src/discovery/udp.ts, src/waker/udp.ts, src/remoteplay/protocol.ts, src/socket/tcp.ts.
+- Discovery sends UDP SRCH messages using the project's discovery formatter and parses responses; shared UDP sockets use reference counting.
+- Wake UDP port for PS5 is 9302 (PS4 uses 987); discovery and wake are distinct operations.
+- Remote Play REST_PORT is 9295, with protocol handshake, packets and heartbeat handling in dedicated modules.
+- Important limitation: src/socket/tcp.ts explicitly maps the legacy TCP socket protocol for PS4 and leaves PS5 undefined. Do not incorrectly infer PS5 standby uses that PS4 TCP socket implementation.
+- Implementation direction: Python asyncio UDP discovery and wake adapter, plus a separately researched PS5 Remote Play pairing/standby transport. Do not copy ISC code without attribution/license review.
+
+### DOC-061 — PSN API upstream source and licensing
+- Repository: https://github.com/achievements-app/psn-api
+- Source tree SHA: 1e9d9a806fcd884a4ddee8086bfe92594611da9f
+- Repository license: MIT.
+- Inspected: src/user/getBasicPresence.ts and src/authenticate/exchangeRefreshTokenForAuthTokens.ts.
+- getBasicPresence performs an authenticated accountId-scoped request to a basicPresences endpoint; privacy settings or missing profiles can cause errors.
+- Token refresh uses an OAuth token endpoint with form-encoded refresh_token grant. Treat refresh tokens and OAuth client credentials as sensitive; never include their values in our repository, logs or guide.
+- PSN-MQTT's account module obtains active title ID, title name and artwork URLs from the PSN presence response, not from LAN discovery.
+- Critical caveat: public source code does not establish official Sony authorization, long-term API stability, rate-limit guarantees or suitability for a public integration.
+
+### Direct integration design constraints
+- No required Node.js, playactor CLI, PS5-MQTT service, Mosquitto broker or Docker App.
+- Prefer standard, audited Python networking/crypto libraries where appropriate; no requirement to reinvent cryptography.
+- LAN-only functionality must degrade gracefully when PSN presence is unavailable or unauthorized.
+- Model power state, reachability, authenticated account presence and observed game activity independently; do not equate power-on with a particular player gaming.
+- Do not mark wake/standby complete solely because a network send returned successfully; wait for a fresh confirmed state.
+- Use stable console IDs, account IDs and title IDs with privacy-preserving storage and configurable user mapping.
+- Do not embed protocol tokens, OAuth client secrets, pairing PINs or console-specific credentials in public fixtures.
+
+### Open protocol validation tasks
+- [ ] Inspect playactor discovery message formatter/parser and model for exact PS5 version/port mapping.
+- [ ] Inspect PS5-specific Remote Play pairing, registration, cryptographic handshake and standby message flow.
+- [ ] Determine which PSN API calls are officially supported, including account permissions and privacy limitations.
+- [ ] Confirm license obligations of each reused code component and its transitive dependencies.
+- [ ] Validate LAN discovery, wake and standby against a test PS5 on supported HA installation types.
+- [ ] Test PSN token renewal, revocation, failure, rate limiting and offline behavior without exposing credentials.
+- [ ] Produce a first-party protocol specification and synthetic contract tests before implementation.
+
+**Decision status:** First-party connection architecture approved; exact protocols, pairing UX and PSN feature availability remain unapproved pending security, legal and live compatibility testing.
