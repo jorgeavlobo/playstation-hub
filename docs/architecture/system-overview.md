@@ -60,3 +60,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Official-source baseline refresh — 2026.11 (research only)
 
 [Current official-source audit](../research/official-source-reaudit-home-assistant-2026-11.md): Home Assistant Core 2026.11.0/Python >=3.14.2 is a verified API research target, subject to minimum-version approval. Home Assistant now includes Marketplace, and the custom integration should use current DeviceInfo dataclasses, single-config-entry device ownership, modern flows/repairs, contextual entity naming and 2026.11 sidebar theme CSS. The proposal remains one HACS/Marketplace integration with one sidebar, native LAN transport and optional, separately gated Remote Play and PSN. No implementation compatibility is claimed.
+
+## WP-00A — Source-pinned HA baseline and LAN foundations
+
+[WP-00A](WP-00A-home-assistant-baseline-and-lan-contracts.md) records Home Assistant Core 2026.11.0/Python >=3.14.2 as an official source-verified development reference, with proposed (not approved) minimum HA support. The first LAN models, fake UDP transport, identity candidates, conservative power observations and 20 synthetic tests are specified, not implemented. The integration's one-sidebar/no-MQTT direction remains unchanged.
