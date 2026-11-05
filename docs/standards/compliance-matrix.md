@@ -21,7 +21,7 @@
 | Physical-console/account identity + entry ownership | P0 | ADR-0004 proposed, not approved; hardware identity unverified | [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownership.md) |
 | Source authority / freshness / reconciliation | P0 | ADR-0005 proposed, not approved; TTL and device behavior unverified | [ADR-0005](../decisions/ADR-0005-observation-and-state-reconciliation.md) |
 | Session ledger and uncertainty policy | P0 | ADR-0006 proposed, not approved; gap thresholds unverified | [ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) |
-| Remote Play credential / crypto verification | P0 | Hardware unverified | Review X-004 |
+| Remote Play credential / crypto verification | P0 | SPEC-002 documented; twelve gates unpassed | [SPEC-002](../specifications/SPEC-002-remote-play-byte-contract-and-safety.md) |
 | Sony PSN client/API entitlement | P0 for PSN | Blocked, optional LAN scope remains | Review X-005 |
 | SQLite/credential storage and backups | P0 | ADR-0007/0008 proposed, not approved; consistent HA backup unverified | [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md), [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) |
 | Multi-console DHCP onboarding | P0 | SPEC-001 acceptance matrix documented; implementation and live validation pending | [SPEC-001](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) |
