@@ -48,3 +48,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Storage architecture (proposed ADR-0008)
 
 [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) recommends a **hybrid** persistence architecture: native Config Entries/Options for devices/accounts; Home Assistant Store for bounded JSON settings; independent credential store after security review; application-owned SQLite **candidate** for multi-year event/session evidence; Recorder only for HA native metrics and long-term statistics. The historical database and cache must be outside HACS-managed code. SQLite transactions, WAL backup snapshot strategy, HA OS backup inclusion and recovery remain **unvalidated**. The original provisional ADR-0003 is not yet approved.
+
+## Native Home Assistant integration (proposed ADR-0009)
+
+[ADR-0009](../decisions/ADR-0009-home-assistant-integration-entities-actions.md) specifies candidate `playstation_hub` config flows, DHCP discovery, physical-console and optional PSN service devices, semantic entities, explicit targeted wake/standby actions, coordinator lifecycle, translations and diagnostics. Physical power is not assumed binary and PSN offline does not imply a console is off. No native integration code or Home Assistant OS tests have yet been run.
