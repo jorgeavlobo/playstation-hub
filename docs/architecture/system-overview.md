@@ -36,3 +36,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Reconciliation architecture (proposed ADR-0005)
 
 [ADR-0005](../decisions/ADR-0005-observation-and-state-reconciliation.md) specifies independent LAN, Remote Play and PSN source snapshots and a pure fact-aware state reducer. PSN online/offline does not assert physical power, successful network send does not assert completed power transitions, and stale observations remain last-known history rather than current state. Source health, reachability, freshness and fact values are independent; the session ledger and Home Assistant projections consume the reconciled stream but have separate contracts still under design.
+
+## Session accounting and reporting (proposed ADR-0006)
+
+[ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) specifies a separate event/checkpoint/session ledger consuming accepted ADR-0005 observations. It proposes bounded evidence-based console duration, explicit unknown gaps, distinct account/game attribution and independent provider aggregate playtime, with half-open UTC intervals and configurable local calendar reporting. The persistence choice, gap thresholds, exact confidence policy and statistics API remain pending approval and validation; no actual duration data has been acquired in the new project.
