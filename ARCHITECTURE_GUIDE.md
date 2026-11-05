@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.9 — 2026-11-05  
+> **Document version:** 0.39.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2526,3 +2526,19 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Storage/security still open:** HA Config Entries and Store are persistence mechanisms but not automatically an encrypted secrets vault. Compare permissions, backups, key custody, schema migrations, atomicity, deletion and runtime encryption in ADR-0008 before selecting. Backup-stored tokens may be stale/rotated; restore must preserve LAN/history regardless of cloud login.
 
 **Policy status:** Proposed repository interfaces and safety requirements are documented. No Sony account token tests, live PS5 pairing, code implementation or credential storage validation occurred. `main` documentation only; `next` and `develop` unchanged.
+
+## ADR-0008 — Storage, durability, backup and restore checkpoint (2026-11-05)
+
+**Status: Proposed; not approved, implemented, benchmarked or tested on Home Assistant OS. Guide version 0.39.0.** Full reference: [docs/decisions/ADR-0008-storage-persistence-and-backup.md](docs/decisions/ADR-0008-storage-persistence-and-backup.md).
+
+**Hybrid direction:** Use native Config Entries/Options for physical-console and PSN-account configuration; versioned Home Assistant Store for small JSON settings and selected metadata; app-owned SQLite **candidate** outside HACS-managed code for the authoritative multi-console observation/event/checkpoint/session ledger; native HA Recorder for appropriately modeled entities and statistics; separate per-owner credential repository; and a bounded provider-approved artwork cache. Do not insert custom SQL tables into Recorder or require PostgreSQL/MySQL.
+
+**Reviewed HA source:** Current `homeassistant/helpers/storage.py` uses `.storage` under the config tree, supports versioned `Store`, `async_save`, `async_delay_save`, a `private` flag and an `atomic_writes` option (observed default `False`). Awaiting a scheduled `async_delay_save` is not equivalent to confirming durable disk writes, and neither `private` nor regular Config Entries implies encryption. Actual fsync/atomicity and secret handling must be tested against a pinned supported HA Core version.
+
+**SQLite candidate:** One per-installation database with integration-owned writer serialization, transactional ingestion of accepted observations and session checkpoints, unique replay IDs, schema migrations, source/identity indexes, bounded queries and non-destructive corruption recovery. WAL can improve concurrency but requires a coherent snapshot/backup strategy. Do not silently adopt the legacy `develop` database schema or hardcoded per-user assumptions.
+
+**Backup and recovery gate:** Verify the selected application data/credential path is included in the actual HA OS backup scope. A copy of the main SQLite `.db` file during live WAL writes is not necessarily consistent. Research/use a supported SQLite online backup or proven quiescence strategy; establish whether Home Assistant provides a supported hook for custom integration backups and **do not presume such a hook exists**. A snapshot should have a committed event high-water mark, integrity verification and an isolated restore test. Restored Sony tokens may already have been rotated, and missing activity since the backup must never be fabricated.
+
+**Retention/security:** Keep secrets separate from history, license-gate copyrighted artwork caching, and define admin-authorized export/purge/delete/unlink/unpair policies. A HACS source uninstall is not assumed to securely remove all auxiliary history files. UTC durable intervals and local timezone reports follow ADR-0006.
+
+**Status and next work:** ADR-0003 dedicated SQLite remains explicitly **proposed, not superseded by an approved decision**. Before approval, verify current HA Core Store and backup interfaces, data-path compatibility, synthetic 3-year / multi-console capacity, crash/migration/WAL restore behavior, and source-dependent release constraints. No code changes to `next` or legacy `develop`; research recorded only on `main`.
