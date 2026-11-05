@@ -28,3 +28,7 @@ See [protocol index](../protocols/README.md) and [architecture guide](https://gi
 ## Cross-protocol review checkpoint
 
 The [Protocols 01–10 architecture audit](cross-protocol-review-01-10.md) identifies the shared contracts required before implementation: identity/config-entry ownership, source observation and reconciliation, session uncertainty, Remote Play credential/cipher interoperability, PSN legal authorization, storage and backup approval, HA native discovery/entities/actions, versioned WebSocket panel API, error policy and release CI. Current designs remain research specifications; see the review's finding register and ADR backlog. **Dedicated SQLite remains provisional.**
+
+## Identity ownership (proposed ADR-0004)
+
+The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownership.md) distinguishes physical console identity, PSN account identity and game title identity. Its preferred option is a separate HA config entry for each verified physical console and each PSN account, with explicit optional many-to-many links, preserving LAN independence and per-entry lifecycle. This is not approved or live-tested; canonical host IDs, HA flow constraints and storage ownership remain open.
