@@ -47,3 +47,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Cross-source state contract:** The proposed [ADR-0005 Observation Envelope and State Reconciliation](../decisions/ADR-0005-observation-and-state-reconciliation.md) unifies observation identity, ordering, freshness, fact-specific authority and command confirmation across protocols. It remains proposed; no source is declared live validated.
 
 **Session and usage accounting:** The proposed [ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) defines how accepted source observations may contribute to bounded duration, unknown gaps, player attribution, multi-console historical statistics and recovery. A successful status poll is a point observation, not proof of uninterrupted activity or exact game transition time.
+
+**Credential lifecycle:** The proposed [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) consolidates security and persistence requirements for PSN OAuth credentials and Remote Play pairing keys spanning Protocols 03–08. Actual secret storage, backup design and provider permission remain unresolved.
