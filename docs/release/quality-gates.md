@@ -25,3 +25,7 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## WP-00 prerequisite
 
 [WP-00](../architecture/WP-00-implementation-readiness-and-decision-closure.md) defines the approval and evidence needed before WP-01 implementation on `next`. No test or release gate has passed by writing the readiness plan.
+
+## Updated HA 2026.11 and Marketplace compatibility gates
+
+[Official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) adds validation targets for a pinned 2026.11.0/Python >=3.14.2 **research baseline** (minimum product support unapproved): DeviceInfo dataclass/UNDEFINED serializing, single-entry device registry ownership, `async_setup_entry`/unload/migrate exception behavior, explicit flow `step_id`, in-place entity ID renames, per-entry repairs, 2026.11 entity naming, frontend panel background/theme/removed components, and integrated Marketplace install/update behavior. HACS Action and Hassfest, `media_entertainment.gaming`, full `translations/en.json`, `brand/icon.png`, catalog release/version alignment and `hacs.json.homeassistant` need tests. Store/backup hook source review is not a passing SQLite restore test.
