@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.41.0 — 2026-11-05  
+> **Document version:** 0.41.1 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -9,6 +9,8 @@
 > **Languages:** Code, comments, identifiers, and repository documentation in English.
 
 > **Current authoritative source checkpoint (2026-11-05):** The [official-source re-audit for Home Assistant Core 2026.11 and integrated Marketplace](docs/research/official-source-reaudit-home-assistant-2026-11.md) supersedes outdated *active instructions* in earlier DOC-001–DOC-080 historical notes. Source research baseline is Core 2026.11.0 / Python >=3.14.2; minimum supported version remains to be approved. New `feature/<scope>` branches are created on demand; the maintainer deleted `next`. The product remains one HACS/Marketplace custom integration with one sidebar panel, direct LAN access, optional Remote Play/PSN, and no mandatory MQTT. Historical sections are retained for traceability.
+
+> **WP-00A technical checkpoint (2026-11-05):** [Core 2026.11.0 and LAN-first interface contracts](docs/architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) sets the source-verified development target Core `2026.11.0` / Python `>=3.14.2`, recommends (but does not yet approve) this as the first minimum supported HA version, and specifies 20 synthetic LAN acceptance cases. No executable tests, hardware checks or implementation authorization have occurred.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2689,3 +2691,14 @@ This policy **supersedes historical references** throughout older research notes
 **Frontend and backup:** The 2026.11 frontend removes `ha-md-list`, `ha-md-list-item` and `ha-formfield`, changes CSS token names and supports panel-level theme backgrounds via `--ha-panel-background`, `--ha-panel-toolbar-background` and `--ha-data-table-background`. Do not hardcode a panel background that conceals the theme. The Bible already verified the official Core 2026.11.0 backup manager's pre/post hooks; do **not** regress to saying the hooks do not exist. The outstanding decision is a real SQLite WAL-safe backup snapshot, archive inclusion, restore, permissions and storage path. No code, HACS install, HA OS test, hardware or Sony account test has been run.
 
 **Branch precedence:** The maintainer deleted `next`; only `main` research and on-demand `feature/<scope>` branches are planned. Earlier mentions of using `next`, an MQTT backend or choosing between sidebar/Lovelace are historical and are superseded by this checkpoint and accepted product decisions. The `develop` branch remains untouched as a reference.
+
+## WP-00A — Home Assistant Core baseline and LAN contracts (2026-11-05)
+
+**Status: Source verification and technical contract proposal complete; guide version 0.41.1.** The canonical [WP-00A technical handoff](docs/architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) recommends Home Assistant Core **2026.11.0** as the initial minimum supported release, based on the released official tag `2026.11.0` (`pyproject.toml` requires Python `>=3.14.2`). **This recommendation remains pending explicit maintainer approval**. The approved minimum must be reflected in future release-specific `hacs.json.homeassistant`; do not create the file before code starts.
+
+**Pinned official APIs checked:** Generic `ConfigFlow.async_step_dhcp` fallback still calls discovery without a unique ID, so PlayStation Hub needs its dedicated multi-console flow. `DeviceInfo`/`ChildDeviceInfo` are dataclasses; `async_show_form` accepts `step_id` and warns on omission. The entity runtime supports in-place `async_entity_id_changed` and cleanup via `async_on_remove`. `panel_custom.async_register_panel` accepts `module_url`, `require_admin` and `handle_safe_area`; KNX is a concrete static-path plus WebSocket precedent. `Store` defaults `atomic_writes=False` and `private=False`; backup pre/post hooks exist but SQLite consistent restore remains an untested release blocker.
+
+**Pure LAN contract candidates:** Versioned immutable discovery/status observations, opaque protocol-level `host-id` candidates, synthetic SRCH UDP 9302 serialization, strict bounded parsing, safe identity collisions, generation/ordering guards, fresh vs last-known state and injectable fake UDP transport. The source-observed 620 code is a standby candidate; non-620 must **not** be blindly promoted to AWAKE. Timeout is not physical OFF. WP-01 will implement and test these only after authorization, with no Sony/Remote Play dependencies. **Twenty test scenarios were specified; zero executed.**
+
+**Decision state:** The planning subtask for a concrete technical source baseline and interfaces is complete, but WP-00 is **NOT_READY for implementation** until the recommended minimum, toolchain and `feature/<scope>` branch/work-package scope are approved. No code, GitHub Actions workflows, physical PlayStation tests, PSN login, or branch creation was performed.
+
