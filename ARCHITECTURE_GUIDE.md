@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.36.0 — 2026-11-05  
+> **Document version:** 0.37.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2359,3 +2359,13 @@ The [05-remote-play-cryptography specification](docs/protocols/05-remote-play-cr
 **Decision:** Use audited Python cryptographic primitives, strict validation and independent per-console session state. Never expose secrets or claim modern authenticated encryption where only AES-CFB is established.
 
 **Status:** Documentation complete for this source-review pass; not live validated. Next: [06-remote-play-session.md](docs/protocols/06-remote-play-session.md).
+
+## 33. Protocol specification progress — Remote Play session (2026-11-05)
+
+The [06-remote-play-session specification](docs/protocols/06-remote-play-session.md) has been expanded with PS5 session initialization and control endpoints, RP-Nonce, authentication headers, persistent TCP socket ownership, login and optional passcode challenge, heartbeat command/response values, framing, state machine, security and implementation-stage tests.
+
+**Source findings:** The playactor session implementation initializes `/sie/ps5/rp/sess/init`, then opens `/sie/ps5/rp/sess/ctrl`, takes ownership of the underlying socket, executes login, and handles incoming heartbeat packets. The login procedure distinguishes passcode-required and nonzero login results.
+
+**Decisions:** Session lifecycle is independent per console, uses bounded deadlines and cancellation-safe cleanup, and never exposes credentials or encrypted control headers. LAN-only monitoring must not require a Remote Play session.
+
+**Status:** Source-derived specification; not live validated. Next: [07-remote-play-commands.md](docs/protocols/07-remote-play-commands.md).
