@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.2 — 2026-11-05  
+> **Document version:** 0.38.3 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2411,3 +2411,18 @@ Sources: [Official Home Assistant PlayStation Network](https://github.com/home-a
 **Implementation and release gates:** Review supported HA Core discovery APIs and test custom integration DHCP matching, user confirmation, stable IDs, repeated discovery with existing entries, ignored devices, concurrent flow deduplication, DHCP/host changes, VLAN and manual-setup conditions, unknown hardware and coexistence with `playstation_network`. Confirm all proposed behaviors through tests before claiming them. Consult the detailed audit's per-platform source and synthetic test matrices.
 
 **Research scope:** Only `main` documentation was modified. `develop` legacy reference and `next` implementation branch remain unchanged.
+
+## Protocol 09 — PSN presence and attribution research checkpoint (2026-11-05)
+
+**Status: source-derived documentation only. No implementation, live Sony account call or console validation.** The detailed 17-section specification is [docs/protocols/09-psn-presence.md](docs/protocols/09-psn-presence.md); its source register and test matrix must be consulted before implementing this domain.
+
+- **Source confirmed:** Community `psn-api` GET `basicPresences?type=primary` exposes account-level status, primary platform and `gameTitleInfoList`; PSNAWP provides per-account presence and an additional account-batch method with platform filters. PS5-MQTT derives an optional current game by selecting the first game record; this is an upstream policy, not a guarantee that a single title always exists.
+- **Official HA reference:** Home Assistant Core `playstation_network` exposes platform-level presence and game/trophy entities, polls main data at ~30 seconds, and documents a 300-request/15-minute allowance for its integration. Its docs warn that the active device is only reported for the last-used platform. These are not Sony-issued universal rate guarantees.
+- **Critical product rule:** PSN `online`/`offline` or `PS5` platform is **not a physical console identity or power confirmation**. A PSN game title is not an exact start/end timestamp and is not proof that a named local device/player was responsible. Separate LAN status, account presence, game candidate data and player/console attribution; expose `confirmed`, `inferred`, `ambiguous` and `unknown` source confidence, without invented numeric probabilities.
+- **Privacy:** Sony lets accounts restrict visibility of online status/current game and supports parental controls for child accounts. Respect authorization and 403/privacy restrictions; do not bypass them or represent hidden data as confirmed inactivity.
+- **Data lifecycle:** Timestamp each observation at retrieval, preserve separate provider event timestamps, reject stale/out-of-order responses, and avoid treating periodic polls as event-perfect session timelines. PSN outages/rate limits never erase valid LAN state or independently recorded history.
+- **Architecture direction:** An account-scoped PSN adapter backed by Protocol 08's token manager, centralized rate/poll coordinator, schema parser and typed errors, plus independent domain presence reconciliation. No Home Assistant entity or frontend makes PSN HTTP calls directly. Multiple accounts/consoles must not mix credentials or identity.
+- **Pending gates:** Sony third-party client and endpoint permission, stable account-to-physical-console attribution, actual endpoint schema/TTL validation, privacy/retention, per-account rate budget, HA entity model and end-to-end tests. Protocol 10 will separately specify game metadata.
+- **Branch policy:** Documentation-only changes on `main`; `develop` and `next` remain unchanged.
+
+Sources: [Protocol 09 source register](docs/protocols/09-psn-presence.md#17-source-register), [Home Assistant PlayStation Network](https://www.home-assistant.io/integrations/playstation_network/), [Sony PSN privacy](https://www.playstation.com/en-us/support/account/privacy-settings/), [PSNAWP presence](https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/models/user.py).
