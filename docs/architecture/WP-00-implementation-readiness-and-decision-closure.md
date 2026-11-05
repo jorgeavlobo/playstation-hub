@@ -26,7 +26,7 @@ The formal review recommended conditional acceptance of ADR-0004–0010 but did 
 
 ## 3. Home Assistant compatibility baseline — decision template
 
-The exact minimum Home Assistant Core version is **TBD**, not guessed from `core/dev` source. Before implementation:
+**Official-source checkpoint (2026-11-05):** Home Assistant Core `2026.11.0` is a released stable reference whose official `pyproject.toml` declares Python `>=3.14.2`. This is our **verified research/test baseline**, not yet an approved minimum supported version. Before implementation:
 1. Select a currently released, stable Core version as the minimum supported baseline; record exact version and release date.
 2. Verify its bundled Python version and dependency constraints from official HA metadata.
 3. Check its `ConfigEntry.runtime_data`, `async_step_dhcp`, unique-ID flow, entity registry, coordinator, repairs, WebSocket, panel_custom, static path and storage APIs.
@@ -221,3 +221,7 @@ This is a documentation template, not a generated approval or an assertion that 
 ## Branch strategy revision — 2026-11-05
 
 The maintainer has rejected using an empty permanent `next` implementation branch. Research and architecture documentation remain on `main`; `develop` is retained as a read-only legacy reference. When implementation is authorized, create a short-lived, purpose-specific branch from the current `main` (for example `feature/lan-discovery`), validate through a pull request, and merge reviewed code into `main`. Do not recreate or use `next` as the designated implementation branch. This decision does not authorize deleting any existing remote branch; branch cleanup is a separate explicit action.
+
+## Official-source re-audit alignment (2026-11-05)
+
+The [official HA 2026.11 / Marketplace re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) provides a pinned **research baseline** of Core 2026.11.0 with Python >=3.14.2; final `ha_core_minimum` remains subject to explicit approval and compatibility tests. WP-00 must also validate DeviceInfo dataclasses, one-config-entry-per-device registry ownership, setup/unload/migrate `-> None` or translated errors, explicit `step_id` in flows, in-place entity-ID changes, config-entry-scoped repairs, 2026.11 entity naming, Marketplace `hacs.json.homeassistant`, local branding, custom translations and the new single-panel theme tokens. The validated manifest category candidate is `media_entertainment.gaming`. No implementation was authorized and no readiness gate is marked passed.
