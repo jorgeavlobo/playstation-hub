@@ -33,3 +33,7 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## WP-00A baseline and pure LAN contract gate
 
 [WP-00A](../architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) selects Home Assistant Core `2026.11.0` and compatible Python `>=3.14.2` as source-verified reference, with formal product-minimum acceptance pending. The first 20 LAN contract tests are documented but all remain NOT_RUN. Later HA OS, actual console, Marketplace/HACS, backup, Remote Play and Sony permission gates retain their independent requirements. Do not claim source inspection is runtime compatibility.
+
+## Legacy source-to-new-code review matrix
+
+[Source code review blueprint](../research/legacy-code-review-and-refactoring-blueprint-2026-11.md) lists 12 audited legacy limitations and strengths, 20 proposed tests, and complete-file/code-review requirements. All 20 tests are NOT_RUN. Future implementations must show that source-derived design improvements are exercised by tests; no legacy App/MQTT code was merged or updated.
