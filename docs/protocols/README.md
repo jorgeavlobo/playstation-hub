@@ -51,3 +51,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Credential lifecycle:** The proposed [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) consolidates security and persistence requirements for PSN OAuth credentials and Remote Play pairing keys spanning Protocols 03–08. Actual secret storage, backup design and provider permission remain unresolved.
 
 **Storage and recoverability:** Proposed [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) evaluates HA Config Entries, Store, Recorder and an application-owned SQLite candidate for sessions and evidence. SQLite backup consistency, schema lifecycle, private credentials and HA OS restore have explicit verification gates; no database is approved or implemented.
+
+**Home Assistant integration interface:** Proposed [ADR-0009](../decisions/ADR-0009-home-assistant-integration-entities-actions.md) covers native config flows, multi-console discovery, device/entity registries, sensors, buttons, targeted actions, security, lifecycle and translations. Sidebar/WebSocket architecture follows in ADR-0010.
