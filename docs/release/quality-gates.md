@@ -5,3 +5,7 @@
 Before first public release: HACS validation and Hassfest; supported HA version matrix; automated setup/unload/reload and config-flow tests; localization coverage; protocol negative tests; secure credentials; no event-loop blocking; live PS5 compatibility tests; database backup/restore; frontend panel mobile/desktop; release upgrade/rollback.
 
 Internal target is Platinum-style engineering, not an official quality-scale rating.
+
+## Formal test and release specification
+
+[SPEC-005 — End-to-End Testing, CI/CD & Release Quality Gates](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) defines the test pyramid, requirement traceability, CI/HA OS/hardware validation, synthetic security/fault tests, auditable evidence records and twelve release gates. All gates remain NOT_RUN or BLOCKED; documentation is not implementation evidence. Optional PSN features remain blocked by SPEC-003 Sony authorization; LAN-only release scope must pass its own tests.
