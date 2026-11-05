@@ -32,3 +32,7 @@ The [Protocols 01–10 architecture audit](cross-protocol-review-01-10.md) ident
 ## Identity ownership (proposed ADR-0004)
 
 The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownership.md) distinguishes physical console identity, PSN account identity and game title identity. Its preferred option is a separate HA config entry for each verified physical console and each PSN account, with explicit optional many-to-many links, preserving LAN independence and per-entry lifecycle. This is not approved or live-tested; canonical host IDs, HA flow constraints and storage ownership remain open.
+
+## Reconciliation architecture (proposed ADR-0005)
+
+[ADR-0005](../decisions/ADR-0005-observation-and-state-reconciliation.md) specifies independent LAN, Remote Play and PSN source snapshots and a pure fact-aware state reducer. PSN online/offline does not assert physical power, successful network send does not assert completed power transitions, and stale observations remain last-known history rather than current state. Source health, reachability, freshness and fact values are independent; the session ledger and Home Assistant projections consume the reconciled stream but have separate contracts still under design.
