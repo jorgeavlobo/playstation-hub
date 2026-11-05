@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.10.0 — 2026-11-05  
+> **Document version:** 0.11.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -18,6 +18,7 @@ This document is our single source of truth for the planned architecture, public
 - One GitHub repository, one HACS integration, one shared release version for Python and JavaScript.
 - No requirement for a separate Supervisor App/add-on.
 - Modular and extensible, with clearly separated responsibilities, strict lifecycle management, and detailed **English** code comments.
+- **Mandatory project policy:** Multilingual architecture from the first release, including integration configuration, entities, errors, diagnostics-facing labels where applicable, and all frontend text. English is the source language; translation files supply other locales. Never hardcode user-visible English strings into business logic.
 - Do not publish private snapshots, SQLite data, Home Assistant `.storage` files, IDs, credentials or real-world user configuration.
 - No empty “placeholder” modules solely to imitate a directory tree. The tree below is a **target roadmap**, not the minimum release structure.
 - The first release must be **functional, installable, configurable, removable, and tested**. A blank integration must not be submitted just to reserve a name.
@@ -62,7 +63,8 @@ playstation-hub/
 │       ├── config_flow.py                # UI setup, reconfigure, options (as needed)
 │       ├── strings.json                  # Base user-facing strings
 │       ├── translations/
-│       │   └── en.json                   # Additional languages only when supported
+│       │   ├── en.json                   # English source translation
+│       │   └── pt.json                   # Portuguese translation; locale policy pending
 │       ├── coordinator.py                # Shared push/poll lifecycle where appropriate
 │       ├── data.py                       # Typed runtime data / per-config-entry state
 │       ├── diagnostics.py                # Privacy-safe diagnostics
@@ -83,6 +85,7 @@ playstation-hub/
 │       │   ├── native_store.py
 │       │   └── sqlite_repository.py      # ONLY IF a dedicated database is approved
 │       ├── frontend/                     # Frontend shipped and versioned with integration
+│       │   ├── i18n/                     # Frontend localization resources (design pending)
 │       │   ├── playstation-hub.js
 │       │   ├── components/
 │       │   ├── services/
@@ -879,4 +882,86 @@ Each rule starts at **Not assessed**. Allowed future statuses: **Applicable / pl
 - [ ] Implement a machine-checkable quality tracker after confirming the official `quality_scale.yaml` format.
 - [ ] Link every Verified rule to evidence.
 
-**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/ — the rules index, then each rule individually.
+**DOC-010 reviewed:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/ — index only; individual rule documents remain pending.
+
+
+
+### DOC-010 — Home Assistant: Integration quality scale rules (index)
+
+- **Official source:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/
+- **Official title:** Integration quality scale rules
+- **Source last updated:** 2025-05-21
+- **Reviewed:** 2026-11-05
+- **Scope:** The complete **rules index page only**, including each tier's one-line rule descriptions and links. **Individual rule pages have not been reviewed.**
+- **Applicability:** The rules belong to Home Assistant Core's quality-scale framework; PlayStation Hub uses them as voluntary engineering standards, not an official Home Assistant quality certification.
+
+#### Confirmed rule structure
+
+| Tier | Rule count | Directly relevant examples |
+| --- | ---: | --- |
+| Bronze | 20 | \`common-modules\`, \`config-flow\`, \`runtime-data\`, \`entity-unique-id\`, \`config-flow-test-coverage\` |
+| Silver | 10 | \`config-entry-unloading\`, \`entity-unavailable\`, \`reauthentication-flow\`, \`test-coverage\` |
+| Gold | 21 | \`entity-translations\`, \`exception-translations\`, \`icon-translations\`, \`diagnostics\`, \`reconfiguration-flow\` |
+| Platinum | 3 | \`async-dependency\`, \`inject-websession\`, \`strict-typing\` |
+
+**Result:** The index confirms the **54 rule identifiers** already cataloged in DOC-009 and gives short explanations for each. It does **not** provide enough detail to declare any one rule implemented or verified. The individual rule pages remain a separate reading backlog.
+
+#### Specific official localization requirements identified in this index
+
+- \`entity-translations\` (Gold): entities have translated names.
+- \`exception-translations\` (Gold): exception messages are translatable.
+- \`icon-translations\` (Gold): entities implement icon translations.
+
+**Evidence boundary:** These are only the index summaries. Exact JSON keys, file placement, language resolution, icon rules, and testing conventions must be confirmed by reviewing the individual official pages and Home Assistant translation documentation.
+
+#### New binding project decision — multilingual from day one
+
+**Status:** APPROVED BY PROJECT OWNER (2026-11-05). This is a PlayStation Hub policy, **not** a statement that HACS requires every custom integration to support multiple languages.
+
+1. **English is the source language.** Code, comments, internal identifiers, documentation and translation keys use English. UI text is translated at runtime.
+2. **Backend / Home Assistant:** Use Home Assistant's official \`strings.json\` and \`translations/\` model, after validating the exact file and key conventions against the dedicated official documentation.
+3. **Frontend:** Keep an independent, modular localization layer for the bundled Lovelace card/panel; use the Home Assistant selected language when supported, and fall back to English. Determine the supported locale API from official frontend documentation before implementation.
+4. **No hardcoded UI strings:** Labels, buttons, errors, empty states, status messages, chart legends, units where appropriate, and accessibility text must be localizable.
+5. **Locale-aware presentation:** Use the user's locale and time zone for date/time and number formatting; retain UTC for persisted event timestamps and domain calculations.
+6. **Scalable locale registry:** New languages are added by supplying locale resources, not by copying UI components or changing domain algorithms.
+7. **Fallback and missing keys:** English fallback for missing/unsupported translations; missing-key checks and translation completeness reporting in CI.
+8. **Pluralization and interpolation:** Use locale-aware formatting and safe parameterized messages. Confirm Home Assistant's officially supported backend translation mechanisms before selecting implementations.
+9. **Privacy:** Never include personal identifiers or credentials in language catalogs, translation keys, or diagnostics output.
+10. **First supported locales:** English and Portuguese are the initial planned languages. Whether \`pt\` and \`pt-PT\` are distinct supported identifiers must be confirmed in the official HA translation documentation. Further languages should be easy to add.
+
+#### Proposed localization-oriented package structure (not yet validated)
+
+\`\`\`text
+custom_components/playstation_hub/
+├── strings.json
+├── translations/
+│   ├── en.json
+│   └── pt.json
+└── frontend/
+    ├── playstation-hub.js
+    └── i18n/
+        ├── en.json
+        └── pt.json
+\`\`\`
+
+**Important:** This is a **design proposal**, not an assertion that the frontend JSON files are automatically loaded by HACS or Home Assistant. The integration must explicitly package, serve, and resolve its frontend language resources.
+
+#### Implementation and verification checklist
+
+- [ ] Review official \`entity-translations\` detailed rule page.
+- [ ] Review official \`exception-translations\` detailed rule page.
+- [ ] Review official \`icon-translations\` detailed rule page.
+- [ ] Review official Home Assistant backend translation file conventions and locale identifiers.
+- [ ] Review official frontend localization API / patterns.
+- [ ] Define typed translation keys and test missing keys, fallback, interpolation, pluralization and locale switching.
+- [ ] Test both integration configuration flows and the dashboard in at least English and Portuguese.
+- [ ] Document a contributor workflow for adding translations.
+- [x] Record the owner's mandatory multilingual requirement without incorrectly claiming official HACS certification.
+
+#### Architecture impact
+
+- This review **does not change** the decision to distribute Python and frontend in one HACS integration and one GitHub Release.
+- It **does change** the minimum release acceptance criteria: multilingual-ready backend and frontend are required from the beginning.
+- It does **not** resolve the SQLite-vs-Recorder decision, the exact config-flow schema, or frontend resource registration.
+
+**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/entity-translations/ — begin detailed localization requirements one document at a time.
