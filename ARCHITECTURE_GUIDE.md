@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.26.0 — 2026-11-05  
+> **Document version:** 0.27.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2068,3 +2068,59 @@ PlayStation Hub custom integration
 - [ ] Produce a first-party protocol specification and synthetic contract tests before implementation.
 
 **Decision status:** First-party connection architecture approved; exact protocols, pairing UX and PSN feature availability remain unapproved pending security, legal and live compatibility testing.
+
+## 23. PS5 Remote Play discovery and registration protocol audit (2026-11-05)
+
+**Upstream reference:** https://github.com/dhleong/playactor — inspected selected files at main source tree SHA 93ee087445db368acaba9ad50099bce56ca9141d. This is a technical study, not a validated PlayStation Hub implementation.
+
+### DOC-062 — Discovery version, parsing and message format
+- https://github.com/dhleong/playactor/blob/main/src/discovery/model.ts
+- https://github.com/dhleong/playactor/blob/main/src/discovery/standard.ts
+- https://github.com/dhleong/playactor/blob/main/src/discovery/messages.ts
+- https://github.com/dhleong/playactor/blob/main/src/protocol.ts
+- Source defines PS5 discovery protocol version 00030010, PS4 version 00020020, and sends discovery SRCH messages as newline-separated HTTP-like text over UDP.
+- Standard PS5 discovery network factory uses the PS5 wake/discovery UDP port 9302. Incoming HTTP-like responses are parsed; code 620 is classified STANDBY, other response codes AWAKE by this library.
+- **Caution:** Treating every non-620 response as AWAKE is an upstream heuristic, not proof that all unknown or malformed responses mean awake. Our parser must explicitly validate status and represent UNKNOWN.
+- Device identity and metadata include host-id, host-name, host-request-port, host-type, system-version and discovery protocol version.
+
+### DOC-063 — Remote Play registration sequence
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/registration.ts
+- For PS5, registration first sends SRC3 over UDP port 9295 and waits for RES3; this pre-registration discovery step is mandatory according to upstream comments.
+- Registration then derives an encrypted payload from the console pairing PIN and account identifier and POSTs to the PS5-specific registration path under HTTP port 9295.
+- The upstream flow decrypts the response and validates the returned RP-Key. Do not log PIN, account identifier, keys, plaintext, encrypted payloads or response bodies.
+- Pairing is a separate operation from ordinary status discovery and wake. It must have a deliberate user-authorized config-flow step.
+
+### DOC-064 — Crypto strategy and Remote Play version
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto.ts
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/model.ts
+- The implementation selects modern versus legacy crypto based on device type and Remote Play version; PS5 uses a distinct PS5_1 branch.
+- Uses cryptographically random 16-byte nonce for registration crypto; key derivation and exact algorithms require a separate review of the modern strategy.
+- **Security decision:** Never invent a crypto algorithm or reimplement it from memory. Audit the full implementation and use maintained Python cryptographic primitives with protocol test vectors.
+
+### DOC-065 — Wake behavior and confirmed observation
+- https://github.com/dhleong/playactor/blob/main/src/waker.ts
+- Wake loads stored device credentials, sends WAKEUP to the PS5, and then waits for fresh discovery identifying the same console as AWAKE.
+- **Decision:** This is preferable to the optimistic upstream PS5-MQTT state publication. A sent packet is not a confirmed transition; require fresh observed state before reporting success.
+
+### DOC-066 — Standby behavior
+- https://github.com/dhleong/playactor/blob/main/src/cli/commands/standby.ts
+- Standby discovers the device, opens a Remote Play connection, issues standby, and closes the connection in finally.
+- **Decision:** Standby must be capability-gated, user-authorized, timeout-bounded and exception-safe. Exact handshake and crypto implementation are still to be researched.
+
+### Proposed Python protocol boundaries (design only)
+- discovery.py: async UDP SRCH, bounded timeouts, response parsing, deduplication, manual IP fallback.
+- pairing.py: explicit PSN account and console PIN authorization, protected credentials and registration lifecycle.
+- wake.py: credentialed WAKEUP followed by observed-state confirmation.
+- remote_play.py: independently testable PS5 handshake and standby command transport.
+- state.py: typed observations with source, freshness, confidence and UNKNOWN handling.
+- All modules are internal to the PlayStation Hub integration or a future optional audited Python library; no PS5-MQTT, Node or Mosquitto runtime required.
+
+### Blocking questions before coding
+- [ ] Inspect modern Remote Play cryptographic strategy, exact message framing and registration test vectors.
+- [ ] Inspect PS5 Remote Play session handshake and standby packet structure.
+- [ ] Determine which credentials are necessary for LAN-only status, wake and standby.
+- [ ] Confirm Sony/PSN authorization and private API usage constraints.
+- [ ] Validate behavior on a test PS5, including power-off, rest mode, awake, no network, incorrect PIN and pairing revoked.
+- [ ] Establish test fixtures that contain no real console identifiers or secrets.
+
+**Status:** Protocol details source-verified at the inspected upstream revision. No claim of successful pairing or direct connection; architecture remains in research.
