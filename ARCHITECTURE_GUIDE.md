@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.34.0 — 2026-11-05  
+> **Document version:** 0.35.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2337,3 +2337,13 @@ The [03-console-wakeup specification](docs/protocols/03-console-wakeup.md) has b
 **Open:** The exact `user-credential` derivation and credential construction still require source tracing. This is explicitly marked in the specialized specification rather than invented.
 
 **Status:** Source-grounded planning, no live test or code changes. Next specialized protocol: [04-remote-play-registration.md](docs/protocols/04-remote-play-registration.md).
+
+## 31. Integration vs App, MQTT entity ownership, and Protocol 04 (2026-11-05)
+
+**Decision reaffirmed:** PlayStation Hub will be a native HACS custom integration, not a Supervisor App. It must require neither PS5-MQTT nor a separate MQTT broker. Native Home Assistant entity platforms replace the old MQTT Discovery bridge. The legacy PS5-MQTT App runs in a separate container, whereas the new integration runs inside HA Core and must respect its event loop and lifecycle.
+
+**Entity ownership distinction:** PS5-MQTT publishes MQTT discovery/state for console activity and power entities, and Home Assistant's MQTT integration materializes those entities. The exact provenance of `sensor.playstation_5_activity` and `switch.playstation_5_power` in the user's current installation is highly likely but requires an entity-registry check; do not claim direct inspection.
+
+**Protocol 04:** The [Remote Play registration specification](docs/protocols/04-remote-play-registration.md) now documents SRC3/RES3 UDP discovery on port 9295, registration HTTP POST, PIN-derived encryption, response key validation, per-console credentials, error handling, security, and future tests.
+
+**Status:** Research and specification only; no changes to production Home Assistant. Next: deepen [05-remote-play-cryptography.md](docs/protocols/05-remote-play-cryptography.md).
