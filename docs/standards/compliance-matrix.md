@@ -39,3 +39,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## SPEC-006 security checkpoint
 
 [SPEC-006](../specifications/SPEC-006-security-privacy-threat-model.md) defines thirty threats and twelve security gates. **Status: research/proposed; no controls or tests verified.** Sony permission remains blocked and all common security release requirements are pending.
+
+## SPEC-007 compatibility checkpoint
+
+[SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) documents model/firmware/network compatibility evidence requirements. All twelve compatibility gates remain NOT_TESTED, BLOCKED or NOT_APPROVED. Source-observed PS5/PS4 protocol constants do not prove support.
