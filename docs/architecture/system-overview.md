@@ -72,3 +72,7 @@ The [legacy backend review](../research/legacy-code-review-and-refactoring-bluep
 ## Legacy frontend evidence boundary
 
 [Frontend source availability and proposed panel UX](../research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) distinguishes the documented new sidebar design from uninspected legacy Lovelace components. The README mentions a private frontend snapshot, but source was not found at expected `develop/frontend` paths. No old UI behavior is considered verified by this research.
+
+## Corrected legacy frontend source inventory — 2026-11-05
+
+The earlier missing-frontend statement was a **tool misuse**, not an absent branch tree. The [authoritative `develop` frontend source audit](../research/legacy-frontend-source-audit-2026-11.md) verifies 21 files and 80 counted test declarations (unexecuted), including the Lovelace card, game library, SVG history chart, live/daily/monthly/36-month history clients, navigation, formatters and styles. The design can reuse safe text handling, request cancellation/correlation, generation filtering and activity navigation, but replaces MQTT and fixed single-console assumptions with an authorized multi-console sidebar API. `develop` remains unmodified.
