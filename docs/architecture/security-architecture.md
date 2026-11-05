@@ -43,3 +43,9 @@ The detailed [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.
 ## Formal threat-model checkpoint — SPEC-006 (2026-11-05)
 
 [SPEC-006 — Security & Privacy Threat Model](../specifications/SPEC-006-security-privacy-threat-model.md) inventories nine trust boundaries, sensitive credentials/history, thirty threats with mitigation/test mapping, twelve security gates and incident-response requirements. It covers LAN spoofing, Remote Play command target, Sony browser/OAuth/NPSSO, Home Assistant WebSocket authorization, SQLite/backup, child/account privacy, artwork SSRF and supply chain. **All controls remain proposed and untested; Sony permission is blocked.**
+
+## Home Assistant source re-audit — diagnostic data and action errors (2026-11-05)
+
+The [official Batch 02 review](../research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md) and official [diagnostics guide](https://contributors.home-assistant.io/core/integrations/diagnostics/) make an important distinction: automatically redacting a few key names does **not** guarantee absence of private data in a multi-console/PSN integration. Prefer an allowlist of harmless diagnostic fields (supported software/version, sanitized source health and typed errors) with an additional redaction pass, and test exported JSON for token-like or player/account history material. Public GitHub issues must never require actual packet captures, NPSSO, Remote Play keys or child-usage history.
+
+Official action-error guidance distinguishes invalid inputs (`ServiceValidationError`) from execution failures (`HomeAssistantError`). Both must be non-sensitive and translated where supported; do not log-and-swallow errors or turn an unconfirmed wake/standby into success. Marketplace validation also has separate install-time artifact and domain checks; pin and test build assets without publishing secrets.
