@@ -298,3 +298,26 @@ Do not ship empty placeholder actions or UI labels claiming unsupported features
 - https://www.home-assistant.io/common-tasks/general/backups
 
 **Outcome:** Test pyramid, release scope boundaries, 50+ representative test cases, evidence record, security gates, CI/CD workflow and twelve release gates documented. All gates are currently NOT_RUN or BLOCKED. No executable tests, GitHub Actions or hardware operations were performed.
+
+## 16. Current Marketplace and Core Quality Scale audit — additional release gates (2026-11-05)
+
+Source review: [Batch 02 official audit](../research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md); [all 54 Core rule applicability statuses](../standards/internal-quality-scale-applicability.md). **Core quality tiers are not official awards for custom integrations.** We voluntarily adopt applicable rules as internal quality goals and separately satisfy actual Marketplace checks.
+
+### Additional design and release tests (all NOT_RUN)
+
+| ID | Criterion | Test |
+| --- | --- | --- |
+| REL-13 | Explicit `PARALLEL_UPDATES` per entity platform | Review sensor/binary_sensor/button and concurrent button requests |
+| REL-14 | Typed per-entry `runtime_data` | Unload one console while other entry/panel continues |
+| REL-15 | Distinct validation vs execution errors | Invalid target raises `ServiceValidationError`; device failure raises `HomeAssistantError` |
+| REL-16 | One outage and one restoration log | Simulated repeated network failures and recovery |
+| REL-17 | Per-entry/device diagnostic redaction | Snapshot tests with synthetic tokens, account IDs, titles, private usage history |
+| REL-18 | Safe stale device behavior | Months of no UDP response never auto-delete device or history |
+| REL-19 | Dynamic independent console discovery | New PS5 gets separate entry without reload/identity confusion |
+| REL-20 | System health loaded entry behavior | Disabled/ignored/unloaded entries cannot access absent `runtime_data` |
+| REL-21 | Marketplace installation artifact bounds | Download/unpacked <=100 MiB and <=50,000 files |
+| REL-22 | Marketplace post-write validation | Domain/manifest conflict or failure safely refuses/reverts install |
+| REL-23 | Per-module Python coverage | Voluntary target >95% for **each** relevant module, not aggregate percent |
+| REL-24 | Repo onboarding/removal documentation | README/docs cover fields, features, unknown states, compatibility, backups, removal |
+
+The 12 original release gates remain binding project checkpoints; REL-13 through REL-24 are additional sub-gates, not proof the product is ready. The Marketplace limits are actual installation checks; Core's >95%-per-module rule is an internal optional quality target, not a custom Marketplace catalog certification.
