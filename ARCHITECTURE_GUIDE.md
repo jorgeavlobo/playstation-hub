@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.17.0 — 2026-11-05  
+> **Document version:** 0.18.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1567,3 +1567,77 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 **Remaining uncertainties:** Static-path unregistration and URL replacement semantics, compatibility with future Home Assistant versions, and browser-side module reload behavior require live tests. No API stability guarantee follows merely from inspecting the Core source.
 
 **Next investigation:** Home Assistant \`StaticPathConfig\` registration details and release-tag compatibility, then data storage and backup APIs.
+
+
+## 14. Recorder, history and long-term statistics — official documentation review (2026-11-05)
+
+**Scope:** Three official Home Assistant documentation pages and one official architecture page reviewed for storage suitability. This section does **not** settle our database architecture or claim that the full Home Assistant storage/backup documentation has been reviewed.
+
+### DOC-031 — Recorder integration
+
+- **Official source:** https://www.home-assistant.io/integrations/recorder/
+- **Reviewed:** 2026-11-05
+- Recorder persists Home Assistant entity state changes and events; History, Activity, graphs and statistics rely on it.
+- Default database is SQLite, named \`home-assistant_v2.db\` in the HA configuration directory. Recorder also supports MariaDB, MySQL and PostgreSQL.
+- \`purge_keep_days\` defaults to **10**; old detailed states/events are purged automatically.
+- Retention settings apply to Recorder's scope, **not to PlayStation Hub's detailed per-game ledger alone**.
+- Recorder supports entity/domain include and exclude filtering; users can opt out of recording our entities.
+- **Project rule:** Do not create custom tables or directly write to Home Assistant's Recorder database. It is managed by Home Assistant.
+- **Consequence:** Recorder is valuable for standard Home Assistant sensors, but its ordinary detailed state history is not a reliable sole source for indefinite per-game sessions.
+
+### DOC-032 — Long-term statistics
+
+- **Official source:** https://www.home-assistant.io/docs/configuration/long-term-statistics/
+- **Reviewed:** 2026-11-05
+- Long-term statistics are computed for eligible **numeric sensors** with a \`state_class\`, provided they are recorded.
+- Short-term summaries are generated every five minutes and normally purged with detailed history.
+- Long-term hourly summaries are retained without automatic expiry.
+- Statistics support aggregated measurements/totals, not arbitrary per-session records with player identity, title ID, artwork, session start/end and checkpoints.
+- **Project rule:** Use correct sensor state classes and Recorder statistics for eligible Home Assistant-facing metrics, but do not assume long-term statistics can reconstruct the complete PlayStation session ledger.
+
+### DOC-033 — History integration
+
+- **Official source:** https://www.home-assistant.io/integrations/history
+- **Reviewed:** 2026-11-05
+- History reads from Recorder and can export selected data to CSV.
+- Beyond detailed Recorder retention, eligible sensor history is displayed from long-term hourly statistics.
+- Increasing \`purge_keep_days\` to preserve full-resolution history affects the Recorder database for the wider Home Assistant installation, not just our integration.
+- **Project rule:** Do not require users to change global Recorder retention to preserve PlayStation Hub history.
+
+### DOC-034 — Home Assistant architecture: History and statistics
+
+- **Official source:** https://contributors.home-assistant.io/architecture/core/history/
+- **Reviewed:** 2026-11-05
+- Recorder writes in its own thread, protecting the Home Assistant event loop.
+- Frequent/large entity attributes increase database storage; avoid publishing a full game library or extensive session history as sensor attributes.
+- **Project rule:** Expose compact operational entities and suitable statistics; serve detailed history from our own bounded-query interface when required.
+
+### Storage decision update — ADR-DATA-001 (provisional)
+
+**Recommendation:** A **single application-owned SQLite database** for PlayStation Hub's durable, detailed event/session/game history, with multiple consoles and players distinguished by stable IDs in normalized tables. Use native Config Entries for setup, native Store for small configuration/checkpoint data where suitable, and Recorder for appropriate Home Assistant-facing numeric sensors. CSV/JSON remain export formats, not primary transaction stores.
+
+**Status:** PROVISIONAL. Not yet approved for implementation. This is a project inference from the documented Recorder retention and statistics behavior, **not** an official Home Assistant mandate to use SQLite.
+
+**Rationale:** PlayStation Hub requires arbitrary multi-year detailed queries, individual session boundaries, per-game rankings, player associations and replayable events. Recorder's default 10-day detailed retention and hourly numeric summaries do not preserve that full data model.
+
+**Do not assume:** The current private SQLite backup or its schema is the future public schema. We will design the new schema from scratch with migrations and multi-console support.
+
+**Before approval, investigate separately:**
+1. Official \`homeassistant.helpers.storage.Store\` behavior and appropriate use for small durable state.
+2. Home Assistant configuration path APIs and whether a dedicated integration data directory is covered by supported backup/restore workflows.
+3. Supported async/non-blocking database access patterns, transaction serialization, SQLite WAL/locking and recovery.
+4. Safe retention, export/import, migration, downgrade policy and corruption recovery.
+5. Data deletion on config entry removal versus keeping shared history, with explicit user-facing policy.
+6. Performance benchmarks with three years of representative sessions and multiple consoles.
+7. Privacy, diagnostics redaction, encryption expectations and user backup controls.
+
+### Acceptance criteria
+
+- [x] Recorder's detailed retention and statistics limits recorded from official documentation.
+- [x] Explicitly prohibit direct writes to Recorder's internal schema.
+- [x] Distinguish native HA metrics from PlayStation Hub's own detailed session ledger.
+- [ ] Verify native Store and backup coverage in dedicated official-source reviews.
+- [ ] Create an architecture decision record with benchmark and migration evidence.
+- [ ] Approve database path, schema, multi-console keys and backup semantics before implementation.
+
+**Next official-source priority:** Home Assistant Store helper and integration backup/restore behavior.
