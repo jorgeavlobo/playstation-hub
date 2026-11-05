@@ -449,3 +449,7 @@ This sequence is documentation-first and may be reordered if new evidence change
 - Sony account and legal: https://www.playstation.com/pt-pt/legal/terms-of-service/
 
 **Final audit finding:** Research is comprehensive on the ten transport topics but cross-cutting implementation contracts and release gating remain incomplete. No use of Sony credentials, device interaction, code generation or live validation occurred during this review. The next documentation work should close the proposed ADR/spec gaps rather than declaring the application ready to implement.
+
+## ADR-0004 documentation update — 2026-11-05
+
+The proposed identity and multi-console design is documented in [ADR-0004 — Identity, multi-console ownership and Home Assistant configuration boundaries](../decisions/ADR-0004-identity-and-multi-console-ownership.md). Preferred **unapproved** option: one HA config entry per validated physical console and separate PSN account config entries under `playstation_hub`, with a provenance-rich many-to-many account/console association registry. The ADR details candidate/verified identity, DHCP-to-LAN discovery, stable unique IDs, address changes, secure pairing targets, account disassociation, independent runtime unloading, migration, ambiguity and synthetic tests. It does not settle the physical `host-id` stability or the exact supported Core multi-entry flow behavior.
