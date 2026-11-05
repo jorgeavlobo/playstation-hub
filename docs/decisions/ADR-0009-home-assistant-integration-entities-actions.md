@@ -302,3 +302,11 @@ Avoid embedding fixed English/Portuguese strings in entity logic, and never use 
 - https://www.hacs.xyz/docs/publish/integration/
 
 **Outcome:** Detailed proposed Home Assistant native integration contracts, device/entity/action semantics, lifecycle, discovery and tests. No code or live HA installation was changed.
+
+## 19. Home Assistant Core 2026.11 compatibility overlay (2026-11-05)
+
+See the [current official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md), including official references OS-016–OS-023. Core 2026.11.0 requires Python >=3.14.2; this is a **research baseline candidate**, not an approved minimum supported release. DeviceInfo/ChildDeviceInfo are dataclasses: use typed construction, attributes and `as_dict()` instead of TypedDict assumptions; DeviceEntry is owned by one config entry and at most one subentry. This reinforces distinct physical-console and PSN account service ownership.
+
+Prefer modern config-entry `async_setup_entry`, `async_unload_entry` and `async_migrate_entry` returning `None` and raising translated ConfigEntry exceptions; custom integrations can still return booleans. Always supply `step_id` in forms, menus, progress and external steps, anticipating the 2027.5 requirement. Core 2026.11 changes entity IDs in place; listener keys must handle `async_entity_id_changed`, and `async_on_remove` should clean up callbacks for partial add failures. Entity display names should be translated and context-free; canonical unique IDs remain stable. Per-entry repairs can use `config_entry_id` and the issues-refresh helper.
+
+The candidate Marketplace manifest category is `media_entertainment.gaming`; this is optional for custom integrations but recommended for discoverability and to avoid an HACS Action warning. No source compatibility tests or native entities were implemented.
