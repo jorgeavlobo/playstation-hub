@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.16.0 — 2026-11-05  
+> **Document version:** 0.17.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1467,3 +1467,103 @@ For each source entry, maintain:
 **Already recorded:** DOC-001 through DOC-028, plus the grouped reading list in section 6. Their URLs and review notes remain in this document. Some DOC entries are focused re-reviews of previously consulted pages; document count is **not** a count of distinct URLs.
 
 **Next source research:** The current \`panel_custom.async_register_panel\` signature, safe panel unregister behavior, frontend asset caching and lifecycle across config entry reload, and frontend locale selection. These are implementation questions not yet proven by this guide.
+
+
+
+## 13. Verified Home Assistant Core custom-panel API — source inspection (2026-11-05)
+
+**Review method:** Read the official Home Assistant Core implementation of \`panel_custom\` and relevant current Core usages. This is a source-code API review, **not** an installation or runtime test. These are moving \`dev\` branch sources; before implementing, compare against the **supported Home Assistant release tag**.
+
+### DOC-029 — Home Assistant Core: panel_custom implementation
+
+- **Canonical source:** https://github.com/home-assistant/core/blob/dev/homeassistant/components/panel_custom/__init__.py
+- **Reviewed:** 2026-11-05
+- **Official source:** Home Assistant Core (Python implementation).
+- **Confirmed async API:** \`panel_custom.async_register_panel\`.
+
+The inspected function has the following parameters:
+
+\`\`\`python
+async def async_register_panel(
+    hass: HomeAssistant,
+    frontend_url_path: str,
+    webcomponent_name: str,
+    sidebar_title: str | None = None,
+    sidebar_icon: str | None = None,
+    js_url: str | None = None,
+    module_url: str | None = None,
+    embed_iframe: bool = False,
+    trust_external: bool = False,
+    config: ConfigType | None = None,
+    require_admin: bool = False,
+    config_panel_domain: str | None = None,
+) -> None:
+    ...
+\`\`\`
+
+**Contract observations:**
+1. At least one of \`js_url\` or \`module_url\` must be provided; the source raises \`ValueError\` otherwise. Prefer \`module_url\` for modern JavaScript.
+2. \`config\` must be a dictionary when supplied; it is copied before modification.
+3. The implementation adds \`_panel_custom\` metadata and delegates registration to \`frontend.async_register_built_in_panel\` with \`component_name="custom"\`. **Our code should call \`panel_custom.async_register_panel\` rather than invoking the built-in panel registration directly.**
+4. The inspected signature does **not** contain \`handle_safe_area\` or \`update\`. Do not copy arguments from other integration examples without verifying their exact supported Core version.
+5. \`config_panel_domain\` is described for panels used to configure an integration; our analytics panel is not necessarily such a configuration panel. Do not set it automatically.
+6. A globally fixed \`frontend_url_path\` and \`webcomponent_name\` should be used across all config entries; do not create a panel for each console.
+
+**Proposed registration sketch (NOT deployed):**
+
+\`\`\`python
+from homeassistant.components import panel_custom
+
+await panel_custom.async_register_panel(
+    hass,
+    frontend_url_path="playstation-hub",
+    webcomponent_name="playstation-hub-panel",
+    module_url="/playstation_hub/frontend/playstation-hub-panel.js?v=0.1.0",
+    sidebar_title="PlayStation Hub",
+    sidebar_icon="mdi:sony-playstation",
+    require_admin=False,
+)
+\`\`\`
+
+The URL and version are illustrative. The icon name, static path, sidebar authorization and exact supported Core API must be verified during implementation.
+
+### DOC-030 — Home Assistant Core: panel removal and URL collision behavior
+
+- **Sources:**
+  - https://github.com/home-assistant/core/blob/dev/homeassistant/components/hassio/addon_panel.py
+  - https://github.com/home-assistant/core/blob/dev/homeassistant/components/lovelace/__init__.py
+  - https://github.com/home-assistant/core/blob/dev/homeassistant/components/frontend/__init__.py
+- **Reviewed:** 2026-11-05
+- **Confirmed current usage:** Core integrations use \`frontend.async_remove_panel(hass, url_path, warn_if_unknown=False)\` to remove panel registrations.
+- **Collision behavior:** The Lovelace implementation checks for panel URL collisions and logs failures; panel paths are shared with other Home Assistant panels. A chosen \`frontend_url_path\` must not conflict with an existing panel.
+- **Idempotence:** Core's Supervisor panel management reconciles desired and registered panel sets. We should follow this lifecycle principle rather than registering blindly for each config entry.
+- **Important nuance:** \`panel_custom.async_register_panel\` itself does not expose an \`update\` argument in the inspected version. Do not claim a direct idempotent update facility on this API.
+
+### Proposed lifecycle architecture — project decision, not official implementation
+
+1. Register the static frontend route and custom panel once per Home Assistant process, after the first successful PlayStation Hub config entry setup.
+2. Keep a single integration-wide panel manager; separate per-console runtime data from the global UI registration.
+3. On subsequent config entries, reuse the existing panel; do not call \`async_register_panel\` again.
+4. On removal/unload of the last active config entry, determine whether panel removal is appropriate; ensure no dangling registration, and avoid breaking other entries.
+5. On reload/update, reconcile registration carefully and do not overwrite unrelated panels sharing the same path.
+6. Handle failure atomically: if static route registration or panel registration fails, do not report the integration as fully ready.
+7. Use a deterministic, release-versioned frontend module URL. Test cache invalidation in browser and companion app.
+8. Register only assets intended to be publicly served. No credentials, SQLite or runtime private state in frontend static directories.
+9. Validate UI availability for non-admin users separately from backend action permissions.
+
+### Acceptance tests required before first release
+
+- [ ] Panel registers once with one configured console.
+- [ ] Second configured console does not duplicate the sidebar entry.
+- [ ] Repeated setup, reload and restart do not raise a panel URL collision.
+- [ ] Last-entry unload/removal follows the documented panel lifecycle.
+- [ ] Integration setup failure does not leave a broken sidebar panel.
+- [ ] Existing unrelated dashboard/panel with a colliding URL is not overwritten.
+- [ ] JS module is served with the expected release version and refreshed on update.
+- [ ] Panel works for administrator and non-administrator users according to configured policy.
+- [ ] Responsive UI respects mobile safe areas, localization and Home Assistant themes.
+- [ ] Tests run against a **pinned supported HA Core version**, not only the moving \`dev\` branch.
+
+**Remaining uncertainties:** Static-path unregistration and URL replacement semantics, compatibility with future Home Assistant versions, and browser-side module reload behavior require live tests. No API stability guarantee follows merely from inspecting the Core source.
+
+**Next investigation:** Home Assistant \`StaticPathConfig\` registration details and release-tag compatibility, then data storage and backup APIs.
