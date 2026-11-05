@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.3.0 — 2026-11-05  
+> **Document version:** 0.4.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -415,5 +415,88 @@ The page explicitly presents a root-level `README.md` and `hacs.json` in its val
 - [ ] Release only after CI passes.
 - [ ] Submit the catalog PR with the exact prescribed workflow.
 
-**Next official document recommended (not yet reviewed):** https://www.hacs.xyz/docs/publish/action/
+**DOC-003 (HACS GitHub Action) has now been reviewed; see below.**
 
+
+### DOC-003 — HACS: GitHub Action
+
+- **Primary source:** https://www.hacs.xyz/docs/publish/action/
+- **Official page title:** GitHub Action
+- **Reviewed:** 2026-11-05
+- **Review scope:** This page only, including action modes, inputs, optional checks, version selection, and the official workflow example. Linked Hassfest and Dependabot documents are **not yet reviewed**.
+- **Source status:** Directly inspected official HACS documentation. This is a specification review, **not evidence that PlayStation Hub currently passes HACS validation**.
+
+#### Official findings and application to PlayStation Hub
+
+| ID | Classification | Official documented behavior | PlayStation Hub implementation / evidence |
+| --- | --- | --- | --- |
+| HACS-ACT-001 | FACT | The Action uses the same repository validation code as HACS. | Treat a passing HACS Action as the primary automated HACS compatibility check, not a substitute for a real installation test. |
+| HACS-ACT-002 | FACT | For the HACS default catalog, it validates newly proposed default repositories. | Validate our project before catalog PR and let catalog checks run again during review. |
+| HACS-ACT-003 | FACT | For repository validation, it checks the latest GitHub Release when releases exist; otherwise the default branch. | **Important:** after first Release, a green branch-only run does not prove the latest Release passes. Test the actual release artifact and record its URL/SHA. |
+| HACS-ACT-004 | FACT | When configured for PR events, it validates the fork/branch that opened the PR. | Enable pull-request checks for proposed changes. |
+| HACS-ACT-005 | FACT | When configured for push events, it validates the pushed branch. | Enable push checks; distinguish branch CI from release-validation semantics. |
+| HACS-ACT-006 | INPUT | \`category\` selects repository type: \`integration\`, \`plugin\`, \`template\`, \`theme\`, \`appdaemon\`, or \`python_script\`. | Set **\`category: integration\`**, not \`plugin\`, even though we bundle frontend code. |
+| HACS-ACT-007 | INPUT | \`ignore\` is a space-separated list of checks to skip. | **Project rule:** do not set \`ignore\`; DOC-002 catalog inclusion requires no ignored checks. |
+| HACS-ACT-008 | OPTIONAL | Ignorable checks are \`archived\`, \`brands\`, \`description\`, \`hacsjson\`, \`images\`, \`information\`, \`issues\`, and \`topics\`. | Keep all checks enabled. Do not infer that every check is equally applicable to an integration; the Action handles category-specific behavior. |
+| HACS-ACT-009 | EXAMPLE | Official workflow triggers on \`push\`, \`pull_request\`, a daily midnight cron, and \`workflow_dispatch\`. | Adopt all four triggers so regressions from HACS updates can be detected. |
+| HACS-ACT-010 | EXAMPLE | Official workflow uses \`permissions: {}\` and an \`ubuntu-latest\` job. | Follow least-privilege example unless an evidenced permission requirement changes. |
+| HACS-ACT-011 | EXAMPLE | Official action reference is \`hacs/action@main\`. | Start from the official example. Evaluate pinning to a version/SHA separately for supply-chain reproducibility. |
+| HACS-ACT-012 | RECOMMENDATION | When pinning a specific action version, the documentation recommends enabling Dependabot. | If pinned, add Dependabot updates; verify against the official Dependabot documentation in a later review. |
+| HACS-ACT-013 | RECOMMENDATION | HACS page recommends Hassfest for integration maintainers. | Hassfest remains a separate required CI gate under DOC-002; study its own documentation before implementing. |
+
+#### Official minimal workflow for our chosen category
+
+This is an adaptation of the page's official example with \`category: integration\` and no ignored checks. It is **planned** and must not be reported as passing until the integration exists.
+
+\`\`\`yaml
+name: Validate HACS
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  validate-hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: HACS validation
+        uses: hacs/action@main
+        with:
+          category: integration
+\`\`\`
+
+**Design decision:** Keep this workflow conceptually separate from Python unit tests and Hassfest so failures have clear ownership. The actual filename, workflow duplication and branch triggers will be reconciled before implementation. A daily scheduled check may fail even without repository changes when HACS validation rules evolve; investigate such failures rather than disabling checks.
+
+#### Release-gate implications
+
+1. Validate pull requests and pushes.
+2. Run HACS validation and Hassfest before producing a new Release (DOC-002).
+3. Publish a **full GitHub Release**, as required by our project policy.
+4. Confirm the published release contents and compatibility. The official page says the latest release is checked when releases exist; do not assume the new branch head alone is sufficient.
+5. Record the successful workflow run and release reference in the release checklist.
+
+#### Corrections and unresolved items
+
+- **Clarification:** \`hacs/action@main\` is the documented example, not proof that following a moving branch is the only acceptable production pinning policy.
+- **Clarification:** An \`ignore\` input exists, but we will **not** use it.
+- **Clarification:** This page does not define the Home Assistant manifest format, branding image specifications, or Hassfest setup; those require separate source reviews.
+- **Open:** Verify how the Action behaves with pre-release versions, tags, and its release selection once we have a real release.
+- **Open:** Verify whether the current action supports a pinned immutable commit and whether that is preferable to \`@main\`.
+
+#### Review checklist
+
+- [x] Read one official document in full and record its scope.
+- [x] Classify action inputs and supported triggers.
+- [x] Document all eight ignorable check names without enabling any.
+- [x] Record official example with \`category: integration\`.
+- [x] Preserve GitHub Releases as mandatory project policy.
+- [ ] Implement workflow when the initial valid integration skeleton is created.
+- [ ] Obtain a real green run and link the evidence.
+- [ ] Review Hassfest documentation separately.
+
+**Next suggested document (not yet reviewed):** https://developers.home-assistant.io/docs/development_validation/
