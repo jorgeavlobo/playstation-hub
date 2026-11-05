@@ -275,6 +275,20 @@ For each official website / subsection:
 
 Source links: sections 6.2–6.4 above.
 
+## 8. Open architecture decisions
+
+- [ ] Official connector/source strategy for PS5 discovery/status/control, without assuming PS5-MQTT is universal.
+- [ ] Supported Home Assistant versions / Python version.
+- [ ] Multi-console and multi-player modeling and attribution.
+- [ ] Recorder/statistics vs private SQLite proof-of-concept (see section 5).
+- [ ] Whether the interface is a custom Lovelace card, sidebar panel, or both.
+- [ ] Exact frontend serving, resource lifecycle, versioning and cache policy.
+- [ ] Integration unloading / uninstall storage retention and cleanup policy.
+- [ ] Branding/logo, license, release automation, screenshots, documentation translations.
+- [ ] Minimum real feature set needed for the first acceptable catalog submission.
+
+**Next action:** Exhaustively review the official documentation page by page, then refine this guide **before** constructing the initial integration skeleton.
+
 ## 9. Official document review register
 
 ### DOC-001 — HACS: Publish → Integrations
@@ -332,17 +346,3 @@ The page explicitly presents a root-level `README.md` and `hacs.json` in its val
 - [x] Official source and outstanding dependencies logged.
 
 **Next document to review (not yet reviewed):** https://www.hacs.xyz/docs/publish/include/
-
-## 8. Open architecture decisions
-
-- [ ] Official connector/source strategy for PS5 discovery/status/control, without assuming PS5-MQTT is universal.
-- [ ] Supported Home Assistant versions / Python version.
-- [ ] Multi-console and multi-player modeling and attribution.
-- [ ] Recorder/statistics vs private SQLite proof-of-concept (see section 5).
-- [ ] Whether the interface is a custom Lovelace card, sidebar panel, or both.
-- [ ] Exact frontend serving, resource lifecycle, versioning and cache policy.
-- [ ] Integration unloading / uninstall storage retention and cleanup policy.
-- [ ] Branding/logo, license, release automation, screenshots, documentation translations.
-- [ ] Minimum real feature set needed for the first acceptable catalog submission.
-
-**Next action:** Exhaustively review the official documentation page by page, then refine this guide **before** constructing the initial integration skeleton.
