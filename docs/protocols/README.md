@@ -49,3 +49,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Session and usage accounting:** The proposed [ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) defines how accepted source observations may contribute to bounded duration, unknown gaps, player attribution, multi-console historical statistics and recovery. A successful status poll is a point observation, not proof of uninterrupted activity or exact game transition time.
 
 **Credential lifecycle:** The proposed [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) consolidates security and persistence requirements for PSN OAuth credentials and Remote Play pairing keys spanning Protocols 03–08. Actual secret storage, backup design and provider permission remain unresolved.
+
+**Storage and recoverability:** Proposed [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) evaluates HA Config Entries, Store, Recorder and an application-owned SQLite candidate for sessions and evidence. SQLite backup consistency, schema lifecycle, private credentials and HA OS restore have explicit verification gates; no database is approved or implemented.
