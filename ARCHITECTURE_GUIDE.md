@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.2 — 2026-11-05  
+> **Document version:** 0.39.3 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2574,3 +2574,13 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Open tests/gates:** Minimum HA Core/frontend version; Web Component vs iframe; proper asset installation/version cache; authorization and subscription cleanup; browser/mobile safe-area and HA theme compatibility; backend query/pagination performance; command and error semantics; localization/accessibility. Sony third-party PSN authorization and SQLite/storage are independently blocked/proposed as recorded in ADR-0007/0008.
 
 **Branch discipline:** Only `main` research documentation modified; `next` and legacy `develop` unchanged.
+
+## SPEC-001 — LAN discovery acceptance matrix (2026-11-05)
+
+**Status: Proposed test specification, not implemented or validated. Guide version 0.39.3.** Full source: [docs/specifications/SPEC-001-lan-discovery-acceptance-matrix.md](docs/specifications/SPEC-001-lan-discovery-acceptance-matrix.md).
+
+The matrix consolidates Protocols 01/02 and ADR-0004/0005/0009 into deterministic acceptance tests for PS5 IPv4 UDP discovery (source-observed SRCH, UDP 9302, version 00030010), packet parsing and malformed responses, physical host identity, Home Assistant DHCP Discovered and explicit `async_step_dhcp`, independent multi-console entries, manual directed setup, VLAN/interface limitations, IP changes, user confirmation/ignore, lifecycle cleanup, network spoofing and source confidence. PS4 UDP 987 is a separately gated future capability.
+
+**Nine release gates G1–G9 are defined and all remain unpassed.** The source-observed `host-id` has not been empirically proven stable; DHCP MAC/OUI/hostname is not proof of identity; an unresponsive host is not confirmed OFF. Discovery must not trigger Remote Play pairing, wake or Sony login. Existing Home Assistant Core `playstation_network` can coexist under its separate domain.
+
+**Next research task:** SPEC-002 Remote Play Byte Contract & Safety; then remaining cross-cutting validation specs and formal ADR review. No executable code, Home Assistant OS discovery run or hardware validation was performed. Only `main` documentation changed.
