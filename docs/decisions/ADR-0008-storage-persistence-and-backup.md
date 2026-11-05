@@ -195,12 +195,12 @@ A 30-second polling interval is not a promise that every UDP heartbeat becomes a
 2. Define a **snapshot barrier**: choose a durable observation/event high-water mark and commit outstanding writes to that point before snapshot.
 3. Produce a consistent SQLite snapshot with the officially supported sqlite3 backup mechanism (or proven coordinated quiescence/checkpoint approach) to a temporary, protected target outside HACS code.
 4. Check snapshot integrity/version and record snapshot timestamp, schema version and high-water mark.
-5. Coordinate with HA backup lifecycle using an actual supported API for this type of integration; **do not invent a backup hook or assume Home Assistant invokes it**.
+5. Use the officially documented Home Assistant `backup.py` platform pre/post hooks where appropriate. Their existence and the pinned Core 2026.11.0 manager invocation are source-confirmed; actual registration and PlayStation Hub snapshot safety must still be tested.
 6. Avoid snapshot file accumulation; securely clean temporary files and handle full disk, interrupted backup or stopped integration.
 7. Ensure credentials are protected and backed up separately according to ADR-0007, never copied into public session exports.
 8. Verify archive restore in an isolated Home Assistant OS test: database opens, indexes and constraints work, history matches the high-water mark, and pending observations are not counted twice.
 
-**Important unresolved integration constraint:** If Home Assistant's normal backup mechanism does **not** invoke a custom integration pre-backup hook, a periodic snapshot or a persistent consistent copy inside the backup scope may be necessary. This must be tested rather than promising transparent seamless snapshot coordination.
+**Important unresolved integration constraint:** The official pre/post backup platform hooks exist at Core 2026.11.0, but a consistent SQLite WAL snapshot, archive inclusion, cancellation, restore and recovery have not been demonstrated on PlayStation Hub. Hook existence is not an approved backup architecture.
 
 ## 10. Encryption and privacy boundaries
 
@@ -331,7 +331,7 @@ These are abstract contracts. File/folder names are **roadmap suggestions**, not
 
 ### C. HA backup / restore
 - [ ] Verify exact inclusion of app DB and credential store in selected HA OS backup type.
-- [ ] Confirm whether an official supported pre-backup hook exists and is called for custom integration storage.
+- [ ] Validate the documented backup platform pre/post hooks in a running custom integration, including cancellation and failure, archive inclusion and consistent SQLite WAL restore (hook existence is source-confirmed).
 - [ ] Produce an SQLite consistent snapshot under active writes and verify matching high-water mark.
 - [ ] Restore into isolated HA OS, compare reports and integrity, and detect missing intervals.
 - [ ] Interrupted backups and storage-full conditions produce clear errors and no corrupted accepted backup.
@@ -359,7 +359,7 @@ These are abstract contracts. File/folder names are **roadmap suggestions**, not
 | Direct writes into HA Recorder tables | Rejected |
 | HA Recorder for eligible sensors/statistics | Preferred HA-native complement |
 | WAL and synchronous transaction mode | To benchmark and approve |
-| Consistent backup mechanism and HA hook support | **OPEN** |
+| Consistent backup mechanism and HA hook support | Hook existence source-confirmed at Core 2026.11.0; snapshot/restore **OPEN** |
 | Runtime at-rest encryption/key custody | **OPEN** |
 | Automatic deletion of data when HACS source uninstalled | Not assumed |
 | Restore with old Sony tokens / Remote Play credentials | Revalidate and reauth/re-pair when needed |
@@ -399,3 +399,7 @@ These are abstract contracts. File/folder names are **roadmap suggestions**, not
 - https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/usage_statistics.py
 
 **Outcome:** Hybrid architecture preferred; concrete SQLite, Store secret policy and backup orchestration remain subject to source-verified and synthetic HA OS tests. Nothing was implemented or validated on the user's installation.
+
+## 19. Official-source update — Home Assistant 2026.11 and Marketplace
+
+The [2026.11 official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) confirms official `backup.py` pre/post hooks and their pinned Core backup manager invocation. The previous uncertainty about the hooks' **existence** is now closed at source level; PlayStation Hub snapshot/backup/restore correctness remains untested. Marketplace `hacs.json.persistent_directory` can preserve integration-owned user files across updates, but it does not prove transactionally safe SQLite backup or encryption. Prefer mutable data outside HACS-managed source until the storage policy has been approved and tested. This ADR remains Proposed.
