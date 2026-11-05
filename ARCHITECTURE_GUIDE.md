@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.2.0 — 2026-11-05  
+> **Document version:** 0.3.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -31,7 +31,7 @@ This document is our single source of truth for the planned architecture, public
 | `next` | Clean-room-style reimplementation and integration tests | Feature branches / PRs encouraged |
 | `main` | Release-ready integration and public documentation | Merge only after CI and review |
 
-- Use GitHub Releases with semantic versions (initial version still to be decided); the `manifest.json` version must match the released integration.
+- **Project decision (mandatory):** Use GitHub Releases with semantic versioning (first version TBD); keep the released integration `manifest.json` version aligned with its release. Create a full GitHub Release **only after** HACS Action and Hassfest have passed. This is both our selected quality policy and an explicit prerequisite for inclusion in the HACS default catalog (DOC-002).
 - GitHub commits alone do not imply installed upgrades. HACS uses its repository/release update mechanism.
 - **Official HACS Integration publication page:** GitHub Releases are **optional** for a valid repository. If releases exist, HACS can offer the five latest releases plus the default branch; otherwise HACS uses the default branch. We may still **choose** a release-first policy for production stability. Catalog inclusion requirements are a distinct review.
 - Dashboard assets ship **inside the custom integration package**; the integration must register/serve the frontend with compatible Home Assistant APIs.
@@ -129,8 +129,8 @@ playstation-hub/
 
 ### Gate B — Quality and CI
 
-- [ ] HACS Action runs with no errors **and no ignored checks** for catalog inclusion.
-- [ ] Hassfest passes.
+- [ ] HACS Action passes with **zero errors and zero ignored checks**, before catalog submission (DOC-002).
+- [ ] Hassfest passes for the integration, before catalog submission (DOC-002).
 - [ ] Backend tests, frontend tests, style and type checks pass.
 - [ ] Test configuration, duplicate configuration, unavailable source, reconnect, restart, unload and remove.
 - [ ] Storage durability, corruption and migration/recovery tests where applicable.
@@ -141,8 +141,8 @@ playstation-hub/
 
 - [ ] Install as a **custom repository in HACS** and verify it can be installed/updated.
 - [ ] Verify one release updates both Python and dashboard assets.
-- [ ] **Project release policy:** Create a real GitHub Release after validation for stable production updates. This is **our policy**, not a requirement of the HACS Integration publication page, where releases are optional. Confirm separate catalog admission criteria when reviewing the dedicated inclusion document.
-- [ ] Submit to `hacs/default` integration list with a complete, truthful PR.
+- [ ] **Required for default HACS catalog inclusion (DOC-002) and our project policy:** Create a full GitHub Release (not merely a tag) **after** HACS Action and Hassfest pass. DOC-001 alone makes releases optional for a manually added custom repository; this distinction is now verified.
+- [ ] Submit a truthful, complete PR to **`hacs/default` → `integration`**, sorted alphabetically, from a new branch based on the fork's `master`; the PR must remain editable (DOC-002).
 - [ ] Catalog admission is subject to review; it does **not** reserve exclusive ownership of the name/domain.
 
 ## 5. Data architecture — provisional recommendation, not yet finalized
@@ -268,7 +268,7 @@ For each official website / subsection:
 
 - HACS integration publishing requires one integration under `custom_components` and all its runtime-required files inside that integration directory.
 - HACS specifies the manifest keys `domain`, `documentation`, `issue_tracker`, `codeowners`, `name`, `version`.
-- Separate **catalog inclusion** requirements (HACS Action, Hassfest, GitHub Release and review conditions) are recorded provisionally from earlier research. **Not validated by the Integration publication page alone**; review the official Inclusion document separately before classifying them as mandatory.
+- **DOC-002 confirms** the separate default-catalog inclusion requirements: public GitHub repository, successful HACS Action without errors or ignored checks, successful Hassfest for integrations, and a full GitHub Release after successful actions. These are mandatory for the proposed default-catalog submission, though DOC-001 permits basic HACS custom-repository installation without releases.
 - HA identifies integrations by a unique, effectively permanent domain.
 - HA config entries are persistently stored configuration created through UI flows.
 - HA has a typed `Store` helper for JSON-serializable data; that alone does not prove it suits long-duration event logs.
@@ -345,4 +345,75 @@ The page explicitly presents a root-level `README.md` and `hacs.json` in its val
 - [ ] A working release/update workflow documented (a project choice).
 - [x] Official source and outstanding dependencies logged.
 
-**Next document to review (not yet reviewed):** https://www.hacs.xyz/docs/publish/include/
+**This document has now been reviewed separately as DOC-002 below.**
+
+### DOC-002 — HACS: Include default repositories
+
+- **Source:** https://www.hacs.xyz/docs/publish/include/
+- **Official title:** Include default repositories
+- **Reviewed:** 2026-11-05
+- **Status:** Full document reviewed, including "Who can submit?", "Before you start", "Additional information", all enumerated review checks, and "After the PR is merged".
+- **Scope boundary:** This entry covers **default-catalog admission**, not runtime architecture or Home Assistant integration implementation. Referenced HACS Action, Hassfest, and GitHub/brands specification pages are **not** treated as separately reviewed.
+- **Project decision confirmed:** GitHub Releases are **mandatory in PlayStation Hub**, and a real release **is also mandatory for default-catalog submission**, although DOC-001 permits a basic custom HACS repository without releases.
+
+#### Explicit admission and review requirements
+
+| ID | Status | Official admission rule / reviewer check | Project implementation or proof |
+| --- | --- | --- | --- |
+| HACS-CAT-001 | MUST | Only the repository owner or a major contributor may propose the repository as a default. | Submit as repository owner `jorgeavlobo` or an eligible major contributor. |
+| HACS-CAT-002 | MUST | Repository can first be added to HACS as a custom repository. | Perform and document real HACS custom-repository install test. |
+| HACS-CAT-003 | MUST | Public GitHub repository. | Check repository visibility is `public`. |
+| HACS-CAT-004 | MUST | HACS Action passes with no errors **and no ignored checks**. | Add official Action and retain green GitHub Actions result. |
+| HACS-CAT-005 | MUST | Hassfest passes for integrations. | Add official Hassfest workflow and retain green result. |
+| HACS-CAT-006 | MUST | Publish a **full GitHub Release**, not merely a tag, **after** successful actions. | Document release procedure, verify timestamp/order, tag, version and release URL. |
+| HACS-CAT-007 | MUST | Submit to the appropriate file in `hacs/default`: `./integration` for custom integrations. | Open the inclusion PR targeting the integration list, not the plugin list. |
+| HACS-CAT-008 | MUST | Insert repository entry in alphabetical order. | Validate sorted list in the submission diff. |
+| HACS-CAT-009 | MUST | PR must be editable; documentation says not to submit from an organization account. | Use personal-account fork and enable maintainers to edit the PR. |
+| HACS-CAT-010 | MUST | In a fork of `hacs/default`, create a **new branch from `master`**, never edit the fork's `master` directly. | Use an isolated submission branch. This refers to the `hacs/default` fork, not PlayStation Hub's own branch layout. |
+| HACS-CAT-011 | CONDITIONAL | For a repository restricted to one country or a limited set of countries, include a `country` key in released `hacs.json`. | Global PlayStation Hub deployment planned; omit unless actual availability is country-limited. |
+| HACS-CAT-012 | MUST | Complete the PR template accurately; misrepresentations or incomplete statements cause closure. | Evidence-based responses with links to passing checks; never claim unverified compatibility. |
+| HACS-CAT-013 | MUST | Default catalog does **not** accept alpha/beta custom integrations for Core or integrations overriding Core. | Use own unique domain; not a replacement/testing fork of a Core integration. |
+| HACS-CAT-014 | MUST | Reviewer requires branding: a brand directory with at least `icon.png`, or a matching domain in `home-assistant/brands`. | Prepare `icon.png`; separately research exact asset path and format. |
+| HACS-CAT-015 | MUST | Integration manifest must validate. | Validate with Hassfest plus HACS checks; compare official Home Assistant manifest requirements in later DOC. |
+| HACS-CAT-016 | MUST | HACS repository validation and `hacs.json` containing at least `name`. | Ensure `hacs.json` has `name: PlayStation Hub` as JSON, plus other fields if required by later research. |
+| HACS-CAT-017 | MUST | Repository must not be archived. | Check `archived = false`. |
+| HACS-CAT-018 | MUST | Repository has a description, Issues enabled, and GitHub topics. | Check GitHub repo settings; add meaningful topics (e.g. `home-assistant`, `hacs`, `playstation`). |
+| HACS-CAT-019 | MUST | Submission files must contain valid JSON and be alphabetically sorted. | Let submission PR's `lint jq` and `lint sorted` pass. |
+| HACS-CAT-020 | NOT APPLICABLE | README image checks documented for **plugins and themes only**. | We submit as **Integration**, with frontend bundled; useful README screenshots remain our own quality target. |
+
+#### Submission sequence — mandatory ordering
+
+1. Build a **real working** integration; do not submit a placeholder to reserve a domain.
+2. Verify installation in HACS as a **custom repository**.
+3. Ensure repository is public and active; description, issues, topics, valid branding/manifest/`hacs.json`.
+4. Run HACS Action and Hassfest; require green results with no ignored HACS checks.
+5. **Only then create the full GitHub Release**, not just a tag.
+6. Fork `hacs/default` under the personal account; create a **new branch from its `master`**.
+7. Add `jorgeavlobo/playstation-hub` to the alphabetically ordered `integration` list.
+8. Open an editable PR, fully and accurately completing its template.
+9. Monitor checks and review; address failures. If placed in draft for minor issues, mark ready when corrected. Major issues can cause closure.
+10. After merge, HACS includes the repository at the **next scheduled scan**; approval does not imply instant catalog visibility.
+
+**Timeline note:** The official document cautions that reviews and inclusion can take **months**. This is not a guaranteed review time or queue position.
+
+#### Clarifications for our existing guide
+
+- **Releases:** Required for catalog inclusion (DOC-002), optional for basic custom-repository use (DOC-001). **PlayStation Hub always uses Releases** by explicit project decision.
+- **Branding:** This document allows the repository brand directory / `icon.png` or a `home-assistant/brands` matching domain. Exact paths and image specifications await a dedicated source review.
+- **Dashboard:** We submit to the **Integration** list, not the Plugin list, even though our integrated Python package also distributes frontend assets. Runtime frontend registration still needs official Home Assistant API research.
+- **Beta wording:** The actual restriction is on custom integrations used as alpha/beta testing of **Core integrations** or overriding them; do not incorrectly generalize this to a ban on all early-stage independent community projects.
+- **Scope:** The document does not prescribe database selection or whether our code is implemented with a coordinator; those choices remain open.
+
+#### Checklist after DOC-002
+
+- [x] Catalog inclusion rules recorded separately from basic HACS installation.
+- [x] GitHub Releases made a non-optional PlayStation Hub policy.
+- [ ] Add HACS Action and Hassfest per their own official documents (not yet reviewed).
+- [ ] Create valid integration manifest, `hacs.json` and branding.
+- [ ] Verify custom-repository installation from GitHub.
+- [ ] Configure GitHub Issues, description and topics.
+- [ ] Release only after CI passes.
+- [ ] Submit the catalog PR with the exact prescribed workflow.
+
+**Next official document recommended (not yet reviewed):** https://www.hacs.xyz/docs/publish/action/
+
