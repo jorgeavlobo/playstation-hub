@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.14.0 — 2026-11-05  
+> **Document version:** 0.15.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1270,3 +1270,92 @@ The documentation trees at https://www.hacs.xyz/docs/use/, https://www.hacs.xyz/
 - [ ] Create working minimal integration with direct runtime translation catalogs.
 - [ ] Implement Hassfest/HACS Action and verify the actual release artifact.
 - [ ] Add real tests and install as a custom repository before catalog submission.
+
+
+## 11. Official frontend integration review — static resources, cards and panels (2026-11-05)
+
+**Scope:** Verified the following **five** official Home Assistant pages. This is a focused review of frontend delivery, not an exhaustive audit of all HACS/Home Assistant documentation.
+
+### DOC-022 — Register resources (current official frontend docs)
+
+- Source: https://contributors.home-assistant.io/frontend/custom-ui/resources/
+- **Two distinct steps:** (1) serve the JavaScript file at a URL, (2) register it as a dashboard resource.
+- Standard manual route: files in \`<config>/www/\` appear under \`/local/\`, but this directory is discovered on startup; creating it may require a restart.
+- Resources are normally managed at **Settings → Dashboards → Resources**; YAML \`lovelace.resource_mode: yaml\` instead manages resources through configuration, requiring \`lovelace.reload_resources\` or restart.
+- Use resource type **\`module\`** for modern JavaScript. Legacy \`js\` and \`html\` resource types are deprecated.
+- Resource URL version query parameters, e.g. \`?v=1.2.0\`, force browsers to fetch updated files. Reloading the browser may be needed.
+- \`/local/\` files are served **without authentication**; never include credentials or sensitive data in frontend bundles.
+- **Project consequence:** Shipping JavaScript inside our Python package does not by itself register the Lovelace resource. Implement both static serving and registration, or clearly document a manual registration path. Automatic registration is a **project goal** requiring tested HA API behavior for both storage and YAML resource modes.
+
+### DOC-023 — Async static path registration
+
+- Source: https://contributors.home-assistant.io/blog/2024/06/18/async_register_static_paths/
+- **Supported async API:** \`await hass.http.async_register_static_paths([StaticPathConfig(url_path, filesystem_path, cache_headers)])\`.
+- Import \`StaticPathConfig\` from \`homeassistant.components.http\`.
+- The old \`hass.http.register_static_path\` blocks the event loop and was deprecated, with removal planned for Home Assistant 2025.7. **Do not use it.**
+- Multiple static paths may be registered in one async call to reduce executor work.
+- Proposed path: \`/playstation_hub/frontend/\` serving files under \`custom_components/playstation_hub/frontend/\`.
+- Proposed module URL: \`/playstation_hub/frontend/playstation-hub.js?v=<integration-version>\`.
+- **Project policy:** Register paths once per integration, not once per console/config entry. Never serve the integration's entire Python directory or persistent SQLite database. Ensure the static route exposes only intended frontend assets.
+- **Unresolved:** Route removal/registration behavior across unload/reload and supported Home Assistant versions must be tested. The official article does not specify a universal unregistration API.
+
+### DOC-024 — Custom panels
+
+- Source: https://contributors.home-assistant.io/frontend/custom-ui/panel/
+- A custom panel is a **full page** with access to the Home Assistant \`hass\` object, not simply a Lovelace card.
+- Integrations register custom panels in Python with \`async_register_panel()\` from \`homeassistant.components.panel_custom\`.
+- The integration API uses \`webcomponent_name\` (rather than \`name\`) and \`frontend_url_path\` (rather than \`url_path\`); consult the current signature when implementing.
+- Panels receive \`hass\`, \`narrow\`, \`route\`, and \`panel\`; the integration owns layout, responsiveness and navigation.
+- The sidebar entry can be controlled by panel options such as title, icon and administrator requirement.
+- **Project option:** Provide a PlayStation Hub sidebar panel in addition to the Lovelace card, reusing the same UI components. **Not required for the first skeleton**; must not be confused with an automatically generated Lovelace dashboard.
+
+### DOC-025 — Routing and panels
+
+- Source: https://contributors.home-assistant.io/frontend/architecture/routing-and-panels/
+- Built-in panels and custom panels are different: \`frontend.async_register_built_in_panel\` registers a component already present in the HA frontend; a custom integration normally uses a **custom panel** for new UI.
+- Panels are associated with URL paths, and the frontend provides routing and panel metadata.
+- **Project consequence:** Do not misuse built-in panel registration to pretend our custom JavaScript is part of the HA frontend bundle.
+- **Unresolved:** Determine safe duplicate detection and removal behavior for panel registration from supported public APIs before implementation.
+
+### DOC-026 — Home Assistant frontend integration
+
+- Source: https://www.home-assistant.io/integrations/frontend/
+- The frontend integration supports themes, extra JavaScript modules and localization settings.
+- Users can select a preferred language in their Home Assistant profile.
+- **Project consequence:** Frontend locale selection should follow the Home Assistant user's locale, not a hardcoded English or Portuguese setting; verify the \`hass\` object language contract from dedicated frontend documentation.
+- **Do not require** users to edit \`configuration.yaml\` to add \`extra_module_url\` for the PlayStation Hub; our integration should manage the frontend where supported.
+
+### Implementation blueprint — proposed, not yet tested
+
+\`\`\`text
+custom_components/playstation_hub/
+├── __init__.py
+├── manifest.json
+├── translations/
+│   ├── en.json
+│   └── pt.json
+└── frontend/
+    ├── playstation-hub.js
+    ├── components/
+    ├── styles/
+    └── i18n/
+\`\`\`
+
+The integration is installed/updated as **one HACS integration release**. Its Python setup serves frontend files using \`async_register_static_paths\`. The Lovelace card resource must be registered as a \`module\`; optionally a sidebar panel may be registered through \`panel_custom.async_register_panel\`. The Python package and frontend must share the same release version, with explicit browser cache-busting.
+
+#### Safety, lifecycle and update acceptance gates
+
+- [ ] HACS installs all required Python/JS/CSS assets from a **single** GitHub Release.
+- [ ] Static URL serves **only** intended public assets, never credentials, source configuration or SQLite files.
+- [ ] Registration is idempotent across multiple console config entries and HA restart/reload.
+- [ ] Resource registration works in Lovelace storage mode; YAML resource mode is detected and documented without overwriting user settings.
+- [ ] Frontend module is registered once; repeated updates do not create duplicate resource records.
+- [ ] A release upgrade loads the matching Python and JavaScript versions; cache invalidation is tested in browser and companion app.
+- [ ] Unload/removal behavior is documented and tested; no user-owned dashboard is deleted implicitly.
+- [ ] Optional panel is accessible, responsive, localized and correctly removed/updated.
+- [ ] Safe mode behavior is documented: Home Assistant does not load custom dashboard resources in safe mode.
+- [ ] Frontend localization and accessibility verified separately.
+
+**Important evidence boundary:** Official docs confirm static serving and manual resource registration. They do **not** by themselves establish a stable public API for automatic modification of Lovelace's storage resources from custom integrations. We must validate that API against current HA Core and integration examples before promising zero-click card registration.
+
+**Next research:** Home Assistant frontend \`hass\` object/language contract, current Lovelace resource registration API and its storage-vs-YAML semantics; official backup/storage/Recorder guidance for the database architecture decision.
