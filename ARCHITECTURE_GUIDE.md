@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.30.0 — 2026-11-05  
+> **Document version:** 0.31.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2292,3 +2292,18 @@ The transport modules will expose typed interfaces to the integration domain lay
 - [ ] Verify real PS5 pairing and standby on a disposable test configuration.
 
 **Status:** More source evidence collected; no protocol implementation started. Do not mark direct Remote Play support as verified.
+
+## 27. Documentation modularization — approved and created (2026-11-05)
+
+**Owner instruction:** Document now, validate during implementation. The protocol documents therefore distinguish source-confirmed upstream behavior from our proposed design and future live compatibility checks.
+
+**Documentation structure created in the main branch:**
+- [Protocol index](docs/protocols/README.md) with 10 independent protocol specifications.
+- [System overview](docs/architecture/system-overview.md), [communication architecture](docs/architecture/communication-architecture.md) and [security architecture](docs/architecture/security-architecture.md).
+- [Official source index](docs/standards/official-sources.md), [compliance matrix](docs/standards/compliance-matrix.md) and [review history](docs/standards/review-history.md).
+- ADR-0001 first-party connectivity, ADR-0002 sidebar-only panel, ADR-0003 provisional persistence.
+- [Quality gates](docs/release/quality-gates.md) and [release process](docs/release/release-process.md).
+
+**Canonical policy:** The root guide remains the architecture decision and historical research register. Specialized files contain the current working specification. Never silently delete DOC-001 through DOC-080 or claim that a source-derived design has been live-validated.
+
+**Next documentation work:** Expand each protocol's exact messages, failure codes, state machines, security model and fixture links. Validate against a real console only when implementation begins, as directed by the owner. Keep the source register current.
