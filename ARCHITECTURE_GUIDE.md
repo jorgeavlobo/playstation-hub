@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.33.0 — 2026-11-05  
+> **Document version:** 0.34.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2325,3 +2325,15 @@ The [02-console-status specification](docs/protocols/02-console-status.md) has b
 **Architecture decision:** No UDP response must never be treated as confirmed powered-off. Standby can be available, and last-known power is separate from current power. Unrecognized response codes remain UNKNOWN until validated. No optimistic state transitions or fabricated gameplay.
 
 **Status:** Source-grounded planning; real-device verification remains scheduled for implementation. Next specialized specification: [03-console-wakeup.md](docs/protocols/03-console-wakeup.md).
+
+## 30. Protocol specification progress — Console Wake-up (2026-11-05)
+
+The [03-console-wakeup specification](docs/protocols/03-console-wakeup.md) has been expanded with the upstream UDP wake protocol, credential-bearing message fields, port 9302, source-confirmed sequence, discovery-based confirmation, a proposed per-console command state machine, security boundaries, error categories and implementation-stage tests.
+
+**Source findings:** playactor loads credentials keyed by console ID, requires the device awake for initial registration if no credentials exist, sends `WAKEUP` with credential fields, waits for the same console ID to become AWAKE and closes its wake socket in `finally`. The upstream wake test covers standby followed by awake.
+
+**Decisions:** No optimistic success on UDP send; validate freshness and identity; isolate concurrent consoles; protect credentials; use bounded confirmation and cancellation-safe cleanup.
+
+**Open:** The exact `user-credential` derivation and credential construction still require source tracing. This is explicitly marked in the specialized specification rather than invented.
+
+**Status:** Source-grounded planning, no live test or code changes. Next specialized protocol: [04-remote-play-registration.md](docs/protocols/04-remote-play-registration.md).
