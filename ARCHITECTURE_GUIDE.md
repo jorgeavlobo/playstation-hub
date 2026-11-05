@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.32.0 — 2026-11-05  
+> **Document version:** 0.33.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2315,3 +2315,13 @@ The [LAN discovery specification](docs/protocols/01-lan-discovery.md) has been e
 **Source references:** playactor discovery model, transport, formatter, parser, orchestrator and PS5-MQTT multi-interface discovery (all linked in the specialized document). The root guide retains the historical research; the specialized document is now the working specification.
 
 **Evidence status:** Source-derived and planned; not yet live validated, as agreed with the owner. Next: expand 02-console-status.md, then continue protocol by protocol.
+
+## 29. Protocol specification progress — Console Status (2026-11-05)
+
+The [02-console-status specification](docs/protocols/02-console-status.md) has been expanded with source-backed PS5-MQTT polling/availability behavior, LAN parser limitations, independent power/availability/activity/command dimensions, observation freshness, multi-console scheduling, state transitions, error taxonomy, diagrams and implementation-stage tests.
+
+**Important source finding:** The legacy PS5-MQTT check loop uses `break` when a device is transitioning, which can suppress checks for later devices in the same cycle. The new design isolates transitions per console.
+
+**Architecture decision:** No UDP response must never be treated as confirmed powered-off. Standby can be available, and last-known power is separate from current power. Unrecognized response codes remain UNKNOWN until validated. No optimistic state transitions or fabricated gameplay.
+
+**Status:** Source-grounded planning; real-device verification remains scheduled for implementation. Next specialized specification: [03-console-wakeup.md](docs/protocols/03-console-wakeup.md).
