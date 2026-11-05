@@ -321,3 +321,9 @@ Source review: [Batch 02 official audit](../research/official-source-reaudit-bat
 | REL-24 | Repo onboarding/removal documentation | README/docs cover fields, features, unknown states, compatibility, backups, removal |
 
 The 12 original release gates remain binding project checkpoints; REL-13 through REL-24 are additional sub-gates, not proof the product is ready. The Marketplace limits are actual installation checks; Core's >95%-per-module rule is an internal optional quality target, not a custom Marketplace catalog certification.
+
+## 17. Multi-console Config Entry / coordinator lifecycle acceptance expansion
+
+[Core source audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) add **46 deterministic multi-console tests** (MC-CF01–12, MC-MON01–18, MC-LC01–16) and **12 approval gates** (MC-G01–12). Critical scenarios: normal DataUpdateCoordinator periodic scheduling ceases when all listeners depart; integration-owned monitoring must remain active with zero enabled entities or browser panels; disabling HA polling must pause observations; two consoles must have independent runtime tasks; one unload must not release shared storage/panel; a partially failed setup must clean sockets; a prior run's late packet must be fenced; and a sleeping previously configured console must be recoverable without identity loss.
+
+These test descriptions supplement, rather than supersede, existing SPEC-001 and SPEC-005 release evidence. All cases remain NOT_RUN. Source evidence of `async_create_background_task` lifecycle and `async_set_updated_data` does not prove our implementation works.
