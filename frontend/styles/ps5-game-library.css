@@ -1,0 +1,172 @@
+/**
+ * PS5 Dashboard - Game Library Styles.
+ *
+ * Responsive PlayStation-inspired presentation.
+ *
+ * Design principles:
+ * - Dark surfaces with subtle depth.
+ * - Clear information hierarchy.
+ * - Prominent game artwork.
+ * - Accessible contrast and focus states.
+ * - Responsive layouts without external dependencies.
+ */
+
+.ps5-game-library {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, 340px), 1fr)
+  );
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.ps5-game-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(122, 158, 216, 0.16);
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    rgba(39, 57, 86, 0.92),
+    rgba(22, 34, 54, 0.96)
+  );
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.ps5-game-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(94, 154, 255, 0.48);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+.ps5-game-artwork {
+  flex: 0 0 112px;
+  width: 112px;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #101a2b;
+}
+
+.ps5-game-artwork img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ps5-game-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    145deg,
+    #244b94,
+    #101a35
+  );
+  color: #ffffff;
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.ps5-game-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.ps5-game-title {
+  overflow-wrap: anywhere;
+  color: #f7faff;
+  font-size: 19px;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.ps5-game-duration {
+  color: #ffffff;
+  font-size: 25px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps5-game-sessions {
+  color: #9fb2d0;
+  font-size: 13px;
+}
+
+.ps5-game-progress {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(124, 151, 195, 0.2);
+}
+
+.ps5-game-progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    #3478ff,
+    #77b2ff
+  );
+}
+
+.ps5-library-empty {
+  padding: 32px 20px;
+  border: 1px dashed rgba(122, 158, 216, 0.25);
+  border-radius: 16px;
+  color: #9fb2d0;
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 600px) {
+  .ps5-game-library {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .ps5-game-card {
+    gap: 14px;
+    padding: 12px;
+  }
+
+  .ps5-game-artwork {
+    flex-basis: 86px;
+    width: 86px;
+  }
+
+  .ps5-game-title {
+    font-size: 16px;
+  }
+
+  .ps5-game-duration {
+    font-size: 21px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps5-game-card {
+    transition: none;
+  }
+
+  .ps5-game-card:hover {
+    transform: none;
+  }
+}

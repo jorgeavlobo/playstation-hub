@@ -1,0 +1,2 @@
+# MQTT client library used for subscribing to PS5 state updates.
+paho-mqtt==2.1.0

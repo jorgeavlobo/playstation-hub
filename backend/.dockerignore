@@ -1,0 +1,46 @@
+# ============================================================
+# PS5 Monitoring Service - Docker Build Exclusions
+# ============================================================
+
+# Python cache and compiled bytecode.
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Previous source versions and backups.
+*.bak
+*.pre_*.bak
+*.backup
+*.old
+
+# Development and test files.
+tests/
+Dockerfile.test
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local Python environments.
+.venv/
+venv/
+env/
+
+# Version control.
+.git/
+.gitignore
+
+# Local databases and temporary files.
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.tmp
+*.log
+
+# Operating system metadata.
+.DS_Store
+Thumbs.db
+
+# Additional isolated test Dockerfiles.
+Dockerfile.entrypoint-test

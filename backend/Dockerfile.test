@@ -1,0 +1,31 @@
+# ============================================================
+# PS5 Monitoring Service - Test Image
+# ============================================================
+#
+# Build an isolated test image containing the application
+# source code and automated unit tests.
+#
+# No MQTT broker connection or production database is required.
+# ============================================================
+
+FROM python:3.13-alpine
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONPATH=/app
+
+WORKDIR /app
+
+# Install the exact application dependencies.
+COPY requirements.txt /app/requirements.txt
+
+RUN pip install \
+    --no-cache-dir \
+    --requirement /app/requirements.txt
+
+# Copy application modules and automated tests.
+COPY app/ /app/
+COPY tests/ /tests/
+
+# Execute all unit tests by default.
+CMD ["python", "-m", "unittest", "discover", "-s", "/tests", "-p", "test_*.py", "-v"]

@@ -1,0 +1,50 @@
+# ============================================================
+# PS5 Monitoring Service - Home Assistant App Configuration
+# ============================================================
+#
+# Purpose:
+#   Persistent PlayStation 5 usage monitoring and statistics.
+#
+# Platform:
+#   Home Assistant OS on ARM64.
+#
+# Storage:
+#   SQLite database inside the Supervisor-managed /data volume.
+#
+# MQTT:
+#   Uses a dedicated authenticated Mosquitto account.
+#
+# ============================================================
+
+name: "PS5 Monitoring Service"
+version: "0.5.0"
+slug: "ps5_monitor"
+description: "Persistent PlayStation 5 monitoring and historical statistics"
+
+startup: application
+boot: manual
+init: false
+
+arch:
+  - aarch64
+
+services:
+  - mqtt:need
+
+options:
+  mqtt_host: "core-mosquitto"
+  mqtt_port: 1883
+  mqtt_username: "your_mqtt_username"
+  mqtt_password: ""
+  mqtt_topic: "ps5-mqtt/YOUR_DEVICE_ID"
+  player_name: "PlayerOne"
+  database_path: "/data/ps5_monitor.db"
+
+schema:
+  mqtt_host: str
+  mqtt_port: port
+  mqtt_username: str
+  mqtt_password: password
+  mqtt_topic: str
+  player_name: str
+  database_path: str

@@ -1,0 +1,16 @@
+# ============================================================
+# PS5 Monitoring Service - Entrypoint Security Test Image
+# ============================================================
+
+FROM python:3.13-alpine
+
+RUN apk add --no-cache su-exec
+
+RUN addgroup -S ps5monitor \
+    && adduser -S -G ps5monitor ps5monitor
+
+COPY tests/test_entrypoint.sh /test_entrypoint.sh
+
+RUN chmod 755 /test_entrypoint.sh
+
+CMD ["/bin/sh", "/test_entrypoint.sh"]
