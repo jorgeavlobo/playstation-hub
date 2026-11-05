@@ -17,3 +17,7 @@ Internal target is Platinum-style engineering, not an official quality-scale rat
 ## Hardware and firmware evidence
 
 [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) defines hardware-family, firmware, power, network and Remote Play compatibility matrices and twelve release gates. No PlayStation model is currently hardware-verified in the PlayStation Hub implementation.
+
+## Architecture review prerequisite
+
+The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010.md) recommends conditional acceptance of ADR-0004–0010 only after explicit maintainer approval and evidence. All existing release gates remain in force; no test is marked passed by this documentation review.
