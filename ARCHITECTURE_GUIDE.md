@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.1 — 2026-11-05  
+> **Document version:** 0.39.2 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2556,3 +2556,21 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Security/UX:** Home Assistant service/WebSocket authorization and backend permission checks, credential redaction, diagnostic/repair issues, English source code/comments, English and PT-PT UI translations, proper entity categories/state classes, HACS/Hassfest and pinned Core compatibility tests. Panel registration and API are deferred to ADR-0010; Sony third-party API client permissions remain unresolved.
 
 **Status:** No executable code, live HA OS validation or PS5 testing. Documentation updated only on `main`; `develop` and `next` untouched.
+
+## ADR-0010 — Sidebar Panel & Backend API checkpoint (2026-11-05)
+
+**Status: Proposed, not implemented or approved; architecture guide version 0.39.2.** Canonical 18-section proposal: [docs/decisions/ADR-0010-sidebar-panel-and-backend-api.md](docs/decisions/ADR-0010-sidebar-panel-and-backend-api.md).
+
+**Approved product scope remains unchanged:** A single multilingual full-page Home Assistant sidebar panel shipped with one HACS Python custom integration. No Lovelace custom card, mandatory add-on/App, independent Node.js runtime, MQTT, PS5-MQTT or third-party server. Modular frontend source/build tooling is allowed as long as the user receives a reproducible, locally installed release bundle.
+
+**Source-grounded HA mechanism:** Reviewed HA Core `panel_custom.async_register_panel`, the KNX panel pattern combining `StaticPathConfig`, `hass.http.async_register_static_paths` and WebSocket handlers, official websocket API extension and service-action guidance, and 2026.8 frontend safe-area changes. These show supported patterns; the exact API must be pinned/tested before implementation. Register panel/WS infrastructure only once via integration scope, not once per console. Do not invent unregister APIs; handle update and teardown based on actual supported calls.
+
+**Recommended API contract:** Namespaced `playstation_hub/*` authenticated WebSocket read/subscription commands for per-console and per-account source snapshots, long-term summaries, paginated historical sessions, game metadata and sanitized diagnostics. Mutating console actions must use Home Assistant services or an equally authorized shared CommandCoordinator. Snapshot generation/revision plus replay/resync prevents lost updates between initial state and subscription; reconnects never automatically re-send uncertain power commands. All queries enforce server-side limits and schema versions.
+
+**Security:** Panel visibility does **not** authorize backend access. Initial proposal is admin-only for the panel and its private history/management APIs pending a finer HA ACL design. Sony NPSSO/OAuth secrets, Remote Play keys, private raw responses and unrestricted personal history must never appear in JS assets, URLs, client storage, diagnostics or unauthorized WebSocket payloads. Frontend must not make provider API or direct database calls.
+
+**UI expectations:** Console overview/detail, separate PSN account activity, games and library, bounded-day/month/year reports, historical timelines with ambiguous/unknown intervals, localized configuration/diagnostics, English/PT-PT and expandable locales, HA theme, accessible mobile/desktop layouts and explicit freshness/attribution labels. A full-page panel remains the **only** supported UI, with internal modular navigation.
+
+**Open tests/gates:** Minimum HA Core/frontend version; Web Component vs iframe; proper asset installation/version cache; authorization and subscription cleanup; browser/mobile safe-area and HA theme compatibility; backend query/pagination performance; command and error semantics; localization/accessibility. Sony third-party PSN authorization and SQLite/storage are independently blocked/proposed as recorded in ADR-0007/0008.
+
+**Branch discipline:** Only `main` research documentation modified; `next` and legacy `develop` unchanged.
