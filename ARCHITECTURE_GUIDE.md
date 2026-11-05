@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.37.0 — 2026-11-05  
+> **Document version:** 0.38.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2369,3 +2369,13 @@ The [06-remote-play-session specification](docs/protocols/06-remote-play-session
 **Decisions:** Session lifecycle is independent per console, uses bounded deadlines and cancellation-safe cleanup, and never exposes credentials or encrypted control headers. LAN-only monitoring must not require a Remote Play session.
 
 **Status:** Source-derived specification; not live validated. Next: [07-remote-play-commands.md](docs/protocols/07-remote-play-commands.md).
+
+## 34. Protocol specification progress — Remote Play commands (2026-11-05)
+
+The [07-remote-play-commands specification](docs/protocols/07-remote-play-commands.md) now documents source-confirmed Remote Play command values, the eight-byte big-endian packet header, standby `0x50` framing, upstream CLI behavior, TCP socket closure, the proposed command state machine, HA action design, permissions, multi-console concurrency, error taxonomy and future tests.
+
+**Source findings:** Standby is sent as a header-only packet after an authenticated Remote Play session. The upstream implementation waits for socket closure, not a fresh LAN standby observation. The upstream connection path may wake a device before opening a Remote Play session; this requires conservative handling for already-standby and unknown states.
+
+**Decisions:** Confirm state transitions through LAN, not command send or socket closure; do not wake unexpectedly; keep actions permission-checked, idempotent where appropriate and serialized per console. Do not claim full shutdown or arbitrary console buttons without separately sourced protocols.
+
+**Status:** Source-grounded specification, no live validation or implementation. Next: [08-psn-authentication.md](docs/protocols/08-psn-authentication.md).
