@@ -43,3 +43,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## SPEC-007 compatibility checkpoint
 
 [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) documents model/firmware/network compatibility evidence requirements. All twelve compatibility gates remain NOT_TESTED, BLOCKED or NOT_APPROVED. Source-observed PS5/PS4 protocol constants do not prove support.
+
+## Formal architecture review checkpoint
+
+[Formal ADR-0004–0010 review](../architecture/formal-architecture-review-adr-0004-0010.md) records 18 consistency findings and implementation dependencies. All seven ADRs remain proposed pending explicit approval and relevant evidence. WP-00–WP-08 are recommendations, not authorized implementation. PSN permission and Remote Play wire gaps remain separately blocked.
