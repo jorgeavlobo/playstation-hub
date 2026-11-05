@@ -39,3 +39,7 @@ One HACS custom integration with Python protocol adapters, native HA entities, i
 **Protocol 08 research checkpoint (2026-11-05):** Added dedicated reviews of Sony browser-login limitations, authorization-callback eligibility, PSNAWP PyPI versus development APIs, official HA and Emkraan token persistence, refresh-token concurrency, crash/backup recovery and a synthetic test matrix. See [Protocol 08](08-psn-authentication.md), sections 12–16. This does not establish a Sony-approved OAuth client or live protocol compatibility.
 
 **Official Home Assistant Core reference:** A detailed audit of `playstation_network` and its automatic DHCP discovery, config flows, PSNAWP account data, platforms/entities, test coverage and multi-console limitations is maintained at [Core PlayStation Network deep reference audit](../research/home-assistant-core-playstation-network-audit.md). This reference informs Protocols 01, 02, 08, 09 and 10; it does not validate our own integration.
+
+## Cross-protocol architecture review
+
+Before implementation, consult [Cross-protocol architecture review (Protocols 01–10)](../architecture/cross-protocol-review-01-10.md): 22 findings and prioritized ADR/spec prerequisites address device/account identity, source authority and freshness, conservative history, Remote Play byte contracts, Sony API permission, persistence and backups, Home Assistant discovery/entity/action/sidepanel lifecycles and release acceptance. **Detailed protocol documents are not equivalent to an approved or working integration.**
