@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.38.7 — 2026-11-05  
+> **Document version:** 0.38.8 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2494,3 +2494,19 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Still open:** approve ADR-0004 identity plan, accept ADR-0005 source/clock policies, calibrate TTL, prove response/command states on hardware, define HA entities and permissions in ADR-0009, finalize backend API and i18n in ADR-0010, and review optional PSN permissions under Protocol 08.
 
 **Branch discipline:** Only research documentation updated in `main`; `next` implementation branch and `develop` legacy reference are untouched.
+
+## ADR-0006 — Session accounting and usage statistics proposal (2026-11-05)
+
+**Status: Proposed, not accepted, not implemented; guide version 0.38.8.** Canonical 21-section design: [docs/decisions/ADR-0006-sessions-and-usage-statistics.md](docs/decisions/ADR-0006-sessions-and-usage-statistics.md). This ADR consumes the independent source observations in ADR-0005 and physical/account identity in ADR-0004; it does not approve SQLite or specify the complete Home Assistant UI interface.
+
+**Recommended accounting direction:** Use a separate idempotent event/checkpoint/session ledger, and account bounded intervals only when consecutive compatible observations fall within an approved freshness/continuity policy. A point-sampled status is **not** continuous physical measurement; gaps, unknown player attribution and unobserved state transitions must be explicit, never optimistically counted as off/on or game time. Same-state polling may update a durable checkpoint without creating new session IDs; changed-state intervals have unknown transition boundaries. Long network gaps and crash recovery close prior segments at last committed evidence, not current wall clock.
+
+**Legacy source findings:** Reviewed `develop/backend/app/session_tracker.py`, `database.py` and `usage_statistics.py`. Useful conceptual features include atomic observation/checkpoint transitions, rejection of old observations, idempotent close-at-last-checkpoint recovery, half-open UTC session intervals, calendar intersection and DST-aware local reports. The old default 90-second gap and hardcoded Europe/Lisbon reporting timezone are **not** approved defaults for a worldwide multi-console integration.
+
+**Distinct statistics:** Per-console bounded awake time, source-specific PSN presence, optionally inferred player/game time, unknown/unobserved coverage, provider lifetime playtime and local session time are different quantities. Do not merge game/entitlement names into canonical identities, count PSN time twice across two PS5s, or subtract incomparable player totals from console totals. Combined all-console resource time may exceed wall-clock duration when two devices run simultaneously; a union-of-wall-time metric must be named separately.
+
+**Calendar and numerical rules:** Persist timestamps in UTC, use half-open `[start,end)` ranges, calculate local day/week/month/year boundaries in configurable IANA timezone (test Europe/Lisbon DST), and document partial month-to-date versus full reporting windows. Maintain explicit quality/completeness, attribution and persistence-health labels. An absent provider play-duration value is unknown, not zero.
+
+**Open approval gates:** choose maximum continuity threshold from actual polling/failure behavior, finalize when estimated intervals may be displayed, commit user/session attribution policy, choose durable storage and transactional/backup guarantees in ADR-0008, and define HA statistics entity/WebSocket output contracts in ADR-0009/0010. No live PS5 tests or implementation were performed.
+
+**Research workflow:** Documentation only on `main`; `next` and `develop` unchanged.
