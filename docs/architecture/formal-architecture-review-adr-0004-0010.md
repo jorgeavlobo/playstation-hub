@@ -174,3 +174,7 @@ Do not mark these decisions approved simply because they appear in the review. T
 ## WP-00 follow-up
 
 The [WP-00 readiness plan](WP-00-implementation-readiness-and-decision-closure.md) defines explicit maintainer decision closure, stable HA baseline selection, contract candidates, ten scoped blockers and WP-01 entry requirements. Its creation does not accept any ADR or authorize implementation.
+
+## Official-source re-audit follow-up (2026-11-05)
+
+[Home Assistant 2026.11 / Marketplace audit](../research/official-source-reaudit-home-assistant-2026-11.md) adds 18 source-prioritized findings and corrects active references to the old `next` branch, standalone-HACS-only installation, device typing/ownership, current config flow and entity lifecycle, local branding/custom translations, frontend themes and backup-hook evidence. The proposed WP-00 research baseline is Home Assistant Core 2026.11.0 with Python >=3.14.2; choosing that as the minimum supported release remains an explicit maintainer decision. No ADR changed status and no implementation/hardware tests were performed.
