@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.5.0 — 2026-11-05  
+> **Document version:** 0.6.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -547,4 +547,51 @@ jobs:
 
 The previous guide referred to this URL as if it were Hassfest documentation. That was inaccurate. This URL's current official page is **Validate the input**. Hassfest remains an independent research task.
 
-**Next recommended official document (not yet reviewed):** https://developers.home-assistant.io/docs/development_checklist/ — verify the destination and its actual content before assigning it a topic.
+**DOC-005 reviewed:** https://developers.home-assistant.io/docs/development_checklist/ — general pre-commit checklist, mainly oriented to Home Assistant Core contributions; see review register below.
+
+
+### DOC-005 — Home Assistant: Development checklist
+
+- **Official source:** https://developers.home-assistant.io/docs/development_checklist/
+- **Page title:** Development checklist
+- **Page last updated:** 2024-08-27 (as displayed by the official page)
+- **Reviewed on:** 2026-11-05
+- **Scope:** The introductory **Development checklist** page only. Its linked **Component checklist** and **Platform checklist** are separate documents and have **not** been reviewed in this iteration.
+- **Source context:** This is a Home Assistant **Core contribution** pre-commit checklist. Some requirements concern the Core repository and do **not** directly apply to a standalone HACS custom integration.
+
+#### Directly documented checklist items and applicability
+
+| ID | Official checklist requirement | Applicability to PlayStation Hub | Planned implementation / evidence |
+| --- | --- | --- | --- |
+| HA-DEV-001 | All communication with external devices/services must be wrapped in an external Python library hosted on PyPI. | **Core submission requirement; voluntary architecture target for HACS.** | Design transport adapter around an independent reusable library where warranted. Verify PS5-MQTT integration strategy before choosing dependencies. |
+| HA-DEV-002 | External library must have source distribution packages available; binary-only distributions are not permitted. | **Core requirement; voluntary HACS quality target.** | For any external communication library, verify PyPI source distribution and supported platforms/architectures. |
+| HA-DEV-003 | External communication library must have an enabled issue tracker. | **Core requirement; voluntary HACS quality target.** | Verify issue tracker URL for chosen library. |
+| HA-DEV-004 | If the external library mainly serves Home Assistant and integration authors own it, an issue-template picker linking to HA Core issues is encouraged. | **Optional / Core-context recommendation.** | Revisit only if we publish our own external library; do not create irrelevant Core issue links. |
+| HA-DEV-005 | Add new dependencies to Core's \`requirements_all.txt\` via \`python3 -m script.gen_requirements_all\`, when applicable. | **Not applicable** to our separate HACS repository. | Define dependencies in our integration manifest per the separate official manifest document; do not modify HA Core files. |
+| HA-DEV-006 | Add new codeowners to Core's \`CODEOWNERS\` via \`python3 -m script.hassfest\`, when applicable. | **Not applicable** to our separate HACS repository. | Set integration \`manifest.json\` codeowners; separately study Hassfest validation. |
+| HA-DEV-007 | Update Core's \`.strict-typing\` when providing fully type-hinted source. | **Not applicable** as a Core file. | Prefer strict type hints and appropriate static checks in our own repository. |
+| HA-DEV-008 | Format code with \`ruff format\`. | **Adopt as mandatory project quality policy.** | Run Ruff format checks in CI; document pinned tool version. |
+| HA-DEV-009 | Develop documentation for \`home-assistant.io\`. | **Core contribution workflow; not a requirement to publish a HACS integration.** | Maintain clear repository docs, installation, troubleshooting and screenshots; separate review needed for catalog documentation rules. |
+
+#### Practical project decisions from DOC-005
+
+1. **Ruff is required for PlayStation Hub.** The official page explicitly names \`ruff format\`; configure CI to reject noncompliant formatting.
+2. **Type hints are strongly preferred.** This is our own quality policy, not a direct command to edit the Core \`.strict-typing\` file.
+3. **Isolate external communication.** Keep PlayStation protocol/MQTT transport separate from Home Assistant entity and domain logic. Whether an independent PyPI library is required for **HACS** is not established by this Core-focused page.
+4. **Avoid false compliance claims.** We must not pretend that modifying \`requirements_all.txt\`, \`CODEOWNERS\`, or \`.strict-typing\` is required in our independent GitHub repository.
+5. **Dependency provenance matters.** Prefer portable packages with source distributions and clear maintenance/issue reporting.
+
+#### Acceptance checks (planned, not yet implemented)
+
+- [ ] CI executes \`ruff format --check\` for Python.
+- [ ] All external communication is isolated behind testable interfaces.
+- [ ] Any chosen third-party communication library has a documented distribution and maintenance audit.
+- [ ] Relevant integration dependencies are declared in the correct Home Assistant integration manifest format (review pending).
+- [ ] Code uses appropriate type annotations and static checks.
+- [x] Core-specific checklist items are explicitly marked not applicable instead of blindly copied.
+
+#### Source boundaries and follow-up
+
+This document **does not** establish HACS inclusion requirements, database architecture, dashboard distribution, GitHub Release rules, or the exact Python integration skeleton. These remain governed by other documents and our explicit project decisions.
+
+**Next document to review (not yet reviewed):** https://developers.home-assistant.io/docs/development_checklist/component/ — confirm the exact live URL and review that page independently.
