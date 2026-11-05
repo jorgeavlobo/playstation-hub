@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.28.0 — 2026-11-05  
+> **Document version:** 0.29.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2191,3 +2191,58 @@ The transport modules will expose typed interfaces to the integration domain lay
 - [ ] Create synthetic protocol fixtures and negative tests for invalid packets, timeouts and partial handshakes.
 
 **Status:** Protocol architecture is increasingly understood, but no production-grade direct PS5 connection has yet been validated.
+
+## 25. Remote Play cipher, login and standby audit — 2026-11-05
+
+**Audit scope:** Read targeted files from `dhleong/playactor` source. No production credentials or live console used. References point to upstream source; implementation and compatibility remain unverified.
+
+### DOC-071 — Registration and session cryptography
+
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto/base.ts
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto/modern.ts
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto/keys.ts
+- Base strategy uses AES-128-CFB, an HMAC-SHA256-based IV derived from nonce plus a big-endian 64-bit counter, and distinct PIN-registration/authentication seed derivation.
+- PS5 modern strategy applies PS5-specific lookup tables and nonce transformations; `keys.ts` is large and was **not** exhaustively verified or reproduced.
+- Registration padding is 480 bytes in the upstream implementation.
+- **Security decision:** Use audited Python AES/HMAC primitives and test vectors. Never log derived keys, raw registration messages, pairing PIN or OAuth tokens. The upstream source contains some debug calls that could expose material; do not reproduce them.
+
+### DOC-072 — Encrypted packet codec
+
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/codec.ts
+- Packet codec preserves the 8-byte header and encrypts/decrypts payloads, with independent incrementing counters for outbound and inbound directions.
+- Zero-length payloads bypass encryption in this implementation.
+- **Design:** Separate packet framing, cryptographic codec, and session lifecycle. Validate counters, length bounds, fragmentation and malformed frames using synthetic test vectors.
+
+### DOC-073 — Login and passcode challenge
+
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/proc/login.ts
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/packets/passcode-response.ts
+- Login sends a command and awaits either login result or passcode request. When passcode is requested, the client sends a passcode response and awaits login result.
+- **Design:** Distinguish pairing PIN from an optional session login passcode. Expose translated, non-sensitive errors and do not assume successful registration guarantees successful login.
+
+### DOC-074 — Remote Play standby command
+
+- https://github.com/dhleong/playactor/blob/main/src/connection/remoteplay.ts
+- https://github.com/dhleong/playactor/blob/main/src/remoteplay/packets.ts
+- RemotePlayDeviceConnection sends Standby command `0x50`, then awaits control-socket closure.
+- **Important:** A closed socket is not itself proof of successful transition to rest mode. The PlayStation Hub must confirm a fresh discovery state after sending standby, with timeout and UNKNOWN result if confirmation fails.
+- **Code review observation:** Upstream `isConnected` getter returns negated `socket.isConnected`; this appears counterintuitive and requires targeted upstream test verification before borrowing lifecycle semantics.
+
+### DOC-075 — PS5 versus legacy Second Screen transport
+
+- https://github.com/dhleong/playactor/blob/main/src/connection.ts
+- https://github.com/dhleong/playactor/blob/main/src/socket/proc/standby.ts
+- `openConnection` selects Remote Play for Remote Play credentials and Second Screen otherwise. The legacy Second Screen standby RPC is a different transport from PS5 Remote Play standby.
+- **Decision:** Do not reuse PS4 Second Screen packets or connection assumptions in PS5 control modules.
+
+### Updated engineering gates
+
+- [ ] Audit full modern crypto key table selection, cryptographic codec and upstream test vectors.
+- [ ] Confirm exact PS5 login result handling, heartbeat and connection termination.
+- [ ] Validate Remote Play standby against a test console and firmware versions.
+- [ ] Check compatibility of licensing and attribution for any reused upstream code.
+- [ ] Define protected credentials lifecycle and explicit pairing/unpairing UX.
+- [ ] Add regression tests for invalid PIN, missing passcode, bad nonce, malformed packet, truncated response, timeout and forced disconnect.
+- [ ] Keep LAN-only monitoring operational if Remote Play pairing is unavailable.
+
+**Status:** Documentation expanded. Direct Python implementation has not started, and the protocol is not yet proven on a live PS5.
