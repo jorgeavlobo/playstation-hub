@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.41.4 — 2026-11-05  
+> **Document version:** 0.42.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -11,6 +11,8 @@
 > **Current authoritative source checkpoint (2026-11-05):** The [official-source re-audit for Home Assistant Core 2026.11 and integrated Marketplace](docs/research/official-source-reaudit-home-assistant-2026-11.md) supersedes outdated *active instructions* in earlier DOC-001–DOC-080 historical notes. Source research baseline is Core 2026.11.0 / Python >=3.14.2; minimum supported version remains to be approved. New `feature/<scope>` branches are created on demand; the maintainer deleted `next`. The product remains one HACS/Marketplace custom integration with one sidebar panel, direct LAN access, optional Remote Play/PSN, and no mandatory MQTT. Historical sections are retained for traceability.
 
 > **WP-00A technical checkpoint (2026-11-05):** [Core 2026.11.0 and LAN-first interface contracts](docs/architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) sets the source-verified development target Core `2026.11.0` / Python `>=3.14.2`, recommends (but does not yet approve) this as the first minimum supported HA version, and specifies 20 synthetic LAN acceptance cases. No executable tests, hardware checks or implementation authorization have occurred.
+
+> **Official Quality/Discovery checkpoint (2026-11-05):** [Batch 02 source audit](docs/research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md) and [54-rule applicability matrix](docs/standards/internal-quality-scale-applicability.md) add HA discovery ownership, runtime data, coordinator/update/error policies, safe diagnostics, stale-device handling and actual Marketplace installation limits. These are documented requirements, not implemented/tested claims.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2725,4 +2727,22 @@ The new product remains one multilingual native Home Assistant sidebar panel wit
 **Changes needed for new product:** Replace MQTT request/response topics with authorized, versioned `playstation_hub/*` backend WebSocket APIs; remove single-PS5 and single-player assumptions; make local physical power, PSN account activity and source freshness independent; never equate `!console_active` with confirmed physical OFF; remove duplicated 90-second frontend freshness constants; use explicit HA/user timezone instead of browser-local report assumptions; adopt EN/PT-PT translations, HA 2026.11 responsive/theme CSS and accessibility; preserve rendering focus and prevent unbounded lists. Direct HTTPS image URLs require provenance/rights and safe handling beyond a prefix check. The existing 80 tests offer behavior references, not production validation.
 
 **Scope:** This review updated only documentation in `main`, with `develop` retained unchanged as legacy reference. No implementation branch, executable files or automated test run were created. Next documentation research can map the old MQTT message contracts and all 80 behavior tests to ADR-0010's proposed WebSocket DTOs.
+
+## Official-source audit Batch 02 — Quality Scale, Discovery, Runtime, Marketplace (2026-11-05)
+
+**Status: Documentation researched and updated, but all executable/installation gates unpassed. Guide version 0.42.0.** Source-backed [Batch 02 audit](docs/research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md) contains 22 prioritized findings and 29 official-reference entries. The [internal quality applicability matrix](docs/standards/internal-quality-scale-applicability.md) maps all **54 current Home Assistant Core quality rules**: 20 Bronze, 10 Silver, 21 Gold and 3 Platinum. Core tiers remain **voluntary internal engineering targets**, not official certification of the custom Marketplace integration.
+
+**Discovery ownership:** Home Assistant's shared `dhcp` discovery service identifies candidates and triggers `async_step_dhcp` using manifest matchers. PlayStation Hub's source-verified IPv4 UDP `SRCH` protocol is a bounded PlayStation **verification and status transport**; it is not a replacement DHCP scanner. New physical consoles are user-confirmed independent entries; stable discovered identity updates the same entry's IP without duplicating devices. Missing UDP responses must never automatically remove a physical PS5, erase history or assert OFF.
+
+**Runtime data and updates:** Put typed per-console/PSN-account coordinators and clients in their owning `ConfigEntry.runtime_data`. A separately justified integration-scope owner may maintain shared panel/SQLite/history infrastructure. Reuse `DataUpdateCoordinator` for cached entity observations where appropriate, with explicit platform `PARALLEL_UPDATES` and per-console command serialization. Log a lost connection once and recovery once, without per-poll log floods. The source freshness TTL and durable session continuity policy remain separate.
+
+**Actions and flow lifecycle:** Raise `ServiceValidationError` for invalid caller input or target, and `HomeAssistantError` for transport/device failures. Do not swallow failures or label a sent-but-unconfirmed wake/standby as success. Keep account `reauth`, console host `reconfigure` and behavior `options` distinct; check stable identity before altering an existing entry. Connection fields go to `ConfigEntry.data`, behavior settings to `ConfigEntry.options` subject to the credential security policy.
+
+**Diagnostics and privacy:** Add sanitized per-entry/device diagnostics when implemented, preferring an explicit **allowlist** of source-health/firmware facts over unbounded raw responses; `async_redact_data` alone does not guarantee all private fields are removed. Use `async_loaded_entries` before reading entry runtime data in optional `system_health.py`; disabled or unloaded entries may have no runtime_data. Repair issues should be per-entry, actionable and localized. No tokens, real console IDs, account/child history or private packet captures in diagnostics or GitHub issues.
+
+**Marketplace validation:** Besides successful HACS Action/Hassfest and catalog review, Marketplace performs installation-time checks for `hacs.json`, domain ownership, manifest/version, compatible release, files and rollback on failed post-write validation. Its documented download/unpacked limits are **100 MiB and 50,000 files**. Establish artifact-size/file-count gates, avoid unbounded bundled artwork, and pin reviewed CI action revisions according to project supply-chain policy.
+
+**Coverage and documentation:** Core's Silver rule is **over 95% test coverage in every Python module**, not only aggregate coverage; adopt as voluntary project aspiration after implementation, with recorded CI evidence. Provide user-facing Marketplace README/docs for installation, remove, configuration/options, supported models, source/data-update semantics, actions/automations, troubleshooting, privacy and backups. Core documentation Jinja macros do not render automatically in an ordinary GitHub README.
+
+**Next documentation research:** Reconcile the complete 54-rule matrix with exact PlayStation Hub source/module contracts and future release variants; detail the first LAN config-flow lifecycle and audit the Marketplace `hacs.json` / manifest and Python dependency matrix against pinned 2026.11 source. No implementation branch or code was created, and `develop` remains unchanged.
 
