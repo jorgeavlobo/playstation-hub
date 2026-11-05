@@ -63,3 +63,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## Source-derived legacy code review — documentation only
 
 [Legacy code review and refactoring blueprint](../research/legacy-code-review-and-refactoring-blueprint-2026-11.md) documents 12 findings and 20 planned validation scenarios against five read-only `develop` backend files. No source code was edited and no tests were executed. A proven old transaction/checkpoint model may inform future modular design, but MQTT, Supervisor `/data`, one-player identity, fixed Lisbon timezone, a 30-second gap policy and synchronous sqlite3 must not be copied without explicit design and compatibility review.
+
+## Legacy frontend availability checkpoint
+
+[Frontend source inventory and UX research](../research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) records blocker UX-001: actual legacy Lovelace frontend code was not available at expected `develop/frontend` paths. The legacy README's claimed 80 local tests have not been independently verified. Native one-panel UX requirements can be documented, but a component-by-component code audit remains NOT_STARTED.
