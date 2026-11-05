@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.0 — 2026-11-05  
+> **Document version:** 0.39.1 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2542,3 +2542,17 @@ Primary references: [Protocol 10](docs/protocols/10-game-metadata.md), [PSNAWP G
 **Retention/security:** Keep secrets separate from history, license-gate copyrighted artwork caching, and define admin-authorized export/purge/delete/unlink/unpair policies. A HACS source uninstall is not assumed to securely remove all auxiliary history files. UTC durable intervals and local timezone reports follow ADR-0006.
 
 **Status and next work:** ADR-0003 dedicated SQLite remains explicitly **proposed, not superseded by an approved decision**. Before approval, verify current HA Core Store and backup interfaces, data-path compatibility, synthetic 3-year / multi-console capacity, crash/migration/WAL restore behavior, and source-dependent release constraints. No code changes to `next` or legacy `develop`; research recorded only on `main`.
+
+## ADR-0009 — Native Home Assistant integration, entities and actions (2026-11-05)
+
+**Status: Proposed, not accepted or implemented. Guide version 0.39.1.** Full reference: [docs/decisions/ADR-0009-home-assistant-integration-entities-actions.md](docs/decisions/ADR-0009-home-assistant-integration-entities-actions.md).
+
+**Native design direction:** One HACS custom integration domain `playstation_hub` with independent per-physical-console and per-PSN-account Config Entries (subject to ADR-0004 acceptance), verified DHCP/PlayStation LAN discovery and manual setup, stable DeviceInfo/Entity unique IDs, native Home Assistant entities and explicit targeted actions. No MQTT, extra App, PS5-MQTT, Node.js or built-in `playstation_network` dependency. The official integration may coexist and generate its own discovery proposal.
+
+**Entity semantics:** The console's locally observed power state is categorical `awake/standby/unknown`; silence or PSN offline never establishes hardware OFF. Prefer an account-independent physical power sensor, LAN reachability/last seen, explicit wake and standby buttons/actions, command verification status and durable usage sensors. Optional account entities expose PSN presence, now-playing, artwork, trophies and subscription status only when authorized. A switch is deferred until reliable binary command/state semantics are proven; do not reproduce the old `switch.playstation_5_power` blindly.
+
+**Lifecycle:** Dedicated `async_step_dhcp` for multi-console setup, explicit user confirmation and stable identity deduplication; independent entry setup/unload/reauth/reconfigure and integration-scope shared managers for storage/panel. No provider I/O from entity getters. Remote Play commands must target a validated console, be serialized and report unconfirmed when no final state observation exists. Cloud failures cannot unload LAN devices. Source freshness, confidence and historical time semantics come from ADR-0005/0006.
+
+**Security/UX:** Home Assistant service/WebSocket authorization and backend permission checks, credential redaction, diagnostic/repair issues, English source code/comments, English and PT-PT UI translations, proper entity categories/state classes, HACS/Hassfest and pinned Core compatibility tests. Panel registration and API are deferred to ADR-0010; Sony third-party API client permissions remain unresolved.
+
+**Status:** No executable code, live HA OS validation or PS5 testing. Documentation updated only on `main`; `develop` and `next` untouched.
