@@ -67,3 +67,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **End-to-end testing and release:** [SPEC-005](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) covers CI/CD, HACS/Hassfest, HA OS, real-console verification, security, persistence and twelve release gates. No tests have been executed.
 
 **Security and privacy:** [SPEC-006](../specifications/SPEC-006-security-privacy-threat-model.md) covers the cross-protocol threat model, thirty tests and twelve unpassed security gates.
+
+**Console and firmware compatibility:** [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) defines the PS5 candidate models, deferred PS4 families, firmware and network test matrix, and twelve unpassed compatibility gates.
