@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.15.0 — 2026-11-05  
+> **Document version:** 0.16.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -16,6 +16,7 @@ This document is our single source of truth for the planned architecture, public
 - Preserve the previous app/card code on the `develop` branch **as reference only**; never merge it wholesale into the new integration.
 - Develop the replacement on `next`, and release reviewed, tested code through `main`. The branching policy can be revised before the first release.
 - One GitHub repository, one HACS integration, one shared release version for Python and JavaScript.
+- **Approved frontend decision (2026-11-05):** Exactly one supported UI: a full-page custom Home Assistant sidebar panel. No Lovelace custom card, dashboard strategy, or parallel card distribution is planned. Keep the frontend modular internally.
 - No requirement for a separate Supervisor App/add-on.
 - Modular and extensible, with clearly separated responsibilities, strict lifecycle management, and detailed **English** code comments.
 - **Mandatory project policy:** Multilingual architecture from the first release, including integration configuration, entities, errors, diagnostics-facing labels where applicable, and all frontend text. English is the source language; translation files supply other locales. Never hardcode user-visible English strings into business logic.
@@ -85,7 +86,7 @@ playstation-hub/
 │       │   └── sqlite_repository.py      # ONLY IF a dedicated database is approved
 │       ├── frontend/                     # Frontend shipped and versioned with integration
 │       │   ├── i18n/                     # Frontend localization resources (design pending)
-│       │   ├── playstation-hub.js
+│       │   ├── playstation-hub-panel.js
 │       │   ├── components/
 │       │   ├── services/
 │       │   └── styles/
@@ -1359,3 +1360,110 @@ The integration is installed/updated as **one HACS integration release**. Its Py
 **Important evidence boundary:** Official docs confirm static serving and manual resource registration. They do **not** by themselves establish a stable public API for automatic modification of Lovelace's storage resources from custom integrations. We must validate that API against current HA Core and integration examples before promising zero-click card registration.
 
 **Next research:** Home Assistant frontend \`hass\` object/language contract, current Lovelace resource registration API and its storage-vs-YAML semantics; official backup/storage/Recorder guidance for the database architecture decision.
+
+
+
+## 12. Approved frontend decision and living official-source registry (2026-11-05)
+
+### ADR-UI-001 — One custom sidebar panel, no Lovelace card
+
+**Status:** APPROVED by project owner, 2026-11-05. **Supersedes** earlier proposals to support both a Lovelace card and sidebar panel.
+
+**Decision:** The only PlayStation Hub user interface will be a **full-page custom panel**, registered by the custom integration and accessible from the Home Assistant sidebar. The integration remains a single HACS Integration; its frontend is shipped with the Python code in one GitHub Release.
+
+**Why:** One consistent user experience, one responsive UI, one navigation model, one localization implementation, and one release/update lifecycle. No separate custom Lovelace card registration, no \`window.customCards\` metadata, no Lovelace resource management for our own card, and no second dashboard distribution category.
+
+**Direct official evidence:**
+- https://contributors.home-assistant.io/frontend/custom-ui/panel/ — custom panels are full-page components with sidebar links and \`hass\`, \`narrow\`, \`route\`, \`panel\` properties; Python integrations can register them using \`panel_custom.async_register_panel\`.
+- https://contributors.home-assistant.io/frontend/architecture/routing-and-panels/ — custom panels are different from built-in panels; use the custom-panel mechanism for a frontend not bundled into Home Assistant.
+- https://contributors.home-assistant.io/frontend/custom-ui/ — panel and card are separate frontend extension types; a custom panel loads via its own registration rather than Lovelace resource registration.
+- https://contributors.home-assistant.io/blog/2026/07/31/frontend-component-updates-2026.8/ — safe-area handling for custom panels and companion apps.
+- https://contributors.home-assistant.io/blog/2026/10/28/frontend-component-updates-2026.11/ — theme backgrounds for all panels and recent component removals; avoid coupling to unstable internal \`ha-*\` UI elements.
+
+**Proposed runtime package:**
+
+\`\`\`text
+custom_components/playstation_hub/
+├── __init__.py
+├── manifest.json
+├── config_flow.py
+├── const.py
+├── translations/
+│   ├── en.json
+│   └── pt.json
+└── frontend/
+    ├── playstation-hub-panel.js
+    ├── components/
+    ├── views/
+    ├── services/
+    ├── styles/
+    └── i18n/
+\`\`\`
+
+**Panel lifecycle design:**
+1. Serve only packaged frontend assets via the supported async static-path API.
+2. Register **one** custom panel globally, not once per PlayStation console or config entry.
+3. Use the Home Assistant custom-panel registration API, checking its actual signature for the supported Core versions; do not use the built-in panel registration API.
+4. Use the \`hass\` property for current Home Assistant state, \`narrow\` for responsive behavior, \`route\` for internal navigation, and \`panel.config\` for non-secret static panel configuration.
+5. Support desktop, tablet and Home Assistant companion apps, including safe areas and keyboard navigation.
+6. Reuse UI modules internally; a single public UI does **not** imply a monolithic JavaScript file.
+7. Make registration idempotent, prevent duplicate sidebar entries, test reload/unload and cleanup, and version frontend assets with the Python release.
+8. Do not delete or overwrite any existing user Lovelace dashboard during installation or removal.
+9. Keep all UI strings localizable. The frontend translation mechanism must be tested independently of Home Assistant backend translation catalogs.
+
+**Project acceptance gates:**
+- [ ] One sidebar item appears after successful integration setup.
+- [ ] No manual Lovelace resource registration is required.
+- [ ] No PlayStation Hub custom card is distributed.
+- [ ] Panel loads with multiple consoles and without duplicating the sidebar item.
+- [ ] Panel displays usable empty/unavailable states.
+- [ ] Unload/removal/restart/update behavior is deterministic and documented.
+- [ ] Responsive layouts, safe areas, theming, accessibility and language switching are tested.
+- [ ] A single GitHub Release upgrades backend and frontend together.
+
+**Scope correction to earlier guide:** DOC-022's Lovelace resource-registration discussion remains historical reference only. The card-specific acceptance gates in DOC-022 are **superseded** by ADR-UI-001. The current frontend target is the custom-panel route in DOC-024.
+
+### DOC-027 — Home Assistant: Custom panels (decision verification)
+
+- **Official source:** https://contributors.home-assistant.io/frontend/custom-ui/panel/
+- **Reviewed:** 2026-11-05
+- **Findings:** Custom panel is a full-screen web component; Python registration through \`panel_custom.async_register_panel\`; modern \`module_url\` is supported; panel receives \`hass\`, \`narrow\`, \`route\`, \`panel\`; the panel owns its page layout and mobile sidebar access.
+- **Important:** A panel does not automatically become a Lovelace dashboard and does not require maintaining a Lovelace card.
+- **Unresolved:** Exact current API call arguments, idempotent removal, asset caching, supported HA version and automated UI testing remain implementation gates.
+
+### DOC-028 — Home Assistant: Frontend custom UI extension types
+
+- **Official source:** https://contributors.home-assistant.io/frontend/custom-ui/
+- **Reviewed:** 2026-11-05
+- **Findings:** Cards, strategies, views and panels are separate extension types. Panels are loaded by their own registration. Frontend internal \`ha-*\` elements are not guaranteed stable public APIs.
+- **Decision:** Use the custom panel only, and prefer self-contained, documented UI dependencies rather than importing undocumented HA frontend internals.
+
+### Official documentation registry — permanent maintenance contract
+
+**Decision:** This guide must preserve **all consulted official documentation URLs** and provide enough metadata for future re-review. Never silently discard or replace old source links when URLs move. Record the new canonical URL and the previous URL, the date, what changed and which architecture rules are affected.
+
+For each source entry, maintain:
+- Stable ID (DOC-###), official title, canonical URL and publisher.
+- Date reviewed and page last-updated date if actually visible.
+- Scope: whole page, specific section, or reference only.
+- Status: verified, needs re-review, superseded, moved, unavailable, or not yet read.
+- Exact relevant requirement IDs, project decisions and verification/test evidence.
+- Dependencies: other official pages needed to interpret the requirement.
+- Next review trigger: significant HA/HACS update, deprecation notice, failed CI, API migration, or release preparation.
+
+**Source-of-truth precedence:**
+1. Current official Home Assistant/HACS docs and current supported public APIs.
+2. Current official source code for API behavior when documentation is ambiguous.
+3. Tests against the supported Home Assistant version.
+4. Our historical notes and earlier architecture decisions, which must be updated when superseded.
+
+**Review discipline:**
+- Documentation links and project decisions are separate fields. Never label a voluntary policy as an official requirement.
+- Preserve historical entries but mark outdated advice **SUPERSEDED** at its original location where practical.
+- Do not claim all official documentation is read: maintain an explicit backlog.
+- At every planned release, revisit all P0 sources and every document marked stale or moved.
+- Keep the index within this root guide for discoverability; a future machine-readable \`docs/official-sources.json\` can be generated once its schema is agreed, but must not diverge from this guide.
+
+**Already recorded:** DOC-001 through DOC-028, plus the grouped reading list in section 6. Their URLs and review notes remain in this document. Some DOC entries are focused re-reviews of previously consulted pages; document count is **not** a count of distinct URLs.
+
+**Next source research:** The current \`panel_custom.async_register_panel\` signature, safe panel unregister behavior, frontend asset caching and lifecycle across config entry reload, and frontend locale selection. These are implementation questions not yet proven by this guide.
