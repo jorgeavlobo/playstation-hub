@@ -481,3 +481,7 @@ The proposed source-authority and reconciliation contract is now in [ADR-0005 �
 ## SPEC-001 research checkpoint — 2026-11-05
 
 [SPEC-001 — LAN Discovery Acceptance Matrix](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) defines deterministic UDP parser fixtures, HA custom integration DHCP/discovery and multi-console setup tests, network-topology scenarios, canonical host identity migration constraints, security checks and nine sign-off gates. It does not approve ADR-0004 or claim a real Home Assistant OS discovery test has passed. The next protocol-specific validation specification is SPEC-002 Remote Play Byte Contract & Safety.
+
+## SPEC-002 research checkpoint — 2026-11-05
+
+[SPEC-002 — Remote Play Byte Contract & Safety](../specifications/SPEC-002-remote-play-byte-contract-and-safety.md) consolidates Protocols 03–07 transport constants, credential ownership, AES-CFB/HMAC IV, registration, persistent control socket, framed commands and standby confirmation. It defines 28 deterministic tests and twelve currently unpassed release gates. Missing source-to-byte proofs for wake credentials, registration preface, Np-AccountId and control headers remain explicit. No runtime or hardware validation occurred.
