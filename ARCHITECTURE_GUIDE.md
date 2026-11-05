@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.11.0 — 2026-11-05  
+> **Document version:** 0.12.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -964,4 +964,76 @@ custom_components/playstation_hub/
 - It **does change** the minimum release acceptance criteria: multilingual-ready backend and frontend are required from the beginning.
 - It does **not** resolve the SQLite-vs-Recorder decision, the exact config-flow schema, or frontend resource registration.
 
-**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/entity-translations/ — begin detailed localization requirements one document at a time.
+**DOC-011 reviewed:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/entity-translations/ — see below.
+
+
+### DOC-011 — Home Assistant: Entities have translated names
+
+- **Official source:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/entity-translations/
+- **Official title:** Entities have translated names
+- **Official last updated:** 2026-08-02
+- **Reviewed:** 2026-11-05
+- **Scope:** Entire single rule page: reasoning, example implementation, device-class exception to specifying a translation key, additional resources, explicit exceptions, related rules.
+- **Quality tier:** Gold in the official Home Assistant Core quality scale. **No exceptions** to the rule. Our HACS custom integration voluntarily adopts the behavior as a mandatory project standard.
+
+#### Source requirements and implementation contract
+
+| ID | Source-backed rule or clarification | PlayStation Hub design and verification |
+| --- | --- | --- |
+| HA-ENTITY-I18N-001 | Entity names must be translated for users of different languages. | No hardcoded English entity display names for user-facing entities. |
+| HA-ENTITY-I18N-002 | Example sets \`_attr_has_entity_name = True\`. | Use the modern entity naming convention, also subject to the separate \`has-entity-name\` rule review. |
+| HA-ENTITY-I18N-003 | Example sets \`_attr_translation_key = "phase_voltage"\` on a \`SensorEntity\`. | Use stable English semantic keys for named entity types; never use language-dependent translation keys. |
+| HA-ENTITY-I18N-004 | English source names are under \`strings.json\` → \`entity\` → platform domain → translation key → \`name\`. | Build source translation entries under the correct platform, e.g. \`entity.sensor.console_playtime.name\`. |
+| HA-ENTITY-I18N-005 | When a \`binary_sensor\`, \`number\`, \`sensor\`, or \`update\` entity has a device class, the translation key may be omitted **if** the entity should use the device class name. | Prefer standard device-class names where they accurately express the entity; do not invent redundant translations. |
+| HA-ENTITY-I18N-006 | The rule explicitly lists **no exceptions**. | No blanket exemptions for user-visible entity names; decide whether device-class naming covers an entity. |
+| HA-ENTITY-I18N-007 | Entity naming is combined with the device name in the example (e.g. “My device Phase voltage”). | Avoid repeating device name in the entity's translated suffix; test rendered naming with multiple consoles. |
+
+#### Minimal official-pattern example adapted to our domain
+
+\`\`\`python
+class ConsolePlaytimeSensor(SensorEntity):
+    """Represent PlayStation console playtime."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "console_playtime"
+\`\`\`
+
+\`\`\`json
+{
+  "entity": {
+    "sensor": {
+      "console_playtime": {
+        "name": "Console playtime"
+      }
+    }
+  }
+}
+\`\`\`
+
+The JSON fragment illustrates the \`strings.json\` source structure only; it is **not** a complete integration translation catalog. The class snippet is an illustrative contract, not an implemented or tested entity.
+
+#### Architecture decisions and multilingual consequences
+
+1. **Backend localization:** Integration entity names must be supplied through Home Assistant's translation system, using \`strings.json\` and translated locale resources according to the separate translation documentation.
+2. **Stable IDs:** Translation keys are stable technical identifiers, independent of locale. Do not generate unique IDs from translated names.
+3. **Device naming:** Keep device identity separate from entity suffix translations. Do not embed a console's user-defined name into a translation key.
+4. **Device-class reuse:** Where a standard device class describes an entity accurately, use it rather than duplicating the device-class name translation.
+5. **Frontend scope:** This rule covers Home Assistant **entity names**, not arbitrary custom Lovelace labels. Our independent frontend localization layer remains a project requirement but is **not validated by this rule**.
+6. **Locale targets:** English and Portuguese remain the initial languages. The precise HA locale filenames, generation and fallback semantics require the separate official translation documentation review.
+
+#### Planned tests and acceptance checks
+
+- [ ] Entity with \`translation_key\` renders translated name in at least two supported languages.
+- [ ] Entity name composes correctly with device name without repetition.
+- [ ] Entity unique ID remains stable across language changes.
+- [ ] Standard device-class names are used when appropriate.
+- [ ] All user-facing entity names have translations or correct device-class naming.
+- [ ] No runtime I/O in entity name properties.
+- [ ] Verify actual translation catalog and runtime behavior against official Home Assistant translation docs.
+- [x] Record that this Gold rule has no exceptions and identify its limited scope.
+
+#### Source boundaries
+
+The page does **not** prescribe our SQLite architecture, frontend language loader, exact translation build pipeline, dashboard resource registration, or GitHub Release procedure. Do not infer those from this rule.
+
+**Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/exception-translations/
