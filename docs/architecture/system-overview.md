@@ -68,3 +68,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Legacy code reuse boundary — research review (2026-11-05)
 
 The [legacy backend review](../research/legacy-code-review-and-refactoring-blueprint-2026-11.md) separates reusable atomic observation/checkpoint/UTC interval accounting principles from unsupported legacy MQTT, Supervisor App and one-player design. Future native transport, entity and persistence modules require approved contracts, async-safe storage, owner-scoped identity and bounded queries. No implementation code was changed.
+
+## Legacy frontend evidence boundary
+
+[Frontend source availability and proposed panel UX](../research/legacy-frontend-inventory-and-panel-ux-review-2026-11.md) distinguishes the documented new sidebar design from uninspected legacy Lovelace components. The README mentions a private frontend snapshot, but source was not found at expected `develop/frontend` paths. No old UI behavior is considered verified by this research.
