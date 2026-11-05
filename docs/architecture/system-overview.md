@@ -64,3 +64,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## WP-00A — Source-pinned HA baseline and LAN foundations
 
 [WP-00A](WP-00A-home-assistant-baseline-and-lan-contracts.md) records Home Assistant Core 2026.11.0/Python >=3.14.2 as an official source-verified development reference, with proposed (not approved) minimum HA support. The first LAN models, fake UDP transport, identity candidates, conservative power observations and 20 synthetic tests are specified, not implemented. The integration's one-sidebar/no-MQTT direction remains unchanged.
+
+## Legacy code reuse boundary — research review (2026-11-05)
+
+The [legacy backend review](../research/legacy-code-review-and-refactoring-blueprint-2026-11.md) separates reusable atomic observation/checkpoint/UTC interval accounting principles from unsupported legacy MQTT, Supervisor App and one-player design. Future native transport, entity and persistence modules require approved contracts, async-safe storage, owner-scoped identity and bounded queries. No implementation code was changed.
