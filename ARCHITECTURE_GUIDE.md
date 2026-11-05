@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.4 — 2026-11-05  
+> **Document version:** 0.39.5 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2594,3 +2594,13 @@ Source-observed PS5 details include UDP WAKEUP on port 9302, registration discov
 **Explicit blockers:** Exact wake user-credential derivation; full 480-byte registration preface offsets; Np-AccountId byte representation; RP-Did/RP-Auth transformations; complete independent crypto vectors; source licenses; session socket ownership and post-command hardware confirmation. Do not invent values or copy unreviewed secrets/key tables. Standby must never wake a sleeping console merely to send a redundant standby command. Sending a packet is not proof of physical transition.
 
 No executable code, credentials, console pairing or PS5 commands were used. Only main documentation changed; develop and next remain unchanged.
+
+## SPEC-003 — PSN authorization and availability (2026-11-05)
+
+**Status: Proposed research; twelve gates unpassed and Sony authorization unresolved. Guide version 0.39.5.** [SPEC-003](docs/specifications/SPEC-003-psn-authorization-and-availability.md) consolidates Protocols 08–10 and credential/sidebar ADRs into 14 sections, 30 synthetic test cases and twelve release gates.
+
+The preferred seamless Sony OAuth callback requires a provider-authorized client, scopes and registered redirect. Assisted NPSSO handoff is community-observed but not independently approved for a distributed integration. Home Assistant cannot read Sony cookies from a user's existing cross-origin browser session. Neither community token exchange nor the official Home Assistant PSN integration establishes Sony permission for our own client and endpoints.
+
+Token management requires per-account single-flight refresh, durable versioned replacement, crash/backup recovery, permission-specific API access, privacy controls and bounded rate budgets. Provider cloud failure never changes physical LAN power facts. Sony authorization and endpoint/redirect permission are blockers for shipping PSN features; independently tested LAN-only operation remains a viable release scope.
+
+No executable code or live credentials were used; documentation only on main.
