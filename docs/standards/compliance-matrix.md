@@ -35,3 +35,7 @@ No official Home Assistant quality-scale tier is claimed for this custom integra
 ## SPEC-005 release evidence checkpoint
 
 [SPEC-005](../specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) defines twelve release gates, separate LAN/Remote Play/PSN scopes, reproducible test evidence and CI/CD requirements. **Status: documented, no test evidence or release approval.** Sony PSN authorization remains blocked; HACS/Hassfest and HA OS backup/restore remain untested.
+
+## SPEC-006 security checkpoint
+
+[SPEC-006](../specifications/SPEC-006-security-privacy-threat-model.md) defines thirty threats and twelve security gates. **Status: research/proposed; no controls or tests verified.** Sony permission remains blocked and all common security release requirements are pending.
