@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.13.0 — 2026-11-05  
+> **Document version:** 0.14.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -61,9 +61,8 @@ playstation-hub/
 │       ├── manifest.json                 # domain, name, version, docs, issue tracker, owners
 │       ├── const.py                      # Domain, constants, defaults
 │       ├── config_flow.py                # UI setup, reconfigure, options (as needed)
-│       ├── strings.json                  # Base user-facing strings
-│       ├── translations/
-│       │   ├── en.json                   # English source translation
+│       ├── translations/                 # Runtime translations for custom integrations
+│       │   ├── en.json                   # Full English runtime translation
 │       │   └── pt.json                   # Portuguese translation; locale policy pending
 │       ├── coordinator.py                # Shared push/poll lifecycle where appropriate
 │       ├── data.py                       # Typed runtime data / per-config-entry state
@@ -933,7 +932,6 @@ Each rule starts at **Not assessed**. Allowed future statuses: **Applicable / pl
 
 \`\`\`text
 custom_components/playstation_hub/
-├── strings.json
 ├── translations/
 │   ├── en.json
 │   └── pt.json
@@ -1129,3 +1127,146 @@ These snippets demonstrate the documented translation pattern. They are **illust
 This document does **not** specify how to implement PlayStation power control, the frontend translation loader, SQLite error recovery, or the exact Home Assistant translation build process. Those topics remain open for separate official-source reviews.
 
 **Next official document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/icon-translations/
+
+
+
+## 10. Consolidated official-source review — architecture-critical batch (2026-11-05)
+
+**Review status and limits:** The owner requested a comprehensive one-pass review. The official sites contain many hundreds of pages, changing APIs and linked rules. This batch verifies the **specific documents listed below**, records directly supported requirements and corrects prior mistakes. **It is not a claim that every page, linked child page, or all 54 individual quality rules has been exhaustively audited.** Do not label the integration fully compliant until implementation, tests, and remaining official-source reviews are completed.
+
+### DOC-013 — Icon translations
+
+- **Source:** https://developers.home-assistant.io/docs/core/integration-quality-scale/rules/icon-translations/
+- **Reviewed:** 2026-11-05
+- **Direct rule:** Icons can be specified in \`icons.json\` using translation keys; avoid overriding a semantically correct device-class icon. Icons can be state-dependent or numeric-range-dependent.
+- **Example:** \`{"entity":{"sensor":{"console_status":{"default":"mdi:gamepad-variant","state":{"playing":"mdi:gamepad-variant-outline"}}}}}\`
+- **Numeric range rules:** Numeric thresholds sorted ascending; highest matching lower/equal bound wins. Default applies to unavailable, nonnumeric and out-of-range low values. State-based mappings take precedence over ranges.
+- **Exceptions:** The official rule says none.
+- **Important distinction:** Icon “translations” map semantic keys/states to icon names; they are **not natural-language translations**.
+- **Project tests:** Check device-class reuse, static/state/range icon mappings, unavailable states and no I/O in properties.
+
+### DOC-014 — Integration file structure
+
+- **Source:** https://developers.home-assistant.io/docs/creating_integration_file_structure/
+- **Reviewed:** 2026-11-05
+- **Required minimum integration files:** \`manifest.json\` and \`__init__.py\` under a directory matching the unique, effectively permanent integration domain.
+- **Platforms:** e.g. \`sensor.py\`, \`switch.py\`, only when needed.
+- **Actions:** Describe registered actions in \`services.yaml\` when applicable.
+- **Coordinator:** \`coordinator.py\` is a recommended convention for a \`DataUpdateCoordinator\` subclass, **not a mandatory module**.
+- **Custom integration location:** \`<config>/custom_components/<domain>/\`.
+- **Brand:** Custom integration may include \`brand/\` inside its integration directory; image specifics require separate verification.
+- **Our package:** \`custom_components/playstation_hub/\` with all runtime Python/frontend assets under it.
+
+### DOC-015 — Custom integration localization — CRITICAL CORRECTION
+
+- **Source:** https://developers.home-assistant.io/docs/internationalization/custom_integration/
+- **Reviewed:** 2026-11-05
+- **Official explicit rule:** **Do not use \`strings.json\` for custom components.**
+- **Why:** \`strings.json\` and \`[%key:...]%\`-style placeholders are **build-time features for Home Assistant Core**. Custom integrations do not run through that build pipeline.
+- **Runtime requirement:** Include complete, standalone \`translations/<language_code>.json\` catalogs adjacent to the integration source, including \`translations/en.json\`; use **BCP 47** language codes.
+- **No unresolved references:** The full English text must appear in \`translations/en.json\`. No Core build-time references/placeholders.
+- **Validation:** Use Hassfest to validate translation files.
+- **Impact:** Supersedes earlier guide passages DOC-011/DOC-012 that incorrectly prescribed \`strings.json\` as the runtime translation source. Those earlier examples are **historical examples of key shape**, not valid custom-integration packaging instructions.
+- **Planned files:** \`custom_components/playstation_hub/translations/en.json\`, \`pt.json\` (verify HA locale naming before first release), plus future BCP 47 catalogs.
+- **Frontend:** Its JavaScript locale loader remains a separately engineered component, not automatically handled by the Python translation catalogs.
+
+### DOC-016 — Backend localization categories (Core schema reference only)
+
+- **Source:** https://developers.home-assistant.io/docs/internationalization/core/
+- **Reviewed:** 2026-11-05
+- **Categories:** \`title\`, \`common\`, \`conditions\`, \`config\`, \`device\`, \`device_automation\`, \`entity\`, \`entity_component\`, \`exceptions\`, \`issues\`, \`options\`, \`selectors\`, \`services\`, \`triggers\`, plus relevant subentry structures.
+- **Project use:** Reuse the supported JSON **category/key shapes** in complete runtime translation catalogs.
+- **Critical limitation:** This page explains Core's source string and reference system; **do not copy its \`strings.json\` build process or \`[%key:...]%\` references** into our custom integration. DOC-015 controls runtime packaging.
+
+### DOC-017 — Config entries
+
+- **Source:** https://developers.home-assistant.io/docs/config_entries_index/
+- **Reviewed:** 2026-11-05
+- **Persistence:** Home Assistant owns persistent Config Entries created through UI config flows.
+- **Lifecycle:** \`async_setup_entry(hass, entry)\` runs per entry; forward setup to relevant entity platforms via \`await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)\`.
+- **Unload:** \`async_unload_entry\` must remove listeners, unsubscribe events, close connections and unload forwarded platforms.
+- **Removal:** \`async_remove_entry\` can perform cleanup when an entry is deleted. **Data deletion policy must be explicit and conservative.**
+- **Migration:** Implement \`async_migrate_entry\` when entry versions change.
+- **Mutation:** Never mutate \`entry.data\` or \`entry.options\` directly; use \`hass.config_entries.async_update_entry\`.
+- **Subentries:** Official framework supports logical config subentries; decide whether multiple PlayStation consoles are entries or subentries only after modeling source identities and permissions.
+- **Failure states:** Distinguish setup error, setup retry, migration error and failed unload; test each relevant lifecycle transition.
+
+### DOC-018 — Data entry flow
+
+- **Source:** https://developers.home-assistant.io/docs/data_entry_flow_index/
+- **Reviewed:** 2026-11-05
+- **Framework:** Asynchronous multi-step flows for configuration, options, repairs and related operations.
+- **Flow results:** Show form, create entry, abort, external step, show progress and show menu.
+- **Forms:** Define validation with Voluptuous and/or selectors; return structured field errors, never raw sensitive payloads.
+- **Sections:** Can group inputs; only **one level** of sections is supported. Sections can have localized names/descriptions and icon configuration.
+- **Version:** A flow handler defines schema version and relevant steps.
+- **Project:** Implement a minimal functional UI flow with tests for duplicate entries, invalid values, cancellation, retry and translations. Do not invent options before identifying actual user-configurable behavior.
+- **Correction:** The Core examples may refer to \`strings.json\`; **custom integration runtime translations still follow DOC-015**.
+
+### DOC-019 — Integration manifest
+
+- **Source:** https://developers.home-assistant.io/docs/creating_integration_manifest/
+- **Reviewed:** 2026-11-05
+- **File:** \`custom_components/playstation_hub/manifest.json\`.
+- **Domain:** Must match directory, be unique and treated as immutable.
+- **Custom version:** Required for custom integrations, valid AwesomeVersion-compatible SemVer/CalVer. **Project policy: SemVer + full GitHub Releases.**
+- **Type:** Explicit \`integration_type\` recommended even for custom integrations. \`hub\`, \`device\`, \`service\` etc. have different semantics. **Do not finalize \`hub\` until the multi-console config-entry model is decided.**
+- **Dependencies:** Use explicit \`requirements\` pins and correct \`dependencies\` / \`after_dependencies\` semantics. Verify whether MQTT is a dependency only after choosing integration transport.
+- **HACS minimum:** DOC-001 additionally requires \`domain\`, \`documentation\`, \`issue_tracker\`, \`codeowners\`, \`name\`, \`version\`. Manifest validity must be checked with Hassfest.
+- **Quality scale:** Do **not** declare \`quality_scale: platinum\` for a custom integration. Our Platinum target is an internal aspiration, not official certification.
+
+### DOC-020 — HACS Plugin (Dashboard) packaging
+
+- **Source:** https://www.hacs.xyz/docs/publish/plugin/
+- **Reviewed:** 2026-11-05
+- **Separate category:** HACS frontend calls it “Dashboard”; the backend calls it “plugin”.
+- **Standalone plugin packaging:** Expects matching \`.js\` in \`dist/\` or repository root, with release-specific selection rules; non-JS assets belong in \`dist/\`.
+- **Our chosen architecture:** **One HACS Integration**, **not** a separately registered Plugin repository. Do not impose plugin \`dist/\` layout requirements on our integration package.
+- **Unresolved implementation gate:** The custom integration must serve/register its bundled frontend using **supported Home Assistant frontend APIs**, manage resource cache invalidation and remove/update resources safely. This is **not guaranteed by HACS** merely because the JS files are packaged.
+
+### DOC-021 — HACS Integration packaging and catalog admission (revalidated)
+
+- **Sources:** https://www.hacs.xyz/docs/publish/integration/ and https://www.hacs.xyz/docs/publish/include/
+- **Rechecked:** 2026-11-05
+- **One integration** in \`custom_components/\`; all runtime dependencies inside its package.
+- **Valid manifest** with six HACS minimum keys, branding, and release behavior as documented.
+- **Default catalog admission:** Public GitHub repo; HACS Action with zero errors/ignored checks; Hassfest; **full GitHub Release after passing actions**; correct \`hacs/default\` integration list submission.
+- **Distinction:** Basic custom-repository HACS installation can work without releases, but **PlayStation Hub requires Releases** as project policy and for catalog submission.
+
+### Corrections applied to previous design assumptions
+
+1. **P0:** For custom integrations, use \`translations/*.json\` directly, **not** \`strings.json\`. Supersedes conflicting historical instructions in DOC-011 and DOC-012.
+2. **P0:** A bundled frontend is not a HACS plugin installation; integration code must explicitly register/serve it. Test upgrade and rollback of both components.
+3. **P1:** Do not set official \`quality_scale: platinum\` in the custom manifest.
+4. **P1:** \`ConfigEntry.data\` and \`options\` must not be mutated directly.
+5. **P1:** Preserve the unique \`playstation_hub\` domain; do not shadow Core domains.
+6. **P1:** All runtime resources must remain inside the HACS-managed integration directory.
+7. **P1:** The source documentation is not a substitute for real CI, HACS install testing, browser integration testing or data migration testing.
+
+### Remaining mandatory research backlog — NOT YET EXHAUSTIVELY REVIEWED
+
+The documentation trees at https://www.hacs.xyz/docs/use/, https://www.hacs.xyz/docs/publish/, https://www.hacs.xyz/docs/contribute/ and https://developers.home-assistant.io/ contain substantially more documents. The following areas must still receive their own verified source reviews:
+
+| Priority | Documentation family | Reason |
+| --- | --- | --- |
+| P0 | Official custom integration frontend static path/resource registration, panel/custom-card APIs, frontend localization | Critical to our single-install Python + dashboard design |
+| P0 | Official Home Assistant async event-loop/I/O, storage helpers, Recorder, backup coverage | Required before choosing SQLite vs native storage |
+| P0 | HACS Action, Hassfest and branding details | Required for first valid catalog submission |
+| P0 | Config flow specifics, config entry runtime data, setup failures, unloading | Correct first skeleton lifecycle |
+| P1 | All 54 detailed IQS rule pages (only entity/exception/icon translations reviewed individually) | Evidence-based voluntary Platinum target |
+| P1 | Device registry, entity platforms, service actions, permissions, diagnostics and repairs | Production features |
+| P1 | Translations, pluralization, frontend language selection, language codes, accessibility | Multilingual release requirement |
+| P1 | Integration test framework, pytest fixtures, coverage, Ruff, strict typing | High-quality CI |
+| P2 | HACS use/contribute, AppDaemon, theme/template/plugin-only publication | Useful context; many sections do not apply to our integration category |
+| P2 | Compatibility, security, licensing, privacy, telemetry and upgrade policy | Public maintenance |
+
+**No completeness claim:** Until these are read and tests pass, do not label the guide “all official documentation reviewed”, the implementation “Platinum certified”, or the integration “Marketplace approved”.
+
+### Next engineering decisions after documentation research
+
+- [ ] Select and prove frontend registration mechanism and automatic resource update.
+- [ ] Select source/transport and multiple-console architecture.
+- [ ] Approve data storage ADR (native Store/Recorder vs application-owned SQLite).
+- [ ] Create working minimal integration with direct runtime translation catalogs.
+- [ ] Implement Hassfest/HACS Action and verify the actual release artifact.
+- [ ] Add real tests and install as a custom repository before catalog submission.
