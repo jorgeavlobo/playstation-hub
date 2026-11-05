@@ -485,3 +485,7 @@ The proposed source-authority and reconciliation contract is now in [ADR-0005 �
 ## SPEC-002 research checkpoint — 2026-11-05
 
 [SPEC-002 — Remote Play Byte Contract & Safety](../specifications/SPEC-002-remote-play-byte-contract-and-safety.md) consolidates Protocols 03–07 transport constants, credential ownership, AES-CFB/HMAC IV, registration, persistent control socket, framed commands and standby confirmation. It defines 28 deterministic tests and twelve currently unpassed release gates. Missing source-to-byte proofs for wake credentials, registration preface, Np-AccountId and control headers remain explicit. No runtime or hardware validation occurred.
+
+## SPEC-007 compatibility checkpoint — 2026-11-05
+
+[SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) documents physical console-family, firmware, LAN/Remote Play and HA OS compatibility evidence. All twelve release gates remain unpassed; no PS5 hardware has been tested by this project. The next step is formal review of proposed ADR-0004–0010 and closure of P0 blockers, not unsupported release claims.
