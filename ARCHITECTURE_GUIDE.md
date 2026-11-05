@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.4.0 — 2026-11-05  
+> **Document version:** 0.5.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -499,4 +499,52 @@ jobs:
 - [ ] Obtain a real green run and link the evidence.
 - [ ] Review Hassfest documentation separately.
 
-**Next suggested document (not yet reviewed):** https://developers.home-assistant.io/docs/development_validation/
+**The next document was reviewed as DOC-004 below. Its actual topic is input validation, not Hassfest.**
+
+
+### DOC-004 — Home Assistant: Validate the input
+
+- **Source:** https://developers.home-assistant.io/docs/development_validation/
+- **Official title:** Validate the input
+- **Last updated (as shown by source):** 2026-06-15
+- **Reviewed:** 2026-11-05
+- **Scope:** This page addresses YAML configuration and platform input validation using \`voluptuous\` and Home Assistant's \`config_validation\` helpers. It does **not** describe Hassfest.
+- **Review status:** Complete for this single page; the linked helper implementation and modern config-flow documentation require separate reviews.
+
+#### Rules and observations
+
+| ID | Classification | Source finding | PlayStation Hub implementation / verification |
+| --- | --- | --- | --- |
+| HA-INPUT-001 | DOCUMENTED PATTERN | Home Assistant validates \`configuration.yaml\` options with \`voluptuous\`, including required/optional values, types and enumerated options. | Apply equivalent strict input validation wherever the integration accepts external configuration. For UI config flows, research the dedicated official config-flow rules before deciding the exact schema. |
+| HA-INPUT-002 | DOCUMENTED HELPER | \`homeassistant.helpers.config_validation\` offers typed validators for strings, booleans, positive integers, ports, URLs, entity IDs, time zones, and other values. | Prefer Home Assistant-provided validators over duplicate custom validators where suitable. |
+| HA-INPUT-003 | DOCUMENTED HELPER | MQTT-specific helpers include \`valid_subscribe_topic\` and \`valid_publish_topic\`. | If MQTT topic configuration is exposed, validate topics using appropriate HA MQTT helpers; verify supported import/API paths in the current code before implementation. |
+| HA-INPUT-004 | RECOMMENDATION | Use constants defined in \`const.py\`. | Keep configuration key names and defaults centralized. |
+| HA-INPUT-005 | RECOMMENDATION | When extending a platform schema, import and extend the integration's \`PLATFORM_SCHEMA\`. | Only applicable if we actually implement YAML/platform schemas; not a mandate to introduce YAML configuration. |
+| HA-INPUT-006 | RECOMMENDATION | Prefer required fields before optional fields in schema definitions. | Apply this convention to \`voluptuous\` schemas when applicable. |
+| HA-INPUT-007 | RECOMMENDATION | Optional defaults must satisfy their declared validators. The page warns against \`default=None\` with a \`cv.string\` validator. | Unit-test default values and reject incompatible configurations early. |
+| HA-INPUT-008 | EXAMPLE | Constrain options with \`vol.In\` or a list of known valid values. | Enumerated user-facing settings must reject unsupported values. |
+| HA-INPUT-009 | EXAMPLE | Use \`cv.port\` for port numbers (valid range 1–65535). | Validate any configured port without accepting out-of-range values. |
+| HA-INPUT-010 | EXAMPLE | Validate lists using \`cv.ensure_list\` and membership checks. | Apply only where list-valued settings are introduced. |
+
+#### Implications for our planned integration
+
+1. **No decision to introduce YAML:** The official page describes YAML validation. Our UI-first configuration approach remains planned, but requires a separate config-flow documentation review.
+2. **Transport isolation:** If the PlayStation Hub uses MQTT, its transport configuration should validate publish and subscribe topics and reject malformed user input.
+3. **Testability:** Each configuration field should have valid, invalid, boundary and default-value tests.
+4. **Fail safely:** Reject invalid configuration without starting monitoring workers or corrupting stored settings.
+5. **No invented dependencies:** The document does not prescribe SQLite, Recorder, frontend registration, entity lifecycle, or Hassfest commands.
+
+#### Concrete acceptance checklist (planned, not yet implemented)
+
+- [ ] Confirm the configuration mechanism from the official Config Entries / Data Entry Flow documentation.
+- [ ] Identify every input field and choose an appropriate validator.
+- [ ] Add tests for invalid ports, wrong types, invalid topics, invalid enum values and defaults where relevant.
+- [ ] Ensure no credentials or sensitive input are logged on validation errors.
+- [ ] Validate the integration setup and reconfiguration lifecycle separately.
+- [x] Correctly classify this document as **input validation**, not Hassfest.
+
+#### Correction to previous planning
+
+The previous guide referred to this URL as if it were Hassfest documentation. That was inaccurate. This URL's current official page is **Validate the input**. Hassfest remains an independent research task.
+
+**Next recommended official document (not yet reviewed):** https://developers.home-assistant.io/docs/development_checklist/ — verify the destination and its actual content before assigning it a topic.
