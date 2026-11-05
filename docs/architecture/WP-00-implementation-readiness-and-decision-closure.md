@@ -2,7 +2,7 @@
 
 **Status:** Proposed planning package; NOT implementation authorization
 **Date:** 2026-11-05
-**Branch:** Documentation only on `main`; `next` and `develop` unchanged
+**Branch:** Documentation on `main`; new implementation branches will be created from `main` when work begins; `develop` remains legacy reference
 **Depends on:** Formal ADR-0004–0010 review, Protocols 01–10, SPEC-001–007, release quality gates
 **Outcome required:** An approved, evidence-backed implementation baseline and precise WP-01 entry criteria
 
@@ -124,7 +124,7 @@ Dependencies must not point from domain models into Home Assistant, frontend or 
 - [ ] No LAN wake, Remote Play pairing or PSN calls in WP-01.
 - [ ] Acceptance evidence format agreed (test ID, commit, versions, actual result).
 - [ ] Initial directory/module boundaries reviewed.
-- [ ] User has explicitly authorized implementation on `next`.
+- [ ] User has explicitly authorized implementation and the purpose-specific branch name.
 
 If any mandatory entry criterion remains open, WP-01 is **NOT_READY**, even if a planning document exists.
 
@@ -161,7 +161,7 @@ These blockers have different scopes: BLK-005/006 do not prevent pure synthetic 
 ## 10. Risk-based implementation rules
 
 - Keep `develop` as read-only legacy reference, never wholesale merge its MQTT, single-player or Lovelace code.
-- Keep research documentation on `main` until explicit permission to implement on `next`.
+- Keep research documentation on `main` until implementation is authorized; then create a purpose-specific `feature/*` branch from `main`.
 - Each future implementation PR must link ADR/SPEC tests and exact supported HA versions.
 - Reject unverified default status-code mappings, unbounded retries, raw credentials, optimistic command success and implicit cross-console identity reassignment.
 - A capability can be implemented behind a disabled flag for controlled tests but cannot be advertised or enabled without applicable release gates.
@@ -175,7 +175,7 @@ status: PROPOSED
 maintainer_approval: null
 approval_date_utc: null
 architecture_guide_version: "0.40.0"
-target_branch_for_implementation: next
+target_branch_for_implementation: null # create feature/<scope> from main when authorized
 ha_core_baseline: null
 python_baseline: null
 accepted_adrs: []
@@ -217,3 +217,7 @@ This is a documentation template, not a generated approval or an assertion that 
 - https://www.hacs.xyz/docs/publish/integration/
 
 **Outcome:** WP-00 readiness criteria, contract freeze candidates, blocker ownership and staging documented. No code, actual tests, hardware verification or maintainer approval was performed.
+
+## Branch strategy revision — 2026-11-05
+
+The maintainer has rejected using an empty permanent `next` implementation branch. Research and architecture documentation remain on `main`; `develop` is retained as a read-only legacy reference. When implementation is authorized, create a short-lived, purpose-specific branch from the current `main` (for example `feature/lan-discovery`), validate through a pull request, and merge reviewed code into `main`. Do not recreate or use `next` as the designated implementation branch. This decision does not authorize deleting any existing remote branch; branch cleanup is a separate explicit action.
