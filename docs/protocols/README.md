@@ -35,3 +35,5 @@ Each specification includes scope, observed upstream behavior, planned Python bo
 ## First-party integration principle
 
 One HACS custom integration with Python protocol adapters, native HA entities, independent session storage and a single multilingual sidebar panel. No required PS5-MQTT add-on, Mosquitto broker, Node.js or standalone container. Reusing vetted Python dependencies remains possible after license/security review.
+
+**Protocol 08 research checkpoint (2026-11-05):** Added dedicated reviews of Sony browser-login limitations, authorization-callback eligibility, PSNAWP PyPI versus development APIs, official HA and Emkraan token persistence, refresh-token concurrency, crash/backup recovery and a synthetic test matrix. See [Protocol 08](08-psn-authentication.md), sections 12–16. This does not establish a Sony-approved OAuth client or live protocol compatibility.
