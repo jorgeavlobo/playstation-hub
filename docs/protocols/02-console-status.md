@@ -1,47 +1,152 @@
-# Console status
+# Protocol 02 — Console status and availability
 
-**Document status:** Initial specification — source research, not live validated  
-**Last reviewed:** 2026-11-05  
-**Implementation:** Not started  
-**Primary proposed Python module:** `custom_components/playstation_hub/transport/state.py`
+**Status:** Source-derived technical specification; live validation deferred to implementation  
+**Reviewed:** 2026-11-05  
+**Proposed module:** `custom_components/playstation_hub/transport/state.py` (transport observations) and a separate domain-level state reconciler  
+**Source revisions:** playactor tree `93ee087445db368acaba9ad50099bce56ca9141d`; PS5-MQTT tree `7ab3075d276f3eeecd81a3322c72231af8cd51bd`.
 
-## 1. Objective and scope
+## 1. Purpose and boundaries
 
-Normalize LAN console observations into reliable state.
+Determine the observed power state and network reachability of each configured console. Keep **power**, **reachability**, **game activity**, **observation freshness** and **command progress** separate. Status detection is available without PSN; title and player identity are not established by this protocol.
 
-## 2. Source-confirmed upstream behavior
+Evidence labels: **SOURCE** = directly visible in the cited upstream code; **DECISION** = our architecture; **OPEN** = not yet source-confirmed or requiring implementation-stage tests.
 
-The upstream parser maps HTTP-like response code 620 to STANDBY and other response codes to AWAKE; this is an upstream heuristic, not a comprehensive status specification. Discovery responses include host metadata and can be stale.
+## 2. Observed upstream wire semantics
 
-## 3. PlayStation Hub architecture decision
+The LAN discovery response parser in playactor recognizes HTTP-like responses and extracts a numeric status code from the first line. Its `statusCode === "620"` branch maps to `STANDBY`; all other response codes are mapped to `AWAKE`. The parser lowercases header keys and returns device metadata including `host-id`, `host-name`, `host-type`, `system-version`, and `device-discovery-protocol-version`.
 
-Model AWAKE, STANDBY, OFFLINE/UNREACHABLE and UNKNOWN separately. Store observed_at UTC and freshness; never turn an unknown response into proof of AWAKE. Preserve last-known state separately from current availability.
+**SOURCE:** The library's behavior is an implementation heuristic. **OPEN:** This review does not establish a complete Sony-defined mapping of all possible response codes. **DECISION:** Unknown response codes and malformed responses will not be assumed to mean AWAKE.
 
-## 4. Proposed interface contract
+A valid LAN observation must include a stable host ID and a recognizable PS5 device type. Source IP address, receive time and discovery protocol version must be retained for diagnostics and stale-observation rejection.
 
-The module must expose typed, async-compatible operations and return normalized domain objects or explicit typed errors. Transport I/O must not block the Home Assistant event loop. No Home Assistant entity or frontend component may perform protocol I/O directly. Each observation must record its source and UTC timestamp. Details of function signatures remain **to be specified**, not implemented.
+## 3. PS5-MQTT's current state handling
 
-## 5. Failure, privacy and lifecycle policy
+**SOURCE:** `check-devices-state.ts` polls each registered device via playactor `check`. On success it updates HA when the power state changes or a previously unavailable console returns; it marks `available=true`. On exception it publishes `status=UNKNOWN`, `available=false` and clears activity.
 
-All network operations need bounded timeouts and cancellation-safe cleanup. Invalid or stale data must never be reported as confirmed current state. Secrets must not enter logs, diagnostics or frontend assets. The integration must unload cleanly and handle multiple consoles without shared mutable protocol state.
+**SOURCE:** `update-ha.ts` publishes separate fields: `power`, `device_status` (online/offline), `activity` (playing/idle/none), players and title metadata. This separation is useful but the MQTT payload is **not** the protocol contract for our new native integration.
 
-## 6. Source references
+**SOURCE:** `poll-devices.ts` repeats checks using a configurable interval. **DECISION:** Our polling frequency, retries and backoff are not fixed by this upstream implementation; define them according to network load, responsiveness and HA guidance.
 
-- https://github.com/dhleong/playactor/blob/main/src/discovery/messages.ts
-- https://github.com/dhleong/playactor/blob/main/src/discovery/model.ts
+**Observed weakness:** Upstream `check-devices-state.ts` uses `break` when a device is transitioning, which exits the device loop rather than continuing to the next console. **DECISION:** Our multi-console monitoring must isolate command transitions per console; one transition must not suppress checks of other consoles.
 
-## 7. Open questions and implementation-stage verification
+## 4. Domain state model (proposed)
 
-- [ ] Finalize precise wire-format details and edge cases from the upstream source.
-- [ ] Review licenses and any Sony service restrictions before reuse.
-- [ ] Specify Python data models, error types and async lifecycle.
-- [ ] Add synthetic positive/negative protocol fixtures and tests.
-- [ ] Validate behavior on a test PS5 during implementation.
-- [ ] Record firmware compatibility and recovery behavior.
+| Dimension | Values | Meaning |
+| --- | --- | --- |
+| `power_state` | `AWAKE`, `STANDBY`, `UNKNOWN` | Current confirmed power observation or lack of one |
+| `availability` | `AVAILABLE`, `UNAVAILABLE` | Whether a recent valid status observation exists |
+| `activity_state` | `PLAYING`, `IDLE`, `UNKNOWN`, `NOT_APPLICABLE` | Derived from separately sourced game/account activity |
+| `command_state` | `IDLE`, `REQUESTED`, `IN_PROGRESS`, `VERIFYING`, `FAILED` | Independent control operation lifecycle |
+| `last_known_power_state` | `AWAKE`, `STANDBY`, `UNKNOWN` | Most recent confirmed historical observation, not current status |
 
-## 8. Related documents
+**DECISION:** `OFF` is **not** a confirmed LAN power state. An unanswered UDP query could mean fully off, unreachable, firewalled, wrong IP, VLAN restrictions, or transient packet loss. Present it as unavailable, not powered off.
 
-- [Protocol index](README.md)
-- [Architecture guide](https://github.com/jorgeavlobo/playstation-hub/blob/main/ARCHITECTURE_GUIDE.md)
+**DECISION:** A console can be `STANDBY` and `AVAILABLE` simultaneously if it responds to discovery. `UNKNOWN` power and `UNAVAILABLE` are not synonymous: an unexpected but validly received response can imply reachability without proving power mode.
 
-**Evidence boundary:** This document records source findings and intended design. It does not claim the protocol is officially documented by Sony or proven functional in PlayStation Hub.
+## 5. Observation model and ordering
+
+```text
+ConsoleStatusObservation
+  console_id: str
+  source: LAN_DISCOVERY
+  source_address: IPv4Address
+  raw_status_code: str | None
+  power_state: AWAKE | STANDBY | UNKNOWN
+  observed_at: UTC datetime
+  received_sequence: int
+  metadata: validated optional fields
+```
+
+The domain reconciler maintains a per-console snapshot with `last_successful_observation_at`, `last_attempt_at`, `last_error_category`, `last_known_power_state`, and a freshness deadline.
+
+**DECISION:** Process each console independently; discard out-of-order observations and responses for an unexpected host ID. Do not allow a delayed previous query to overwrite a newer confirmed state. Use monotonic elapsed time for in-process deadlines and UTC timestamps for persistence/display.
+
+## 6. Proposed transition behavior
+
+| Input / event | Current power | Availability | Required behavior |
+| --- | --- | --- | --- |
+| Valid response with recognized awake code | AWAKE | AVAILABLE | Update confirmed state and timestamp |
+| Valid response code 620 | STANDBY | AVAILABLE | Update confirmed state and timestamp |
+| Recognized console but unrecognized response code | UNKNOWN | AVAILABLE, if validated as reachable | Preserve raw code for safe diagnostics |
+| One missed response | Retain last-known separately | Policy-dependent | Do not immediately assert OFF |
+| Freshness deadline exceeded | UNKNOWN | UNAVAILABLE | Retain historical last-known state |
+| Later valid response | Observed state | AVAILABLE | Recover without creating false power transitions |
+| Command sent, no confirmation | Unchanged/UNKNOWN | Independently evaluated | Keep command pending then fail/unknown on timeout |
+| PSN unavailable | Unchanged | Unchanged | Game/activity data becomes stale/unknown separately |
+
+**OPEN:** Which specific non-620 codes represent awake must be established from further source evidence or implementation-stage fixtures. The table does not assert a universal awake status code.
+
+## 7. State reconciliation sequence
+
+```mermaid
+sequenceDiagram
+    participant LAN as LAN status poller
+    participant R as State reconciler
+    participant HA as Home Assistant
+    participant DB as Session tracker
+    LAN->>R: Timestamped validated observation
+    R->>R: Verify host ID and freshness
+    R->>R: Reconcile power and availability
+    R-->>HA: Publish cached native entity state
+    R-->>DB: Emit meaningful confirmed transition
+    Note over R,DB: Unknown/unreachable must not invent gameplay
+```
+
+**DECISION:** The state reconciler emits events only for meaningful confirmed changes. Entity properties read cached state and perform no network or database I/O. A transient failure must not silently create a fabricated gaming session end without a documented session recovery policy.
+
+## 8. Multi-console scheduling and recovery
+
+- Maintain independent status tasks or coordinator records per console.
+- Serialize overlapping checks for the **same** console; allow bounded concurrency across different consoles.
+- Use bounded timeouts, jitter and capped backoff after repeated failures.
+- Resume normal intervals after a successful observation.
+- Stop timers and sockets on unload; never let an outstanding callback resurrect removed entities.
+- Keep configuration and actual runtime availability separate.
+
+## 9. Home Assistant presentation policy
+
+**DECISION:** Expose an appropriate native entity for console power status and availability. A binary sensor should only be used where its semantics are unambiguous; an enumerated sensor may be preferable for awake/standby/unknown. Use native entity availability rather than fabricating a power state. Final platform and translation keys will be selected when reviewing HA entity contracts.
+
+The sidebar panel displays current observation, last-seen time, optional last-known state and clear stale/offline messaging in the selected language. No raw PSN account identifiers or sensitive diagnostic payloads appear in frontend state.
+
+## 10. Failure categories and diagnostics
+
+- `DISCOVERY_TIMEOUT`: no timely response.
+- `NETWORK_UNREACHABLE`: network/socket error.
+- `INVALID_RESPONSE`: malformed or unsupported wire format.
+- `IDENTITY_MISMATCH`: response from unexpected console.
+- `STALE_OBSERVATION`: response older than accepted state.
+- `INTERNAL_ERROR`: unexpected integration failure.
+
+These are **proposed internal error categories**, not upstream protocol error codes. Diagnostics should include counts, timestamps and sanitized status codes, never credentials or full raw packets.
+
+## 11. Implementation-stage tests
+
+- [ ] Valid standby response (`620`), and a source-supported awake response.
+- [ ] Unexpected status codes remain UNKNOWN, not AWAKE.
+- [ ] Missing or malformed host identity is rejected.
+- [ ] No reply does not imply OFF.
+- [ ] Available standby remains distinguishable from unavailable console.
+- [ ] Late/out-of-order observations cannot overwrite newer ones.
+- [ ] Console A transitioning does not block console B polling.
+- [ ] Reconnect after temporary network loss preserves accurate history.
+- [ ] PSN outage does not change LAN power state.
+- [ ] Command timeout never creates an optimistic successful state.
+- [ ] Entity properties perform no I/O; unloading cancels active checks.
+- [ ] Session tracker receives only the explicitly defined transition events.
+
+## 12. Sources
+
+- [playactor response parser](https://github.com/dhleong/playactor/blob/main/src/discovery/messages.ts)
+- [playactor discovery model](https://github.com/dhleong/playactor/blob/main/src/discovery/model.ts)
+- [playactor UDP device mapping](https://github.com/dhleong/playactor/blob/main/src/discovery/udp.ts)
+- [PS5-MQTT status check saga](https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/redux/sagas/check-devices-state.ts)
+- [PS5-MQTT polling saga](https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/redux/sagas/poll-devices.ts)
+- [PS5-MQTT HA publication](https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/redux/sagas/update-ha.ts)
+- [PS5-MQTT state types](https://github.com/FunkeyFlo/ps5-mqtt/blob/main/ps5-mqtt/server/src/redux/types.ts)
+
+## 13. Outstanding questions
+
+Confirm the full response-code mapping, select availability deadlines and polling intervals, finalize HA entity semantics and session interruption policy. These are design or implementation-stage validation gates, not reasons to postpone documentation.
+
+**Related:** [01 — LAN discovery](01-lan-discovery.md) · [03 — Console wake-up](03-console-wakeup.md) · [Protocol index](README.md).
