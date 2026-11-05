@@ -28,6 +28,6 @@
 | HA runtime, entities, frontend and release baseline | P1 | Open | Review X-012, X-013, X-016 |
 | Exact supported/released capability set | P1 | Undefined pending gates | Review section 16 |
 
-**Audit:** [Protocols 01–10 cross-protocol review](../architecture/cross-protocol-review-01-10.md) (22 findings; seven P0, nine P1 and six P2; this is documentation assessment, not tested code). The proposed ADR/spec backlog is not approved by inclusion here.
+**Audit:** [Protocols 01–10 cross-protocol review](../architecture/cross-protocol-review-01-10.md) (22 findings; seven P0, ten P1 and five P2; this is documentation assessment, not tested code). The proposed ADR/spec backlog is not approved by inclusion here.
 
 No official Home Assistant quality-scale tier is claimed for this custom integration.
