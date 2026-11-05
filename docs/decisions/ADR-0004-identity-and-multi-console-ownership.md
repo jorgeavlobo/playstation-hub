@@ -385,3 +385,7 @@ These are **project design categories**, not official Sony protocol error names.
 - https://github.com/achievements-app/psn-api
 
 **Outcome:** Detailed preferred identity and ownership model documented, with validation gates. No code was implemented or console interrogated. ADR status remains **Proposed**, not approved.
+
+## 20. Official Home Assistant device-registry clarification — 2026-11-05
+
+The [2026.11 official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) confirms that modern Home Assistant registry devices belong to **one config entry and at most one config subentry**. Avoid deprecated multi-entry DeviceEntry assumptions such as `config_entries` or `primary_config_entry`; use `config_entry_id`. DeviceInfo/ChildDeviceInfo are dataclasses in Core 2026.11, with typed fields, `UNDEFINED` handling and `as_dict()` for serialization. This supports, but does not itself approve, distinct console-owned and account-owned config entries with associations maintained in our domain rather than merging the underlying HA DeviceEntry. Source-level confirmation is not real console identity validation. ADR status remains Proposed.
