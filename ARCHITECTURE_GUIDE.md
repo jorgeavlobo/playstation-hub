@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.9 — 2026-11-05  
+> **Document version:** 0.40.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2638,3 +2638,11 @@ No executable code or live credentials were used; documentation only on main.
 The matrix distinguishes source-observed UDP discovery/status, wake and Remote Play profile values from actual hardware/firmware compatibility. It defines 12 power-state tests, 15 network topology cases, 15 Remote Play tests, HA Core/OS/HACS compatibility requirements, privacy-preserving evidence records and 12 unpassed release gates. Firmware changes require retesting. A missing LAN response never proves physical OFF; IP and host ID changes must not silently merge consoles or transfer keys. PSN cloud permissions remain separately blocked.
 
 **Next step:** Formal review and prioritization of ADR-0004–0010, P0 blocker ownership and release scope, before any implementation authorization. Documentation only on main; next/develop unchanged.
+
+## Formal architecture review of ADR-0004–0010 (2026-11-05)
+
+**Status: Documentation review completed; ADRs still proposed. Guide version 0.40.0.** Canonical [formal architecture review](docs/architecture/formal-architecture-review-adr-0004-0010.md) records 18 cross-document consistency findings, a conditional decision register, separate LAN/Remote Play/PSN release blockers and recommended implementation work packages WP-00–WP-08. This is not maintainer approval or executable test evidence.
+
+**Critical unresolved P0:** Canonical physical console ID stability and discovery trust; distinction between source freshness and bounded session continuity; HA Core stable version and multi-entry DHCP behavior; durable SQLite WAL backup/restore; per-account credential storage and token rotation; Remote Play wake credential and registration byte contract; Sony OAuth client/endpoint permission; frontend history authorization and physical game attribution. Unknown LAN response does not mean OFF; provider account presence does not establish physical console activity.
+
+**Recommended staged direction:** Begin with pinned HA baseline and pure LAN synthetic fixtures, then multi-console config entries, state reducer/native entities, reviewed ledger/backups and one sidebar panel. Remote Play and PSN are independent capability extensions, not abandoned product requirements. No code, hardware tests or release authorization occurred. All ADR-0004–0010 headers remain Proposed; no P0 gate was closed. Research changes only on main, next/develop unchanged.
