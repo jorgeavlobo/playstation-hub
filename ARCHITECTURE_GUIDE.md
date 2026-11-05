@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.1.0 — 2026-11-05  
+> **Document version:** 0.2.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -33,6 +33,7 @@ This document is our single source of truth for the planned architecture, public
 
 - Use GitHub Releases with semantic versions (initial version still to be decided); the `manifest.json` version must match the released integration.
 - GitHub commits alone do not imply installed upgrades. HACS uses its repository/release update mechanism.
+- **Official HACS Integration publication page:** GitHub Releases are **optional** for a valid repository. If releases exist, HACS can offer the five latest releases plus the default branch; otherwise HACS uses the default branch. We may still **choose** a release-first policy for production stability. Catalog inclusion requirements are a distinct review.
 - Dashboard assets ship **inside the custom integration package**; the integration must register/serve the frontend with compatible Home Assistant APIs.
 - Cache-busting and recovery after upgrades must be tested. Browser refresh and Home Assistant restart may still be necessary.
 
@@ -87,7 +88,7 @@ playstation-hub/
 │       │   ├── services/
 │       │   └── styles/
 │       └── brand/
-│           └── icon.png                  # Brand rules to verify
+│           └── icon.png                  # Proposed only: check exact branding path/rules
 ├── tests/
 │   ├── conftest.py
 │   ├── test_config_flow.py
@@ -123,7 +124,7 @@ playstation-hub/
 - [ ] Functional `async_setup_entry`, safe unload/reload, errors and reconnect handling.
 - [ ] A working UI configuration flow when applicable; no unnecessary YAML configuration.
 - [ ] Correct translations, entity identifiers, device information and diagnostics.
-- [ ] Brand icon and branding requirements verified.
+- [ ] Brand assets provided. HACS's Integration publication page explicitly requires a repository brand directory containing at least `icon.png`; exact acceptable placement, naming, dimensions and alternate routes await a separate branding-source review.
 - [ ] Frontend resources are registered only once and versioned consistently.
 
 ### Gate B — Quality and CI
@@ -140,7 +141,7 @@ playstation-hub/
 
 - [ ] Install as a **custom repository in HACS** and verify it can be installed/updated.
 - [ ] Verify one release updates both Python and dashboard assets.
-- [ ] Create a real GitHub **Release** after validation; tags alone are insufficient for catalog submission.
+- [ ] **Project release policy:** Create a real GitHub Release after validation for stable production updates. This is **our policy**, not a requirement of the HACS Integration publication page, where releases are optional. Confirm separate catalog admission criteria when reviewing the dedicated inclusion document.
 - [ ] Submit to `hacs/default` integration list with a complete, truthful PR.
 - [ ] Catalog admission is subject to review; it does **not** reserve exclusive ownership of the name/domain.
 
@@ -267,12 +268,70 @@ For each official website / subsection:
 
 - HACS integration publishing requires one integration under `custom_components` and all its runtime-required files inside that integration directory.
 - HACS specifies the manifest keys `domain`, `documentation`, `issue_tracker`, `codeowners`, `name`, `version`.
-- HACS catalog inclusion requires the HACS Action and Hassfest to pass, a GitHub Release, a public repository and correct submission. Reviews may be slow.
+- Separate **catalog inclusion** requirements (HACS Action, Hassfest, GitHub Release and review conditions) are recorded provisionally from earlier research. **Not validated by the Integration publication page alone**; review the official Inclusion document separately before classifying them as mandatory.
 - HA identifies integrations by a unique, effectively permanent domain.
 - HA config entries are persistently stored configuration created through UI flows.
 - HA has a typed `Store` helper for JSON-serializable data; that alone does not prove it suits long-duration event logs.
 
 Source links: sections 6.2–6.4 above.
+
+## 9. Official document review register
+
+### DOC-001 — HACS: Publish → Integrations
+
+- **Source:** https://www.hacs.xyz/docs/publish/integration/
+- **Official page title:** Integrations
+- **Reviewed:** 2026-11-05
+- **Status:** Reviewed in full for this page, including its repository structure examples, manifest minimum, branding, and release behavior.
+- **Scope boundary:** Only this single page was reviewed in this iteration. Linked pages about general requirements, catalog inclusion, branding specifications, GitHub Actions, Home Assistant manifests, and dashboard plugins remain **pending**.
+- **Impact:** Clarified mandatory packaging rules, corrected release requirements, and added a reproducible compliance checklist.
+
+#### Evidence-based requirements
+
+| ID | Classification | Rule directly stated by the page | Project implementation / verification |
+| --- | --- | --- | --- |
+| HACS-INT-001 | MUST | Only one integration subdirectory under repository `custom_components/`. With multiple, HACS manages only the first. | Exactly `custom_components/playstation_hub/`; validate directory count in CI. |
+| HACS-INT-002 | MUST | All files required at integration runtime reside in `ROOT_OF_THE_REPO/custom_components/INTEGRATION_NAME/`. | Bundle Python, JS, CSS and other runtime assets inside the package; test installation from built repository. |
+| HACS-INT-003 | MUST | Integration manifest located in the integration directory. | Ensure `custom_components/playstation_hub/manifest.json` exists and parses. |
+| HACS-INT-004 | MUST | Manifest defines at least `domain`, `documentation`, `issue_tracker`, `codeowners`, `name`, `version`. | Verify all six keys are present with sensible values; refer to official HA manifest documentation for semantics. |
+| HACS-INT-005 | MUST | Provide integration brand assets, e.g., a repository `brand` directory with at least `icon.png`. | Add legitimate branding; verify exact placement and image rules in the **next separate** branding-document review. |
+| HACS-INT-006 | MAY | `content_in_root: true` in `hacs.json` allows a root-content exception to the normal examples. | **Do not use** this exception: follow normal `custom_components/` structure. |
+| HACS-INT-007 | OPTIONAL | GitHub Releases are preferred, **not required**. Without releases HACS uses the default branch; with releases it offers the five latest releases and the default branch. | **Choose** releases for production even though not required for basic integration validity; distinguish catalog inclusion. |
+
+#### Exact structural implications
+
+```text
+playstation-hub/
+├── hacs.json
+├── README.md
+└── custom_components/
+    └── playstation_hub/
+        ├── __init__.py
+        ├── manifest.json
+        └── ...  # All runtime dependencies, including frontend assets
+```
+
+The page explicitly presents a root-level `README.md` and `hacs.json` in its valid example. It shows examples with integration files outside `custom_components/` as invalid, unless the documented `content_in_root` exception applies. We will not rely on that exception.
+
+**Important boundary:** The `frontend/` directory under the integration is **our packaging design**, not an explicitly mandated folder name from this HACS document. Similarly, the page does not specify `config_flow.py`, entity platforms, SQLite strategy, CI implementation details or the registration API for Lovelace assets. Those belong to future official-source reviews.
+
+#### Corrections made to previous guide
+
+1. **Fixed:** Releases are not mandatory for basic HACS Integration repository validity. Keeping a release-first policy is a separate project decision.
+2. **Clarified:** `hacs.json` with `content_in_root: true` is an explicitly documented exception; the project deliberately uses the standard layout instead.
+3. **Clarified:** Branding is required, but the exact asset location/format must be determined from the linked branding standard, not guessed.
+4. **Separated:** Catalog **inclusion** conditions from the Integration publication requirements. A separate official-document review will resolve them.
+
+#### Acceptance criteria before moving to another document
+
+- [ ] Exactly one integration directory under `custom_components/`.
+- [ ] All integration runtime resources stay inside that directory.
+- [ ] Manifest has the six listed minimum fields.
+- [ ] Branding location and assets validated through the dedicated official standard.
+- [ ] A working release/update workflow documented (a project choice).
+- [x] Official source and outstanding dependencies logged.
+
+**Next document to review (not yet reviewed):** https://www.hacs.xyz/docs/publish/include/
 
 ## 8. Open architecture decisions
 
