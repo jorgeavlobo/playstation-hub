@@ -18,7 +18,7 @@
 
 | Gate | Priority | Status | Reference |
 | --- | --- | --- | --- |
-| Physical-console/account identity + entry ownership | P0 | Open | [Cross-protocol review X-001](../architecture/cross-protocol-review-01-10.md) |
+| Physical-console/account identity + entry ownership | P0 | ADR-0004 proposed, not approved; hardware identity unverified | [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownership.md) |
 | Source authority / freshness / reconciliation | P0 | Open | Review X-002 and X-008 |
 | Session ledger and uncertainty policy | P0 | Open | Review X-003 |
 | Remote Play credential / crypto verification | P0 | Hardware unverified | Review X-004 |
