@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.27.0 — 2026-11-05  
+> **Document version:** 0.28.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2124,3 +2124,70 @@ PlayStation Hub custom integration
 - [ ] Establish test fixtures that contain no real console identifiers or secrets.
 
 **Status:** Protocol details source-verified at the inspected upstream revision. No claim of successful pairing or direct connection; architecture remains in research.
+
+## 24. PS5 Remote Play crypto and control-session source audit (2026-11-05)
+
+**Scope:** Selected source files in `dhleong/playactor` at the previously recorded upstream revision. No live PS5 pairing or command execution was performed. This is protocol research, not an implementation guarantee.
+
+### DOC-067 — Modern registration crypto strategy
+
+- Source: https://github.com/dhleong/playactor/blob/main/src/remoteplay/crypto/modern.ts
+- The modern strategy used for PS5 derives a PIN-dependent seed, transforms nonces and derives authentication seed material using PS5-specific lookup tables and byte operations.
+- The code distinguishes PS5 transformations from PS4 transformations. The lookup tables and base cipher implementation were **not** completely reviewed in this iteration.
+- **Decision:** Do not hand-roll cryptography or copy constants blindly. Inspect `crypto/base.ts`, `crypto/keys.ts`, `codec.ts` and associated tests, then implement using audited Python crypto primitives and known-answer tests.
+- **Security:** Registration PIN, nonces, derived keys and token material must not appear in logs, diagnostics, frontend resources or public test fixtures.
+
+### DOC-068 — Remote Play session initialization and authenticated control
+
+- Source: https://github.com/dhleong/playactor/blob/main/src/remoteplay/session.ts
+- The session begins with a request to `/sie/ps5/rp/sess/init` on port 9295, supplying the registered key and Remote Play version.
+- The response supplies an `RP-Nonce`, decoded as 16 bytes.
+- The client creates a cryptographic packet codec, sends encrypted authentication/control headers to `/sie/ps5/rp/sess/ctrl`, and takes ownership of the underlying connection.
+- A login procedure runs before the session is considered ready.
+- **Decision:** The Python design must treat registration, session initialization, control-channel authentication and login as separate lifecycle stages, each with timeouts and failure cleanup.
+- **Risk:** Upstream relies on an HTTP connection whose underlying socket becomes the Remote Play control transport. This must be reproduced and tested carefully; a conventional HTTP request client that closes the connection may not be sufficient.
+
+### DOC-069 — Remote Play command framing
+
+- Source: https://github.com/dhleong/playactor/blob/main/src/remoteplay/packets.ts
+- The upstream packet writer constructs an eight-byte header with big-endian payload length, command type and reserved field.
+- Identified command values include standby `0x50`, login `0x05`, heartbeat `0x1fe` and passcode response `0x8004`.
+- **Decision:** Treat packet framing as a separately tested codec; use bounded packet lengths, strict parsing and explicit protocol errors. Do not send standby until session authentication/login is confirmed.
+
+### DOC-070 — Standby command lifecycle
+
+- Source: https://github.com/dhleong/playactor/blob/main/src/cli/commands/standby.ts
+- Standby checks current discovery state, opens an authenticated Remote Play session, invokes the standby command and closes the connection in `finally`.
+- **Decision:** Implement a command state machine: REQUESTED → CONNECTING → AUTHENTICATING → COMMAND_SENT → VERIFYING → CONFIRMED or FAILED/UNKNOWN.
+- **Important:** A command packet being written does not prove that the console entered rest mode; verify a fresh observation afterward.
+
+### Proposed Python module boundaries — not yet code
+
+```text
+transport/
+  discovery.py
+  wake.py
+  remote_play/
+    registration.py
+    crypto.py
+    session.py
+    packets.py
+    standby.py
+  psn/
+    authentication.py
+    presence.py
+```
+
+The transport modules will expose typed interfaces to the integration domain layer, avoid blocking the Home Assistant event loop, and have no runtime dependency on Node.js, PS5-MQTT or Mosquitto.
+
+### Outstanding gates before implementation
+
+- [ ] Audit full crypto key tables, cipher modes, codec and protocol tests at a pinned commit.
+- [ ] Verify licensing obligations for any reused source and compatibility with our intended repository license.
+- [ ] Audit Remote Play login, passcode handling, heartbeat, standby acknowledgement and disconnect behavior.
+- [ ] Confirm PS5 firmware compatibility with controlled live tests.
+- [ ] Design credential storage, revocation, re-pairing, and multiple-console isolation.
+- [ ] Verify Sony terms and risks associated with undocumented interfaces.
+- [ ] Create synthetic protocol fixtures and negative tests for invalid packets, timeouts and partial handshakes.
+
+**Status:** Protocol architecture is increasingly understood, but no production-grade direct PS5 connection has yet been validated.
