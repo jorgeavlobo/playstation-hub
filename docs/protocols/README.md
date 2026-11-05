@@ -13,9 +13,11 @@ These documents describe the first-party PlayStation connectivity architecture b
 - [Remote Play cryptography](05-remote-play-cryptography.md) — Describe cryptographic primitives and validation evidence without embedding real secrets.
 - [Remote Play session](06-remote-play-session.md) — Establish and maintain an authenticated control session.
 - [Remote Play commands](07-remote-play-commands.md) — Execute user-authorized console commands with observed confirmation.
-- [PSN authentication](08-psn-authentication.md) — Obtain optional PSN account authorization for enriched activity data.
+- [PSN authentication](08-psn-authentication.md) — Detailed source-derived NPSSO/token lifecycle specification; provider authorization and permitted client use remain blocked release gates.
 - [PSN presence](09-psn-presence.md) — Associate PSN account presence with observed game activity.
 - [Game metadata and artwork](10-game-metadata.md) — Obtain game identifiers, names and cover art without coupling to the dashboard.
+
+**Documentation progress (2026-11-05):** Protocols 01–07 and 08 contain detailed research specifications; Protocols 09–10 remain initial drafts. Research maturity is not a live validation or ship-readiness claim.
 
 ## Evidence labels
 
