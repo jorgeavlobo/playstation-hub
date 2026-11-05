@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.40.0 — 2026-11-05  
+> **Document version:** 0.40.1 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2646,3 +2646,11 @@ The matrix distinguishes source-observed UDP discovery/status, wake and Remote P
 **Critical unresolved P0:** Canonical physical console ID stability and discovery trust; distinction between source freshness and bounded session continuity; HA Core stable version and multi-entry DHCP behavior; durable SQLite WAL backup/restore; per-account credential storage and token rotation; Remote Play wake credential and registration byte contract; Sony OAuth client/endpoint permission; frontend history authorization and physical game attribution. Unknown LAN response does not mean OFF; provider account presence does not establish physical console activity.
 
 **Recommended staged direction:** Begin with pinned HA baseline and pure LAN synthetic fixtures, then multi-console config entries, state reducer/native entities, reviewed ledger/backups and one sidebar panel. Remote Play and PSN are independent capability extensions, not abandoned product requirements. No code, hardware tests or release authorization occurred. All ADR-0004–0010 headers remain Proposed; no P0 gate was closed. Research changes only on main, next/develop unchanged.
+
+## WP-00 — Implementation readiness and architecture decision closure (2026-11-05)
+
+**Status: Proposed planning package; guide version 0.40.1.** [WP-00](docs/architecture/WP-00-implementation-readiness-and-decision-closure.md) documents the explicit readiness/approval contract before any code on `next`: pinned stable HA Core/Python baseline, conditional ADR-0004–0010 decision register, domain identity/observation/session/credential/API contract freeze candidates, proposed module dependency graph, WP-01 entry checklist, ten scoped blockers and evidence/sign-off template.
+
+**Not yet approved:** The creation of WP-00 does not authorize implementation, change ADR statuses, validate hardware, prove SQLite backups, grant Sony permission or close Remote Play wire gaps. Pure synthetic LAN parser tests may be a first implementation milestone after maintainer approval, while the final product roadmap retains PSN and Remote Play independently. No source files or executable tests were created; only `main` documentation changed, `next`/`develop` remain untouched.
+
+**Next planning action:** Pin the actual released Home Assistant Core and Python baseline with source API signatures and release evidence, then seek explicit approval for bounded ADR choices and WP-01 scope.
