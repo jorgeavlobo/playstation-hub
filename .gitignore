@@ -1,0 +1,69 @@
+# PlayStation Hub — never commit private Home Assistant data.
+# Keep this list even when the distribution architecture changes.
+
+# Credentials and environment files
+.env
+.env.*
+!.env.example
+**/options.json
+**/secrets.yaml
+**/credentials.json
+**/*private*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+**/id_rsa
+**/id_ed25519
+
+# SQLite and journals
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db3
+
+# Home Assistant runtime state
+.storage/
+**/.storage/
+**/core.entity_registry
+**/core.device_registry
+**/core.config_entries
+
+# Backups, archives, and snapshots
+*.bak
+*.backup
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+*.sql
+*.sql.gz
+backups/
+**/backups/
+**/source-checkpoints/
+**/development_backups/
+**/upgrade-staging/
+**/checkpoint-*/
+**/pre-v*/
+**/pre-live*/
+**/pre-redesign*/
+**/persistent-data/
+**/snapshot/
+
+# Logs, caches, dependencies and local tools
+*.log
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+node_modules/
+coverage/
+dist/
+.DS_Store
+Thumbs.db
