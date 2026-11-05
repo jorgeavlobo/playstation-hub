@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.3 — 2026-11-05  
+> **Document version:** 0.39.4 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2584,3 +2584,13 @@ The matrix consolidates Protocols 01/02 and ADR-0004/0005/0009 into deterministi
 **Nine release gates G1–G9 are defined and all remain unpassed.** The source-observed `host-id` has not been empirically proven stable; DHCP MAC/OUI/hostname is not proof of identity; an unresponsive host is not confirmed OFF. Discovery must not trigger Remote Play pairing, wake or Sony login. Existing Home Assistant Core `playstation_network` can coexist under its separate domain.
 
 **Next research task:** SPEC-002 Remote Play Byte Contract & Safety; then remaining cross-cutting validation specs and formal ADR review. No executable code, Home Assistant OS discovery run or hardware validation was performed. Only `main` documentation changed.
+
+## SPEC-002 — Remote Play byte contract and safety (2026-11-05)
+
+**Status: Proposed validation specification, no tests passed or hardware operations. Guide version 0.39.4.** Canonical [SPEC-002](docs/specifications/SPEC-002-remote-play-byte-contract-and-safety.md) consolidates Protocols 03–07 and ADR-0004/0005/0007/0009 into 17 sections, 28 byte-level acceptance tests and 12 unpassed release gates.
+
+Source-observed PS5 details include UDP WAKEUP on port 9302, registration discovery SRC3/RES3 on UDP 9295, registration POST to /sie/ps5/rp/sess/rgst, AES-128-CFB and HMAC-SHA256 IV derivation, persistent session init/control TCP endpoints on port 9295, 8-byte big-endian command framing, heartbeat and standby 0x0050. These are upstream reference behaviors, not verified PlayStation Hub compatibility or Sony approval.
+
+**Explicit blockers:** Exact wake user-credential derivation; full 480-byte registration preface offsets; Np-AccountId byte representation; RP-Did/RP-Auth transformations; complete independent crypto vectors; source licenses; session socket ownership and post-command hardware confirmation. Do not invent values or copy unreviewed secrets/key tables. Standby must never wake a sleeping console merely to send a redundant standby command. Sending a packet is not proof of physical transition.
+
+No executable code, credentials, console pairing or PS5 commands were used. Only main documentation changed; develop and next remain unchanged.
