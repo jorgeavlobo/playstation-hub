@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.18.0 — 2026-11-05  
+> **Document version:** 0.19.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -1641,3 +1641,42 @@ The URL and version are illustrative. The icon name, static path, sidebar author
 - [ ] Approve database path, schema, multi-console keys and backup semantics before implementation.
 
 **Next official-source priority:** Home Assistant Store helper and integration backup/restore behavior.
+
+
+## 15. Native Store and backup evidence review (2026-11-05)
+
+**Scope and confidence:** Reviewed the official Home Assistant developer article about \`Store\` and the current Core \`homeassistant/helpers/storage.py\` source location. The previously listed \`https://developers.home-assistant.io/docs/core/backup/\` did **not** resolve during this review. Consequently **no claim is made that an arbitrary custom SQLite file is automatically included in Home Assistant backups**. Backup compatibility remains an unresolved release blocker.
+
+### DOC-035 — Generic Store helper
+
+- **Official article:** https://developers.home-assistant.io/blog/2022/07/08/generic-store/
+- **Official implementation:** https://github.com/home-assistant/core/blob/dev/homeassistant/helpers/storage.py
+- **Reviewed:** 2026-11-05
+- The article establishes \`Store(Generic[T])\` and recommends typing the stored data as JSON-serializable dictionaries/lists or a \`TypedDict\`.
+- Documented pattern: \`Store[Preferences](hass, STORAGE_VERSION, STORAGE_KEY)\`, where \`Preferences\` is a suitable JSON-serializable type.
+- The Store helper is a reasonable candidate for **small, versioned, JSON-serializable state**. The article does **not** establish that it is appropriate for arbitrarily large, frequently updated session ledgers.
+- Implementation is part of Home Assistant Core and can evolve. Inspect the supported release tag and test async load/save, schema evolution, concurrent writes and shutdown behavior before relying on specific implementation details.
+- **Project decision:** Use Config Entries for integration setup/options; consider \`Store\` only for small durable metadata/checkpoints where necessary, not automatically for multi-year detailed history.
+- **Security:** No secrets in public exports or diagnostics; \`.storage\` is private Home Assistant runtime state, not a repository asset.
+
+### DOC-036 — Backup documentation link audit (unresolved)
+
+- **Previously proposed URL:** https://developers.home-assistant.io/docs/core/backup/
+- **Status:** Unavailable / not verified during this review.
+- **Reviewed:** 2026-11-05
+- **Result:** Do not infer backup coverage from this broken URL. Find and validate the current official backup developer docs, supported HA backup APIs and backup inclusion behavior for custom integration data in a later source review.
+- **Required tests:** Create a Home Assistant backup on a disposable instance, restore it into another disposable instance, and verify that integration configuration, panel registration, history database and schema migrations survive.
+- **Explicit prohibition:** Do not state that \`hass.config.path(...)\` or placing a SQLite file in the configuration directory **guarantees** inclusion in every backup type. Coverage must be verified for the actual supported HA installation and backup mechanism.
+
+### ADR-DATA-001 — updated decision status
+
+**Still PROVISIONAL.** A dedicated application-owned SQLite remains the preferred candidate for durable, multi-year per-session history; it must not be implemented until the following are verified:
+
+1. Supported configuration/data path and actual backup coverage.
+2. Safe asynchronous database access and serialized writes without blocking HA's event loop.
+3. Multi-console, multi-player schema and migration strategy.
+4. SQLite consistency, WAL handling, corruption recovery, retention and import/export.
+5. Uninstall/removal policy that does not silently delete history.
+6. Reproducible backup/restore and upgrade tests.
+
+**Next official documentation research:** Locate current Home Assistant backup developer documentation and verify custom integration storage backup semantics. Then review current Core \`Store\` APIs against a supported release tag.
