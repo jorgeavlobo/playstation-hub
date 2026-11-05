@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.40.1 — 2026-11-05  
+> **Document version:** 0.40.2 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2654,3 +2654,9 @@ The matrix distinguishes source-observed UDP discovery/status, wake and Remote P
 **Not yet approved:** The creation of WP-00 does not authorize implementation, change ADR statuses, validate hardware, prove SQLite backups, grant Sony permission or close Remote Play wire gaps. Pure synthetic LAN parser tests may be a first implementation milestone after maintainer approval, while the final product roadmap retains PSN and Remote Play independently. No source files or executable tests were created; only `main` documentation changed, `next`/`develop` remain untouched.
 
 **Next planning action:** Pin the actual released Home Assistant Core and Python baseline with source API signatures and release evidence, then seek explicit approval for bounded ADR choices and WP-01 scope.
+
+## Branch strategy override — feature branches on demand (2026-11-05)
+
+**Current authoritative policy; guide version 0.40.2.** The maintainer decided there is no need for an empty permanent `next` branch. Research and documentation remain on `main` during the present phase. When implementation begins with explicit authorization, create a short-lived, descriptive `feature/<scope>` branch from current `main` (for example `feature/lan-discovery`), use PR review and tests, and merge validated work back into `main`. Keep `develop` as the untouched legacy project reference. The `next` branch, if present remotely, is **not part of the future workflow**; its deletion has not been requested or performed.
+
+This policy **supersedes historical references** throughout older research notes that call `next` the implementation branch. Such references are historical descriptions, not active instructions. The canonical implementation readiness document is [WP-00](docs/architecture/WP-00-implementation-readiness-and-decision-closure.md). No implementation code was created.
