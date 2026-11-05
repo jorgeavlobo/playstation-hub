@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.39.6 — 2026-11-05  
+> **Document version:** 0.39.7 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2614,3 +2614,11 @@ No executable code or live credentials were used; documentation only on main.
 **Source authority:** PSN provider-reported game is account-scoped, not proof of activity on a particular local PS5. Privacy restrictions and provider errors do not imply offline; absent provider duration is unknown, not zero, and Sony lifetime playtime must not be summed with local session durations. All records have source, freshness, UTC timestamps, version and partial-result semantics. Artwork requires rights and SSRF/size validation. HA entities and sidebar consume sanitized DTOs and cached reconciled state only.
 
 **Release blocker:** SPEC-003 Sony client/endpoint authorization remains unresolved. All SPEC-004 gates remain unpassed. LAN-only monitoring remains independent; no changes to `next` or `develop`.
+
+## SPEC-005 — End-to-end testing, CI/CD and release gates (2026-11-05)
+
+**Status: Proposed research specification; guide version 0.39.7.** [SPEC-005](docs/specifications/SPEC-005-end-to-end-testing-ci-release-quality-gates.md) defines the test pyramid from static checks and synthetic protocol fixtures through Home Assistant integration, authenticated WebSocket/frontend, HACS/Hassfest, HA OS backup/restore and authorized real PS5 tests. It contains twelve release gates, explicit evidence-record schema, security/privacy blockers, fault injection, multi-console stress, frontend localization/accessibility and separate LAN/Remote Play/PSN release scopes.
+
+**Evidence rules:** Every gate begins NOT_RUN or BLOCKED; no CI workflow, code, benchmark, Home Assistant OS or hardware test was performed. Do not call a feature tested because it has source citations or a test specification. The Sony authorization gate from SPEC-003 continues to block PSN distribution; independently verified LAN-only capability may ship if all its own release gates pass. No required MQTT, PS5-MQTT, add-on or separate server.
+
+**Next documentation:** SPEC-006 Security & Privacy Threat Model and SPEC-007 Supported Console/Firmware Matrix, followed by explicit ADR review and closure of P0 blockers. Changes are restricted to main; next and develop remain untouched.
