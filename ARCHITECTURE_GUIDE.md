@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.35.0 — 2026-11-05  
+> **Document version:** 0.36.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2347,3 +2347,15 @@ The [03-console-wakeup specification](docs/protocols/03-console-wakeup.md) has b
 **Protocol 04:** The [Remote Play registration specification](docs/protocols/04-remote-play-registration.md) now documents SRC3/RES3 UDP discovery on port 9295, registration HTTP POST, PIN-derived encryption, response key validation, per-console credentials, error handling, security, and future tests.
 
 **Status:** Research and specification only; no changes to production Home Assistant. Next: deepen [05-remote-play-cryptography.md](docs/protocols/05-remote-play-cryptography.md).
+
+## 32. Protocol specification progress — Remote Play cryptography (2026-11-05)
+
+The [05-remote-play-cryptography specification](docs/protocols/05-remote-play-cryptography.md) has been expanded with source-grounded AES-128-CFB and HMAC-SHA256 IV derivation, PS5 PIN registration seed/preface details, server nonce and authentication seed transformations, directional counters, packet framing, known-answer test vectors, security requirements and future test cases.
+
+**Important distinction:** The generic upstream CryptoCodec defaults to AES-128-CBC for legacy paths, but the PS5 Remote Play strategy explicitly selects AES-128-CFB. Do not confuse these transports.
+
+**Evidence:** Public synthetic PS5 IV and PIN-seed vectors are documented. PS5-specific authentication seed/nonce known-answer coverage remains incomplete. Upstream key-table provenance and reuse licensing still need review.
+
+**Decision:** Use audited Python cryptographic primitives, strict validation and independent per-console session state. Never expose secrets or claim modern authenticated encryption where only AES-CFB is established.
+
+**Status:** Documentation complete for this source-review pass; not live validated. Next: [06-remote-play-session.md](docs/protocols/06-remote-play-session.md).
