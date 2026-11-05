@@ -59,3 +59,5 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Discovery acceptance:** [SPEC-001](../specifications/SPEC-001-lan-discovery-acceptance-matrix.md) specifies parser, DHCP Discovered, multi-console, identity and network reliability acceptance tests. No acceptance gate has passed; live firmware behavior remains unverified.
 
 **Remote Play acceptance:** [SPEC-002](../specifications/SPEC-002-remote-play-byte-contract-and-safety.md) consolidates Protocols 03–07 byte contracts, crypto vectors, safe command handling and twelve unpassed release gates. No live interoperability is claimed.
+
+**PSN permission and availability:** [SPEC-003](../specifications/SPEC-003-psn-authorization-and-availability.md) documents OAuth/NPSSO handoff, token lifecycle, privacy and rate budgets, 30 synthetic tests and 12 unpassed release gates. Sony client and endpoint permissions remain unresolved; LAN monitoring is independent.
