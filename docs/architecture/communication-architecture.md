@@ -43,3 +43,13 @@ Full source references: [Core manifest](https://github.com/home-assistant/core/b
 The full 13-section, source-linked analysis is now maintained separately at [Home Assistant Core PlayStation Network — Deep Reference Audit](../research/home-assistant-core-playstation-network-audit.md). It covers manifest DHCP matchers, the Core config-flow fallback when `async_step_dhcp` is absent, multi-console implications, NPSSO and reauth, coordinators, PSNAWP, the account/platform device model, all five entity platforms, privacy, rate limits, test fixtures and architecture decisions.
 
 **Confirmed discovery nuance:** HA's inherited `ConfigFlow.async_step_dhcp` can hand a discovered candidate to `async_step_user` when a source-specific DHCP step is absent. This default fallback is limited to an unconfigured integration / no other in-progress discovery flow. PlayStation Hub therefore needs a dedicated multi-console discovery design rather than simply copying the Core manifest. See [Home Assistant discovery guidance](https://contributors.home-assistant.io/core/integrations/discovery/) and the [Core config-flow source](https://github.com/home-assistant/core/blob/dev/homeassistant/config_entries.py).
+
+## PSN presence research checkpoint — Protocol 09 (2026-11-05)
+
+Detailed source evidence, endpoint parameters, normalized DTO concepts, polling, privacy and test cases are recorded in [Protocol 09](../protocols/09-psn-presence.md).
+
+**Critical invariant:** Account online status and PSN game-title lists are cloud observations of a PSN account. They do **not** prove physical console power, unique physical console identity, game start/end timestamps, or which local PS5 is playing when multiple consoles exist. Independently confirmed LAN/Remote Play observations remain authoritative for their own narrow facts. PSN presence may enrich, but may not overwrite, local power evidence. Keep ambiguous/hidden/stale state explicit; do not invent durations or assign play to a person without sufficient source evidence.
+
+**Research confirmed:** `psn-api` retrieves single-account `basicPresences?type=primary`; PSNAWP additionally uses platform filters, `withOwnGameTitleInfo` and an optional multi-account batch query. PS5-MQTT selects the first reported game. Official HA Core uses PSNAWP and refreshes user data approximately every 30 seconds; Sony privacy settings may restrict visibility and Home Assistant documents a rate budget of 300 requests per 15 minutes for its PSN integration. These are reference facts, not Sony-approved public API guarantees.
+
+**Unresolved:** third-party PSN authorization, physical-console attribution for shared accounts, eventual account-vs-console device registry modeling, measured TTL/polling, and private/social-data retention.
