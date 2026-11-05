@@ -5,7 +5,7 @@
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
-> **Distribution target:** One HACS **Integration**, including its frontend  
+> **Distribution target:** One Home Assistant **Marketplace/HACS Integration**, including its bundled frontend  
 > **Languages:** Code, comments, identifiers, and repository documentation in English.
 
 > **Current authoritative source checkpoint (2026-11-05):** The [official-source re-audit for Home Assistant Core 2026.11 and integrated Marketplace](docs/research/official-source-reaudit-home-assistant-2026-11.md) supersedes outdated *active instructions* in earlier DOC-001–DOC-080 historical notes. Source research baseline is Core 2026.11.0 / Python >=3.14.2; minimum supported version remains to be approved. New `feature/<scope>` branches are created on demand; the maintainer deleted `next`. The product remains one HACS/Marketplace custom integration with one sidebar panel, direct LAN access, optional Remote Play/PSN, and no mandatory MQTT. Historical sections are retained for traceability.
@@ -202,7 +202,18 @@ Deliver a signed-off **storage architecture decision record** documenting option
 
 These are official primary-source URLs. **Not all subpages have yet been exhaustively reviewed.** Read each one deliberately in future sessions; do not mistake this index for completed compliance certification.
 
-### 6.1 HACS — user-provided entry points
+### 6.1 Home Assistant Marketplace and HACS — current official references
+
+**For Home Assistant Core 2026.11+, prefer the unified official Marketplace documentation and 2026.11 release notes below. The HACS site remains an applicable historical/compatibility reference:**
+
+- https://contributors.home-assistant.io/marketplace/ — current contributor portal
+- https://contributors.home-assistant.io/marketplace/guides/integrations/ — publish a custom integration
+- https://contributors.home-assistant.io/marketplace/guides/catalog/ — Marketplace catalog admission
+- https://contributors.home-assistant.io/marketplace/reference/hacs-json/ — Marketplace metadata, minimum HA version and persistent_directory
+- https://contributors.home-assistant.io/marketplace/reference/validation/ — validation, HACS Action and Hassfest
+- https://www.home-assistant.io/blog/2026/11/04/release-202611 — Marketplace integrated into Core 2026.11
+
+### Legacy HACS documentation — still relevant for compatibility
 
 - https://www.hacs.xyz/
 - https://www.hacs.xyz/docs/use/
@@ -222,6 +233,8 @@ These are official primary-source URLs. **Not all subpages have yet been exhaust
 - https://github.com/hacs/integration — HACS implementation and releases
 
 ### 6.3 Home Assistant — integration development
+
+**Canonical documentation portal since the 2026 contributor-site consolidation:** https://contributors.home-assistant.io/ . Older `developers.home-assistant.io` links below may redirect; use their resolved canonical pages for new citations and recheck API compatibility on a pinned Core release. The current source audit is recorded in [OS-001–OS-032](docs/research/official-source-reaudit-home-assistant-2026-11.md).
 
 - https://developers.home-assistant.io/
 - https://developers.home-assistant.io/docs/creating_component_index/
