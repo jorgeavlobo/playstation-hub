@@ -35,3 +35,7 @@ See [protocol index](../protocols/README.md).
 - Account unlink should remove locally held secrets and stop refresh tasks; remote Sony token revocation is not established and must not be promised.
 
 **References:** [Protocol 08](../protocols/08-psn-authentication.md); [Home Assistant backups](https://www.home-assistant.io/common-tasks/general/backups); [Emkraan refresh guard](https://github.com/Emkraan/homeassistant-playstationnetwork/blob/main/custom_components/playstation_network/compat.py); [PSNAWP authentication source](https://github.com/isFakeAccount/psnawp/blob/master/src/psnawp_api/core/authenticator.py).
+
+## Credential architecture ADR-0007 checkpoint (2026-11-05)
+
+The detailed [ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) proposes owner-scoped independent PSN and Remote Play repositories, per-account serialized OAuth refresh with durable generation control, console-bound pairing keys, explicit user consent, redaction and unlink/unpair behavior. Treat Home Assistant Config Entries and Store as persistence helpers, not automatically encrypted vaults. Provider token rotation and local disk commits cannot be made mutually atomic. Sony OAuth client authorization remains blocked and concrete secure storage, encryption/key custody, backup consistency and restoration remain open for ADR-0008. No security implementation was performed.
