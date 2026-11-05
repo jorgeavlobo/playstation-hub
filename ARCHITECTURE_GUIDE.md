@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.8.0 — 2026-11-05  
+> **Document version:** 0.9.0 — 2026-11-05  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -704,4 +704,65 @@ This document **does not** establish HACS inclusion requirements, database archi
 
 This document does **not** select our database architecture, specify SQLite storage paths, define frontend packaging/registration, or replace the official Config Entries / Data Entry Flow documentation. Those topics remain open until separately researched.
 
-**Next document recommended (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/ — verify current page and examine its scope before deriving requirements.
+**DOC-008 reviewed:** https://developers.home-assistant.io/docs/core/integration-quality-scale/ — see the dedicated review section below.
+
+
+### DOC-008 — Home Assistant: Integration quality scale
+
+- **Official source:** https://developers.home-assistant.io/docs/core/integration-quality-scale/
+- **Page title:** Integration quality scale
+- **Source last updated:** 2026-04-16 (as displayed by the page)
+- **Reviewed:** 2026-11-05
+- **Scope:** Full overview document, including scaled tiers, progress tracking, tier adjustments and special tiers. The linked individual checklist and rules pages have **not** yet been reviewed.
+- **Important classification:** PlayStation Hub is a **third-party custom integration**, distributed through HACS, not a Home Assistant Core integration. Its official category is **Custom**. We may voluntarily engineer to Platinum standards but **must not claim official Platinum status**.
+
+#### Tier framework
+
+The scaled tiers are cumulative: each tier requires its own rules and those of lower tiers. Their detailed per-rule criteria live in separate official documents.
+
+| Tier | Official scope and characteristics | PlayStation Hub voluntary target |
+| --- | --- | --- |
+| Bronze | Baseline for **new Core integrations**: easy UI setup, basic code standards, automated setup tests, introductory documentation. | Require before the first usable public release. |
+| Silver | Bronze plus robust offline/error/re-authentication behavior, active code ownership and troubleshooting documentation. | Build resilience early; test disconnect/reconnect and avoid noisy logs. |
+| Gold | Silver plus streamlined user experience, discovery where possible, reconfiguration, translations, comprehensive documentation and broad test coverage. | Target as the first feature-complete community release. |
+| Platinum | Gold plus comprehensive coding standards, full typing, fully asynchronous implementation and efficient data/network/CPU usage. | **Long-term engineering target from day one.** |
+
+#### Explicit findings and implementation consequences
+
+| ID | Classification | Source finding | PlayStation Hub interpretation |
+| --- | --- | --- | --- |
+| HA-IQS-001 | FACT | Bronze, Silver, Gold and Platinum are four cumulative scaled tiers. | Never claim a tier without satisfying all relevant lower-tier rules. |
+| HA-IQS-002 | CORE REQUIREMENT | Bronze is the minimum for new integrations introduced into Home Assistant Core. | Adopt as our internal minimum, but do not misstate it as a HACS admission rule. |
+| HA-IQS-003 | FACT | Silver emphasizes handling offline devices, authentication errors, recovery, active maintainers and troubleshooting. | Implement and test recovery behavior appropriate to our source protocols. |
+| HA-IQS-004 | FACT | Gold emphasizes discovery when possible, reconfiguration, translations, documentation, diagnostics and extensive automated tests. | Plan these capabilities, but verify each detailed rule before coding. |
+| HA-IQS-005 | FACT | Platinum emphasizes full typing, asynchronous code and efficient resource usage. | Adopt as explicit engineering goals; measure event-loop blocking and resource use. |
+| HA-IQS-006 | TRACKING | Integrations working toward or claiming a scaled tier track rules and exemptions in \`quality_scale.yaml\`. | Maintain an internal rules tracker; consider \`custom_components/playstation_hub/quality_scale.yaml\` after reviewing its detailed schema. Do not imply Home Assistant has graded us. |
+| HA-IQS-007 | CORE PROCESS | Official tier changes require a Home Assistant Core PR, full checklist and review; documentation updates follow approved changes. | Not applicable to our HACS-only publication; do not submit tier-upgrade claims. |
+| HA-IQS-008 | FACT | Four special tiers exist: No score, Internal, Legacy and Custom. | Recognize that our distribution belongs to the **Custom** category. |
+| HA-IQS-009 | FACT | Home Assistant does not review, audit, maintain or support third-party custom integrations. | Explicitly state community-maintained and unofficial status; conduct our own security and compatibility testing. |
+| HA-IQS-010 | CORE PROCESS | Quality scale rules can change, requiring Core integrations to reassess compliance. | Recheck applicable standards at significant HA releases and document compatibility reviews. |
+
+#### Architecture and quality decisions
+
+1. **Internal quality ambition:** Design for Platinum from the outset, but require evidence before declaring any individual rule complete.
+2. **Public labeling:** Never market PlayStation Hub as officially Bronze/Silver/Gold/Platinum-certified while it remains a third-party custom integration.
+3. **Config flow:** Setup must be approachable through the Home Assistant UI; research the dedicated Config Flow documentation.
+4. **Error resilience:** Test offline devices, reconnects, missing dependencies, setup failure, unloading and unexpected state transitions.
+5. **Localization:** Make names and UI strings translatable; defer precise file formats to official translation documents.
+6. **Diagnostics and privacy:** Provide troubleshooting information without exposing credentials, player identity or private device data.
+7. **Performance:** Keep Home Assistant's event loop responsive; use fully async-compatible design and benchmark expensive persistence/statistics work.
+8. **Rule tracking:** Add a traceable rule matrix with statuses \`planned\`, \`implemented\`, \`verified\` and \`exempt\`, plus justification and test links.
+9. **Compatibility:** Quality standards evolve; perform periodic review instead of treating this document as a permanent frozen specification.
+
+#### Verification checklist (not yet implemented)
+
+- [ ] Read the official **Integration Quality Scale Checklist** as a separate document.
+- [ ] Read detailed quality rules before creating an exact \`quality_scale.yaml\` schema.
+- [ ] Adopt explicit automated tests for setup and unloading.
+- [ ] Add typed, non-blocking, lifecycle-safe runtime code.
+- [ ] Document recovery behavior, supported devices and limitations.
+- [ ] Add diagnostics and reconfiguration support when the integration needs them.
+- [ ] Document how rule compliance is verified without claiming official Home Assistant certification.
+- [x] Record the difference between Core scaled tiers and the Custom category.
+
+**Next document proposed (not yet reviewed):** https://developers.home-assistant.io/docs/core/integration-quality-scale/checklist/
