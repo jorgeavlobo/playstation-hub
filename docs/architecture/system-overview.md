@@ -40,3 +40,7 @@ The proposed [ADR-0004](../decisions/ADR-0004-identity-and-multi-console-ownersh
 ## Session accounting and reporting (proposed ADR-0006)
 
 [ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) specifies a separate event/checkpoint/session ledger consuming accepted ADR-0005 observations. It proposes bounded evidence-based console duration, explicit unknown gaps, distinct account/game attribution and independent provider aggregate playtime, with half-open UTC intervals and configurable local calendar reporting. The persistence choice, gap thresholds, exact confidence policy and statistics API remain pending approval and validation; no actual duration data has been acquired in the new project.
+
+## Credential lifecycle proposal (ADR-0007)
+
+[ADR-0007](../decisions/ADR-0007-credentials-and-token-persistence.md) specifies separate per-account Sony NPSSO/OAuth token ownership and per-console Remote Play pairing keys, with no credentials exposed to frontend, entities or diagnostics. It proposes synchronized token refresh, versioned durable writes and safe reauth/unpair/unlink. Exact HA secure storage and backup policy belong to pending ADR-0008. PSN endpoint/client authorization is not yet established.
