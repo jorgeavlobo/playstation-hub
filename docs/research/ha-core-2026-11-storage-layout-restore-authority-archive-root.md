@@ -277,3 +277,10 @@ Pinned evidence:
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
 
 **Correction:** Throughout earlier candidate comparisons, references to S1 as "preferred minimal safe" are historical preliminary assessments now **superseded by this section**, pending new source/tests.
+
+
+## 16. Maintainer approval overlay and immutable snapshot deep audit — 2026-11-06
+
+**Status overlay:** The maintainer approved the product direction after the initial research, so prior "Hub entry still PROPOSED" remarks are historical. [ADR-0011 §12](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06) records the exact approval. One logical Hub/Archive entry, per-console/account separation, single panel/controller, private app-owned HA configuration-root storage direction and retaining archived history are accepted as goals. This does NOT prove technical availability or fix the backup.
+
+The next [source audit](ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) and [SPEC-012](../specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) identify no supported custom file-exclusion parameter in reviewed pre/post hook or pinned archive filter. A live DB within the selected config backup tree can be archived alongside a verified immutable snapshot; authority at restore remains unresolved. Online Backup API may restart if other connections modify the source, so bounded termination is required. Snapshot publication requires destination closure, integrity + FK checks, cursor read from snapshot, and a generation-scoped atomic visibility marker. This is still source research with no HA OS tests.
