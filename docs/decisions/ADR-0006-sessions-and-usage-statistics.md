@@ -519,3 +519,10 @@ If a user disables automatic polling, HA stops, the console becomes unreachable 
 - An older backup, even if internally consistent, has historical coverage only until its committed cursor. The restored-to-new-session gap is unknown; do not claim that a console continued gaming while Home Assistant was absent or after the old backup was made.
 - Forward/backward UTC clock adjustments and new physical identity at an old IP require uncertainty/identity handling rather than false elapsed time. Derived daily/weekly/monthly sums continue to use half-open intervals and deterministic union/deduplication.
 - Archived but unconfigured consoles may have readable historical reports only under an explicitly approved archive-access policy. No runtime monitoring or control is implied by an archival record.
+
+
+## Archive-only reports and configuration restore boundary — 2026-11-06
+
+See [ADR-0011](ADR-0011-storage-layout-restore-authority-archive-hub.md), [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) and [storage/restore audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md). A logical Hub/Archive entry, if approved, permits authorized bounded SQL reports without any console monitor. Its existence never proves the retained historical power/game status is fresh; archive stats refer only to committed segments and coverage.
+
+Restoring old HA config can overwrite local ledger history, while an external ledger may survive and conflict with old physical-console associations. Missing post-backup or post-restore observations must remain UNKNOWN, and source generations/ledger identity must be validated before resuming attribution. Historical rows remain owned by canonical physical/account IDs, not the current HA Config Entry ID or the Hub entry. ADR remains PROPOSED and no actual restore evidence was produced.
