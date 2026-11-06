@@ -93,3 +93,13 @@ For every adapted wire behavior:
 **Technical feasibility:** Local discovery and source processing can be researched as self-contained code. Secure Remote Play crypto remains a named blocker under a strict no-new-runtime-dependency policy; Sony PSN service access remains permission-blocked. These **optional** blockers must not stop LAN implementation research.
 
 **No runtime implementation or test performed in this documentation pass.**
+
+## 7. Platform-preinstalled cryptography clarification — candidate only (2026-11-06)
+
+**New verified fact:** The pinned [HA Core 2026.11.0 \`pyproject.toml\`](https://github.com/home-assistant/core/blob/2026.11.0/pyproject.toml) directly requires \`cryptography==50.0.2\`. PyCA 50.0.2 offers standardized AES and, for legacy interoperability, [CFB within \`cryptography.hazmat.decrepit.ciphers.modes\`](https://cryptography.io/en/50.0.2/hazmat/decrepit/). The earlier finding that **Python's standard library has no raw AES API** remains correct.
+
+**Permitted by the package-count target, not yet by the literal library prohibition:** Using PyCA **already installed by Home Assistant** would add *zero new pip packages* and allow all PlayStation-specific wire protocol, orchestration, state and key derivation logic to remain first-party. But PyCA is still an **external third-party library**, not the standard library or a Home Assistant-owned raw AES helper. It therefore is NOT automatically authorized under this policy.
+
+**Explicit pending maintainer choice:** Either (A) approve a *strictly scoped* PyCA AES primitive exception, only where already pinned and available in supported Home Assistant versions, with full license/compatibility/CFB-version/security tests and no PlayStation SDK, or (B) reject all third-party crypto and leave encrypted Remote Play pairing/standby DEFERRED. The default today remains **NO CRYPTO IMPORT / BLOCKED_CRYPTO_BACKEND_APPROVAL**. This is not a request to install \`cryptography\` and not permission to implement Remote Play code.
+
+**Not a shortcut:** Never replace PyCA with handwritten AES, copied Chiaki key tables, random OpenSSL ctypes FFI or unaudited cipher modes. The protocol-specific tables and Sony credentials still need independent legal/security and firmware evidence. The standalone LAN/SQLite/panel architecture is unaffected.
