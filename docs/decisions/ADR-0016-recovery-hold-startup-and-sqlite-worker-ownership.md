@@ -119,3 +119,12 @@ Technical ACCEPTED status requires maintainer agreement on degraded Hub boot sem
 - https://github.com/omnilib/aiosqlite/blob/v0.21.0/aiosqlite/core.py
 
 **Decision:** PROPOSED / NOT_IMPLEMENTED / NOT_TESTED. Accepted ADR-0011 product direction unchanged.
+
+
+## 10. Multidimensional capability guards and aiosqlite 0.22.x source correction — 2026-11-06
+
+**ADR-0016 remains PROPOSED.** [New capability and worker audit](../research/ha-core-2026-11-degraded-capabilities-worker-proof-and-aiosqlite-022-audit.md), [ADR-0017](ADR-0017-degraded-operation-capabilities-and-sqlite-close-evidence.md), and [SPEC-017](../specifications/SPEC-017-degraded-capability-matrix-and-sqlite-close-proofs.md) add a candidate per-operation policy: entry LOADED, entity available, current source awake, PSN authorized, SQLite ledger verified and worker terminal are independent facts, not one capability. All entity services, WebSocket handlers, automations and direct hardware actions must check current backend generation/identity/permissions; marking a UI control unavailable does not by itself prevent a service invocation.
+
+During global RECOVERY_HOLD, historical SQL writes remain denied, source-only verified status may be shown as UNSAVED if future policy accepts it, power/Remote Play is denied by conservative default pending maintainer sign-off, and account-only PSN reads/refresh are separately conditional. A validated immutable snapshot may be exposed via independent bounded read-only lease. Identity conflict unconditionally blocks new attribution and physical control.
+
+**Version correction to previous W2 comparison:** aiosqlite 0.21.0 Connection subclasses Thread; v0.22.0/v0.22.1 contains a private Thread instead. v0.22.1 adds stop and an enhanced queued close flow, but its stop Future can be notified before the worker actually returns; a public terminal/join contract was not established. Never rely on a legacy public Connection.join call or merely await an SQL Future cancelled by asyncio. W1 stdlib executor and W2 aiosqlite v0.22.1 require fault-injected terminal evidence and installation/packaging review. None is chosen or tested; SPEC-017 adds 80 NOT_RUN cases/20 OPEN gates.
