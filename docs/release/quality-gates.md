@@ -77,3 +77,20 @@ The accepted architecture in [ADR-0011 §12](../decisions/ADR-0011-storage-layou
 The [pinned official-source audit](../research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md), [ADR-0013](../decisions/ADR-0013-restore-authority-and-storage-topology.md) and [SPEC-013](../specifications/SPEC-013-restore-authority-storage-topology-and-reconciliation.md) add 64 planned but NOT_RUN tests and 16 OPEN gates. A release that claims safe disaster recovery must verify not only SQLite Online Backup snapshot consistency but also the authority of the restored file when raw live DB/WAL was separately archived, and the mismatch that occurs if HA configuration and share/media are restored from different times. Existing Backup Agent is a destination mechanism, not a source configuration archive file-exclusion hook in the reviewed Core/Supervisor API. The product must not promise restoration of commits absent from all surviving copies.
 
 Required before shipping recoverable historical data: explicit trust classes for valid live DB, immutable verified snapshot, raw tar copy and external ledger; source lineage/fork detection beyond same ledger UUID and cursor; preserved original files; admin-only recovery consent; scoped physical-console/account identity validation; UNKNOWN coverage gaps; HA OS/Container mount and automatic/partial backup selection tests. Default T1 portable config-root direction remains conditional. T2/T3 external live stores cannot be mandatory or assumed local, private, or included in default backup. If fully automatic lossless restore becomes required, this is an unresolved P0 external API/design blocker; honest guided recovery may instead be approved as product behavior after tests.
+
+
+## Native recovery and restoration provenance release blockers — 2026-11-06
+
+[Official-source audit](../research/ha-core-2026-11-recovery-admin-api-ui-and-upstream-backup-gaps-audit.md), [ADR-0014 PROPOSED](../decisions/ADR-0014-admin-recovery-authority-and-upstream-api-requirements.md) and [SPEC-014](../specifications/SPEC-014-admin-recovery-api-ux-and-upstream-gap-tests.md) add 72 NOT_RUN scenarios and 18 OPEN gates.
+
+Release gating for recovery must include:
+- Hub-only RECOVERY_HOLD is a loaded, non-destructive mode with one sidebar, independent of consoles, without fabricating a blank SQLite ledger.
+- A global Repairs issue for shared-ledger errors remains active through removal of any one console, while per-console repair issues may be entry-scoped; diagnostics never expose personal history/secrets.
+- Every proposed PlayStation Hub recovery WS command enforces current administrator rights server-side. Preview/confirm checks digest, candidate lineage, ledger cursor/revision and canonical console/account associations under a global lock immediately before mutation. Stale or replayed confirmations cannot act.
+- Recovery jobs are manager-owned, idempotent and cancellation-/shutdown-safe; a mobile/browser disconnect removes subscriptions only. An incomplete SQLite worker or failed file promotion must never be reported cleanly closed.
+- Source classes distinguish published snapshot, verified archive, raw copied live DB/WAL and external/forked ledgers; no automatic largest-cursor merge or implicit post-restore Sony token authorization.
+- The pinned Supervisor RESTORE_JOB_ID_ENV/BackupManager RestoreBackupEvent source chain is verified in Core and Supervisor source, but custom integration event timing and complete post-restore provenance must be tested on HA OS; never infer auto restore correctness from a generic completed job event.
+- Existing documented pre/post backup hooks do not provide reviewed per-app file excludes; possible upstream enhancements are unfiled proposals, not release dependencies automatically accepted.
+- Explicit admin authorization for history replacement and exact data-loss limits, plus full/partial HA OS and Container real restore tests, are separate release conditions.
+
+An architecture review and a test definition are not a passing release gate. No code, tests, backup or restoration were performed for this update.
