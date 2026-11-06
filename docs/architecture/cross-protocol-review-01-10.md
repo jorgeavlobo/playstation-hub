@@ -493,3 +493,9 @@ The proposed source-authority and reconciliation contract is now in [ADR-0005 �
 ## Formal architecture review checkpoint — 2026-11-05
 
 The [formal review of ADR-0004–0010](formal-architecture-review-adr-0004-0010.md) consolidates 18 consistency findings, separates LAN, Remote Play and PSN release gates, and proposes WP-00–WP-08. This does not change ADR status or close hardware, storage, PSN authorization or Remote Play byte-level blockers.
+
+## 17. 2026-11-06 independent protocol-source triangulation (current addendum)
+
+The [second commit-pinned upstream study](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md) refines the earlier ten-protocol cross-check and **takes precedence for these narrow topics**: status code mapping, header parser grammar, LAN app/title metadata, physical wake/standby command verification and source-independent session checkpoints.
+
+**Key corrections:** (i) `ps5-remoteplay` is a port of playactor with inherited permissive non-620 AWAKE parsing, so its synthetic vectors do not independently validate firmware; Chiaki-ng and PS5-Wake use 200 READY/620 STANDBY/other UNKNOWN; (ii) playactor's split-at-every-colon can truncate names, and may leave CR in identity header values; parse first colon and canonicalize LF/CRLF; (iii) Chiaki-ng, PS5-Wake, old pyremoteplay and the operational Chiaki-KM fork recognize/use optional DDP running-app fields, allowing a **potential** LAN-only reported-title source, independent of PSN, but not verified gameplay; (iv) standby receive-loop termination is not proof of state 620, and the Python port can swallow timeout yet return success; (v) PS5-MQTT only publishes HA updates on changed/unavailable state, so history requires independent same-state observation checkpoints. Preserve the existing design: source authority per fact, no mandatory cloud/MQTT, one controller, no speculative session time. No DDL or implementation authorized.
