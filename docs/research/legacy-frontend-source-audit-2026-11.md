@@ -192,3 +192,10 @@ No new frontend JS, CSS, test files, feature branch or working sidebar panel has
 - [Official 2026.11 Home Assistant source re-audit](official-source-reaudit-home-assistant-2026-11.md)
 
 **Conclusion:** The old frontend is genuinely present on `develop` and its source/test inventory is verified. Multiple architectural improvements can be documented without programming. All executable changes and test runs remain pending separate authorization.
+
+
+## 11. Explicit Lovelace and old MQTT monitor entity cutover contract — 2026-11-06
+
+[New legacy backend/frontend migration evidence](legacy-develop-to-native-migration-provenance-audit-2026-11.md), [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) and [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) connect the old dashboard source directly to historical data migration. The old card uses hardcoded monitor entity ID prefix sensor.ps5_monitoring_service_ps5_ and History/Live clients use mqtt/subscribe and MQTT publish over Home Assistant's WebSocket. Actual installed entity IDs, automations and user-customized cards have NOT been inspected. The backend publisher creates ten synthetic monitor MQTT Discovery sensors with unique_id ps5_monitor_<key> and a synthetic device identifier, none of which establishes physical PlayStation identity.
+
+The native integration's one sidebar should retain conceptual navigation, historical charts, game lists and 36-month browsing; source snapshots and imported legacy sessions remain physically LEGACY_UNATTRIBUTED unless separately proven. The old 36-month index is a UI window, not a deletion policy for raw history. Retiring the Lovelace card, old MQTT retained Discovery configs and any old monitor automations is a **separate owner-approved live cutover** after verified backups and full registry/dependency mapping. The third-party PS5-MQTT activity sensor and power switch are NOT among the old monitor publisher's ten sensors and must not be removed under this migration. No frontend code/registry data/MQTT broker was modified and no test run.
