@@ -244,3 +244,18 @@ Classify errors as transient busy/timeout, disk full/read-only, schema mismatch,
 - [ADR-0010: Sidebar and API](../decisions/ADR-0010-sidebar-panel-and-backend-api.md)
 
 **Outcome:** Source evidence and explicit proposals added; no code, executables, tests, hardware observations, approved ADR or new branch. The critical unresolved issue is HA OS/Supervisor backup consistency, not whether generic SQLite snapshots exist.
+
+
+## 17. Supervisor-to-Core backup handshake re-audit — 2026-11-06 (stronger source evidence)
+
+**Correction to §2/§10/§15:** The previous audit correctly identified the HA OS backup implementation as distinct from CoreBackupReaderWriter but was **too cautious about whether a Supervisor-to-Core hook path exists in source**. That path is now traced explicitly, without claiming live HA OS validation.
+
+**SUPERVISOR_SOURCE**, pinned to [Supervisor commit 69848689](https://github.com/home-assistant/supervisor/tree/69848689a1e982ebe92d80e344fc086d8af667db):
+1. [supervisor/backups/backup.py](https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/backups/backup.py) store_homeassistant delegates to sys_homeassistant.backup.
+2. [supervisor/homeassistant/module.py](https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py) backup calls **begin_backup** before archiving the HA config path, then **end_backup** in finally; begin/end send WebSocket command types **backup/start** and **backup/end** to Core.
+3. **CORE_SOURCE**, pinned Core [backup/websocket.py](https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py), defines Supervisor-only authenticated backup/start and backup/end commands, which await BackupManager.async_pre_backup_actions and async_post_backup_actions respectively. Core tests [test_websocket.py](https://github.com/home-assistant/core/blob/2026.11.0/tests/components/backup/test_websocket.py) cover both commands.
+4. The same pinned Supervisor module's **HOMEASSISTANT_BACKUP_EXCLUDE** excludes *.db-shm, but excludes the HA Recorder DB/-wal only if the Recorder option is selected. It **does not** automatically exclude an independent PlayStation Hub SQLite file or its WAL. The archive uses atomic_contents_add to traverse the HA config folder; that function name does not mean a concurrent collection of unrelated files is an atomic database snapshot.
+
+**Refined evidence boundary:** The platform backup notification path is **SOURCE_CONFIRMED** for these specified upstream versions. It is still **NOT_TESTED** whether the user's installed HA OS/Supervisor version executes the hooks when our future custom backup platform is registered and whether our proposed immutable snapshot/manifest will be included together and restored unambiguously. Final decisions on snapshot placement, live DB handling, backup orchestration and restore remain open.
+
+**Test plan impact:** SH-BK02 is now a source-verified mechanism with a **BLOCKED_HA_OS execution test**, not a source-unknown feature. SH-BK04/05/06/07/09/10 remain critical. Freeze/thaw outside a normal backup is documented by the Supervisor API and needs separate coverage. The source chain makes the proposed snapshot design more credible but does not prove it correct.
