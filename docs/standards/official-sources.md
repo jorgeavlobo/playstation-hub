@@ -424,3 +424,20 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://github.com/StonedModder/ps-game-state-lib/tree/963a0e256ab32090143d44dc7964551aca70ed77 — console-side ELF/payload source for foreground/process/controller-focus comparison. **Excluded**: requires installing software on a console and is not normal retail PS5 API support.
 
 **Evidence quality:** Sony's pause-under-Home product behavior is official. All DDP wire/title fields, title-prefix classification, third-party UI policies and on-console payload behaviors are upstream/community code evidence, not direct live verification of the maintainer's PS5. No real firmware test has occurred; prefix type does not identify current player/gameplay. The first-party dependency ban and no extra console software stay binding.
+## PS5 Remote Play pairing / TCP control wire source audit — 2026-11-06
+
+**Current source-backed analysis:** [Remote Play registration, HTTP-to-binary control and standby audit](../research/first-party-ps5-remote-play-registration-control-source-audit-2026-11-06.md) and [first-party pairing/control contract](../architecture/first-party-remote-play-registration-control-contract.md).
+
+- https://www.playstation.com/pt-pt/support/games/playstation-remote-play-on-pc-and-mac/ — official manual pairing, same-account and same-network requirements.
+- https://www.playstation.com/en-us/support/games/remote-play-settings/ — Sony official Pair Device and console Remote Play settings.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/registration.ts — independent source review of SRC3/RES3 UDP 9295, POST encrypted registration and key validation.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/regist.c — AGPL C registration preflight with NUL terminator and response parsing.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/session.ts — session-init nonce and HTTP control request over retained socket.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/codec.ts — separate cipher direction counters and no encryption of header-only frames.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/ctrl.c — login/passcode/heartbeat/goto-bed message family.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/src/ps5_remoteplay/http.py — ported minimal HTTP parser preserving binary-frame socket ownership.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/tests/test_session.py — synthetic coalesced HTTP + heartbeat, login and session failure tests, not live firmware evidence.
+- https://github.com/home-assistant/core/blob/2026.11.0/pyproject.toml — platform already includes PyCA, but the maintainer has NOT approved importing it.
+- https://cryptography.io/en/50.0.2/hazmat/decrepit/ — PyCA legacy AES-CFB mode, not Python stdlib.
+
+**Boundary:** The proprietary wire grammar is community-observed and unverified against user hardware. Sony officially describes pairing UX, not the packet format. No PlayStation code, crypto tables, account access or commands were imported/executed. No runtime package or new numbered ADR/SPEC is authorized.
