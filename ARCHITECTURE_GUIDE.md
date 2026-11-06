@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.43.2 — 2026-11-06  
+> **Document version:** 0.43.3 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2796,3 +2796,8 @@ The new product remains one multilingual native Home Assistant sidebar panel wit
 ### Typed Config Entry setup ordering correction — 2026-11-06
 
 Official Home Assistant contributors documentation requires assigning typed entry.runtime_data **before** awaiting async_forward_entry_setups: forwarded platforms immediately read it. The proposed shared-controller setup sequence now constructs an inert per-entry runtime, publishes runtime_data, awaits platform setup, activates the protected history lease and only then starts any automatic LAN monitor that could submit observations. If any step fails, generation-fenced, idempotent cleanup is mandatory. See [source audit §18](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md#18-runtime-data-setup-order-correction-from-official-contributors-documentation--2026-11-06) and [SPEC-009 §12](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md#12-corrected-ordering-evidence--2026-11-06). Source-derived correction only; not implemented.
+
+
+### Global Home Assistant shutdown ordering — 2026-11-06
+
+In pinned Core 2026.11.0, **hass.async_add_shutdown_job** is called before EVENT_HOMEASSISTANT_STOP and before Home Assistant automatically cancels background tasks. Its shutdown phase currently has a 20-second global timeout; subsequent stop, final-write and close phases have distinct bounded waits. The proposed integration-wide HubController should register **one** idempotent pre-stop shutdown job, fence new console/SQL work, cooperatively stop monitors, drain or explicitly fail pending commits and close shared SQLite before background-task cancellation. Never assume a Core phase timeout proves durability or completed termination. See [shared-services research §19](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md#19-global-home-assistant-shutdown-ordering--pinned-core-2026110) and [SPEC-009 §13](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md#13-global-graceful-shutdown-checkpoint--2026-11-06). No test/implementation performed.
