@@ -430,3 +430,12 @@ The [2026.11 multi-console source audit](../research/ha-core-2026-11-multi-conso
 - Frontend must distinguish current fresh observation, last durably committed historical cursor, provisional UNSAVED evidence, historical restore-as-of timestamp and UNKNOWN coverage after a crash/restore.
 - Never let a browser select a random local SQLite snapshot or issue restore/purge actions without explicit administrator authorization, provenance checks, validation and a protected backend operation. No Sony tokens, pairing keys or raw personal data in generic diagnostics or exported UI events.
 - Last entry removal preserves history under the retention policy but may intentionally remove menu access. A product decision is required before implementation; the panel must not disappear unpredictably after a first reboot and remain misleadingly visible before it.
+
+
+## Logical Hub/Archive root lifecycle candidate (2026-11-06)
+
+See [source audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [ADR-0011](ADR-0011-storage-layout-restore-authority-archive-hub.md) and [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md). **Status remains PROPOSED.**
+
+A dedicated logical Hub/Archive Config Entry can act as a user-confirmed configuration *anchor* that ensures domain setup and one sidebar after restart even with no physical consoles; it is not a PS5 DeviceEntry, second sidebar, second SQLite writer or LAN monitor. All physical-console and PSN entries keep independent identity/lifecycle. The hub-only mode exposes authorized archived queries via bounded data leases, never wake/standby controls. If hub is removed/disabled, menu availability changes and history remains only according to explicit retention/export policy; no claim of permanent panel without a configured entry.
+
+The built-in generic DHCP flow aborts when integration already configured, so a specific multi-console PlayStation DHCP step remains mandatory if a logical Hub entry is introduced. One global panel and WebSocket registrations still belong to the integration controller. Need approval and synthetic HA OS tests before changing initial onboarding.
