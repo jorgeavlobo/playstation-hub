@@ -217,3 +217,18 @@ All future mitigations require fault injection and backend ACL tests. No securit
 Proposed optional OBSERVATION_ONLY can report verified source current state UNSAVED with no historical buffer/replay, but the conservative default denies wake/standby/Remote Play during global recovery pending explicit approval. PSN token refresh is per-account and not inherited from historical session records; account reads/refresh during Hold remain a separately controlled policy decision.
 
 Worker-specific threat: aiosqlite v0.21.0 Connection inherited Thread, whereas v0.22.0/v0.22.1 now contains a private Thread; v0.22.1 stop/close Futures can be notified before the worker's thread loop returns. A cancelled awaiter can leave queued SQL executing. Do not rely on private version-specific Thread fields, queue emptiness, cancel() or statement interrupt to prove termination. Safe ADR-0015 pointer cutover requires tracked outstanding operations, acknowledged closure of ALL SQL connections/readers/backups and positive terminal worker evidence. Uncertain terminal status means FAILED_UNSAFE_TO_REOPEN and intact hot SQLite WAL; no second writer. All 80 SPEC-017 scenarios remain NOT_RUN.
+
+
+## 20. Unauthorized empty-ledger creation, path confusion and genesis replay — 2026-11-06
+
+[Official SQLite/HA first-boot audit](../research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [ADR-0018](../decisions/ADR-0018-first-boot-consent-and-ledger-provisioning.md), and [SPEC-018](SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md) add new destructive data-loss threats:
+
+- **Silent empty reset:** generic create-capable SQLite open recreates history after a file is missing from a restore, unmounted volume or wrong path; normal existing-ledger reads must use mode=ro/rw, with effective writability separately confirmed.
+- **Path/permission misclassification:** root not accessible or symlinked is treated as empty; explicit permission, file-type, symlink/containment and mount errors must be PRESERVE/HOLD, never CREATE_NEW.
+- **Two-admin/config-flow race:** duplicate Hub unique IDs or competing CREATE_NEW calls create two ledgers, or Core's fallback replaces a colliding entry; use official duplicate abort and process-global provisioning lease.
+- **Privilege bypass:** an automation or non-admin source request attempts to create a historical ledger simply because its data target is absent; CREATE_NEW_HISTORY requires current backend admin confirmation, operation generation and current inventory checks.
+- **Replay after ambiguous pointer commit:** a cancelled client retries initialization with a new ledger UUID and overwrites/abandons an already committed history; keep one durable CREATE_INTENT and idempotent operation receipt.
+- **Partial SQL initialization:** zero-byte or schema-incomplete new stage mistaken for a valid empty history; publish only after SQLite schema transaction, close, integrity checks, generation metadata and active pointer validation.
+- **Restored historical identity graft:** newly created Hub unique ID or imported PSN record used to grant physical PlayStation or account authority; never conflate configuration anchor, ledger, generation and canonical Sony identities.
+
+Do not use an unrestricted filesystem scan or browser-supplied path for history discovery; preserve any old source/sidecars and prior valid recovery snapshot. No secrets, raw game timelines or absolute private file paths in first-run Repairs/diagnostics. These are future mitigations, not implemented security controls.
