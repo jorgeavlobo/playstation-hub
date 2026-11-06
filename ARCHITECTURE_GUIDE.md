@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.49.0 — 2026-11-06  
+> **Document version:** 0.50.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -36,6 +36,9 @@
 
 
 > **Crash-atomic SQLite recovery journal checkpoint (2026-11-06):** The [SQLite/Python/POSIX source audit](docs/research/ha-core-2026-11-crash-atomic-recovery-journal-and-generation-promotion-audit.md), [SPEC-015 (80 NOT_RUN cases, 20 OPEN gates)](docs/specifications/SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md) and [ADR-0015 PROPOSED](docs/decisions/ADR-0015-crash-safe-ledger-promotion-and-recovery-journal.md) formalize crash-safe restoration cutover. Official SQLite warns that **renaming or deleting an open DB and mismatching hot WAL/journal files can corrupt it**; Python os.replace is atomic for a single same-filesystem path, not for database + journal + HA Config Entry metadata; Linux fsync of a file does not guarantee its containing directory entry was persisted. Preferred research model: separate, fully validated SQLite generations, a single durably published active-generation pointer, an independent versioned **application** recovery journal, controller-wide exclusive restore lease and idempotent boot reconciliation. This model is UNIMPLEMENTED and not approved; it does not fix mixed live raw DB/WAL inclusion in HA configuration backups. Core baseline 2026.11.0, no code/tests.
+
+
+> **Recovery Hold bootstrap and SQLite worker termination checkpoint (2026-11-06):** The [Core 2026.11/Python/sqlite worker source audit](docs/research/ha-core-2026-11-recovery-hold-bootstrap-and-sqlite-worker-lifecycle-audit.md), [SPEC-016 (80 NOT_RUN cases / 20 OPEN gates)](docs/specifications/SPEC-016-recovery-hold-boot-order-and-worker-termination.md) and [ADR-0016 PROPOSED](docs/decisions/ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md) refine boot order and database cutover. The logical Hub/Archive Config Entry should be capable of being HA LOADED with an **internal** RECOVERY_HOLD, a global Repair and restricted administrative panel while the SQL writer remains CLOSED/FENCED; treating all database recovery as ConfigEntryNotReady could hide the repair interface. A loaded console may optionally show SOURCE_ONLY_UNSAVED observations under global DENY_WRITE, subject to maintainer approval; historical writes and identity-conflicted controls remain blocked. Crucial worker result: Python ThreadPoolExecutor cancellation does NOT stop running functions, sqlite3.Connection.interrupt only aborts statements, and aiosqlite v0.21.0 may execute queued SQL after its awaiting Future was cancelled. **Positive SQL connection close + queue drain + worker terminal evidence** is mandatory before a generation switch; no worker library selected or tested. Product-level Hub architecture remains ACCEPTED; ADR-0016 is a technical PROPOSAL. No code.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2939,3 +2942,36 @@ There is no proven supported mechanism within the inspected Core 2026.11/Supervi
 **New planned test evidence:** SPEC-015 defines **80 NOT_RUN cases** in four groups (20 promotion, 20 SQLite/filesystem, 20 boot/identity, 20 Supervisor/security) and 20 OPEN gates. With SPEC-008 (46), 009 (56), 010 (56), 011 (64), 012 (64), 013 (64) and 014 (72), there are **502 enumerated cases** across eight specifications, with overlap and **zero executed/passed**. No schema, pointer file, worker, tests, real backup/restore or branch was created.
 
 **Next recommended source investigation:** verify boot-time Hub-only RECOVERY_HOLD and file-promotion interoperability with the exact pinned Home Assistant Config Entry setup ordering, correct repair issue lifecycle, and the selected SQLite worker's cancellation semantics. Further define a recovery protocol after partial Home Assistant configuration restore, given that restoring /config can replace pointer, journal and generations together. Preserve the code freeze.
+
+
+## Recovery-Hold boot ordering and definitive SQLite worker termination — 2026-11-06
+
+**Primary research:** [source-pinned Core/Python/aiosqlite audit](docs/research/ha-core-2026-11-recovery-hold-bootstrap-and-sqlite-worker-lifecycle-audit.md), [SPEC-016](docs/specifications/SPEC-016-recovery-hold-boot-order-and-worker-termination.md), [ADR-0016](docs/decisions/ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md). All are documentation-only. ADR-0011 continues ACCEPTED as product architecture; ADR-0012–0016 remain technical proposals, no runtime code/test authorization.
+
+### Pinned Home Assistant startup contracts
+
+1. Core 2026.11.0 runs domain-level integration setup before individual Config Entries; disabled/ignored entries do not setup. Different entries have independent setup locks. A controller constructed at domain setup with **DENY_WRITE by default**, one panel/API registration and a shared recovery preflight can ensure physical console entries never race to create writers.
+2. ConfigEntryNotReady puts an entry in SETUP_RETRY; ConfigEntryError produces SETUP_ERROR; migration errors yield MIGRATION_ERROR; a successful entry reaches LOADED. **RECOVERY_HOLD is a PlayStation Hub internal state, NOT a new HA ConfigEntryState.** If a Hub entry can safely load its control plane despite failed/corrupt history DB, prefer LOADED + RECOVERY_HOLD to preserve the admin UI and a global Repair. Do not disguise missing essential HA dependencies or invalid Hub Config Entry schema as recoverable history.
+3. Assign typed entry.runtime_data **before** awaiting async_forward_entry_setups; forwarded entity platforms use it immediately. A prepared Hub runtime can report recovery health without opening SQLite; a console runtime can represent fresh source observation separately from historical durability and return unavailable/UNSAVED where appropriate.
+4. The Hub entry must NOT manufacture a physical PlayStation DeviceEntry or start LAN/PSN tasks. Physical console/account entries remain independent. Loaded physical source is **not** an active historical writer lease. During RECOVERY_HOLD no DURABLE_WRITE lease can exist, even when a console reports AWAKE; future optional SOURCE_ONLY_UNSAVED behavior requires explicit approval and cannot buffer unlimited presumed session time.
+5. Core config-entry on-unload callbacks and background task cancellation are per-entry; pinned on-unload task wait is 10 seconds and FAILED_UNLOAD may retain resources. A process-global HistoryService/RecoveryManager cannot be closed by one entry's unload. One early hass.async_add_shutdown_job coordinates write fence, worker closure and bounded state accounting before entry tasks are cancelled.
+
+### Worker cancellation is not termination — new P0 safety finding
+
+6. Official Python concurrent.futures states running ThreadPoolExecutor tasks cannot be cancelled by Future.cancel() or shutdown(cancel_futures=True); shutdown(wait=False) does not join running workers. An asyncio waiter can report CANCELLED while native SQLite still writes. Never perform active generation pointer promotion based only on cancelled task/future, timeout or a zero-length Python queue.
+7. Python sqlite3 uses check_same_thread=True by default and thread-safety varies by the compiled SQLite C library. sqlite3.Connection.interrupt() may abort a running statement with OperationalError, but does NOT close a connection or prove an executor thread stopped. The Python sqlite3 connection context manager also does not implicitly close it.
+8. The pinned **third-party candidate** aiosqlite v0.21.0 uses one worker thread/queue per connection. It enqueues SQL functions before their futures are awaited, and its close() goes through the same queue, with a stop sentinel. Cancelling an await is NOT removal of an already queued function, and a close may wait behind existing SQL. Its exact terminal worker state/connection handle closure must be positively verified through a documented supported contract or independently justified adapter tests. aiosqlite is NOT selected or established to be installed on user's HA OS.
+9. Candidate stop handshake: global FENCING (deny new leases/queued work) -> settle accepted commits and read/export/snapshot leases -> cooperative stop/optional statement interrupt -> **verify** queue drained and SQLite connection closed in owner thread -> verify worker terminal/join -> manager CLOSED -> only THEN change ADR-0015 active pointer/generation. If worker remains unknown/hung, enter FAILED_UNSAFE_TO_REOPEN and RECOVERY_HOLD. The next process startup must preserve native SQLite sidecars and reconcile transaction receipts.
+10. Correct historical semantics: SOURCE_ONLY_UNSAVED observations may update current state only if canonical hardware identity was verified. They cannot extend persisted awake/game intervals while history is blocked. After recovery, a new observation begins a new bounded evidence range, leaving unobserved recovery time UNKNOWN. An identity mismatch blocks control and new attribution.
+
+### State and evidence distinctions
+
+- **Home Assistant entry:** LOADED means setup succeeded; it does NOT promise SQL is healthy.
+- **Hub internal:** NORMAL, RECOVERY_CHECKING, RECOVERY_HOLD or LIMITED_READ_ONLY.
+- **History writer:** DENY_WRITE, READY, FENCING, DRAINING, CONNECTION_CLOSING, WORKER_TERMINATING, CLOSED, FAILED_UNSAFE_TO_REOPEN.
+- **Console source:** OFFLINE, READY, optional SOURCE_ONLY_UNSAVED or IDENTITY_CONFLICT.
+- **Admin panel:** normal statistics or restricted recovery, with server-enforced ACL and global Repairs rather than a removable PS5-scoped issue.
+
+**Gate register:** SPEC-016 adds 80 NOT_RUN case IDs (20 boot/Hub, 20 multi-entry, 20 SQLite worker, 20 OS/security) and 20 OPEN sign-off gates; together with SPEC-008/009/010/011/012/013/014/015, that makes **582 enumerated case IDs** (46+56+56+64+64+64+72+80+80) with intentional overlap and **zero cases executed**. No actual SQLite runtime version, DB worker, HA OS setup or power-cut test is known.
+
+**Recommended next research:** Define a *degraded-mode capability matrix* by entry kind and operation, select the safest HA API/worker ownership boundary from source evidence, and analyze worker progress/close acknowledgement guarantees and read-only snapshot use under recovery, without creating code. Formalize first-start/no-history versus missing/corrupted-history file detection; preserve accepted Hub-only recovery UX. Any actual implementation will need explicit authorization.
