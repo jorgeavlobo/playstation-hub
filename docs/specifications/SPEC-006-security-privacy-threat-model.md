@@ -185,3 +185,12 @@ New threat paths:
 - **False source trust:** Supervisor restore-progress event proves a job state, not the origin/authentication of an app-owned SQLite file. A SHA hash is integrity evidence only, not a signature when payload and manifest are both user-controlled.
 
 User-created Hub/Archive Config Entry and private history retention remain accepted product directions per ADR-0011; the specific recovery API/UX still needs maintainer approval and all 72 SPEC-014 cases remain NOT_RUN. Existing security gates remain unpassed.
+
+
+## 17. Crash-atomic file-promotion and malicious journal integrity threats — 2026-11-06
+
+[Official SQLite/Python/POSIX source audit](../research/ha-core-2026-11-crash-atomic-recovery-journal-and-generation-promotion-audit.md), [ADR-0015](../decisions/ADR-0015-crash-safe-ledger-promotion-and-recovery-journal.md), and [SPEC-015](SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md) add new future security cases. Threats include a tampered active pointer targeting a malicious symlink/path; a forged recovery journal claiming COMPLETED despite an old active pointer; an old executor still writing into a renamed SQLite DB while a new writer shares its WAL; a partial published generation after power loss; a low-privilege browser repeating a previously approved recovery decision; and retention GC deleting the only good original or a live backup source.
+
+Proposed mitigations: fixed private storage roots with canonical path allowlist, generated UUID basenames, no symlink/hardlink aliases, bounded versioned journal/pointer content and digest validation; separate user/admin ACL from file metadata (hash is not authentication); exclusive HubController recovery lease; positive closure of all SQLite workers before pointer selection; separate per-generation SQLite paths and SQLite-managed WAL/journal names; same-filesystem atomic pointer update plus file and directory fsync on tested OS; original generation preservation; idempotent startup reconciliation; globally scoped Repairs on uncertainty, and strict secret/identity segregation.
+
+A journal marked COMMITTED does not prove matching HA Config Entry registry/PSN identity because these are separate systems. Recovery must revalidate canonical physical identity before privileged controls resume, and never claim sessions recorded after an old backup if no current copy exists. All 80 SPEC-015 scenarios are NOT_RUN and no threat-control implementation is approved.
