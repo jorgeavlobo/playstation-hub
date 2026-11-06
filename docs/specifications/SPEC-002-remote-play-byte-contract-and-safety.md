@@ -344,3 +344,9 @@ Do not persist ephemeral session counters, nonces or login passcodes as pairing 
 - https://developers.home-assistant.io/docs/core/entity/button/
 
 **Outcome:** Source-derived byte contract, missing byte-level proofs, 28 deterministic test cases and 12 release gates documented. All release gates remain unpassed. No executable code, real pairing or device command was performed.
+
+## Command-result source regression additions — 2026-11-06 (NOT_RUN)
+
+[Triangulated upstream sources](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md) show that `ps5-remoteplay.wake()` sends UDP WAKEUP without waiting (CLI optionally waits); `playactor.Waker.wake()` waits for its own potentially over-permissive AWAKE parser; both `playactor RemotePlayDeviceConnection.standby()` and the Python port rely on session end. **Specifically, the Python port catches timeout while waiting for close and its outer standby wrapper can return True without a new status 620.**
+
+Add fixtures `SRC-CMD-01` (wake send succeeds but no 200 -> NOT_CONFIRMED), `SRC-CMD-02` (standby session closes without 620 -> NOT_CONFIRMED), `SRC-CMD-03` (standby receive loop times out but wrapper returns true -> NOT_CONFIRMED), `SRC-CMD-04` (stale/wrong identity, conflicting commands -> denied/serialized). Preserve `REQUESTED/SENT/VERIFYING/CONFIRMED/INDETERMINATE/FAILED` separate from physical console facts. No credential or firmware test done. Do not copy AGPL/GPL implementations or crypto material without legal review.
