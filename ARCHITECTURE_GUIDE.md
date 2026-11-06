@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.43.0 — 2026-11-06  
+> **Document version:** 0.43.1 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -2786,3 +2786,8 @@ The new product remains one multilingual native Home Assistant sidebar panel wit
 **Current state:** The new SPEC-009 defines **56 additional unrun tests** and **12 open sign-off gates**, separate from SPEC-008's **46 unrun tests** and 12 open gates. No code, CI run, hardware test, new branch or accepted ADR. The baseline remains Core 2026.11.0/Python >=3.14.2 as a source reference, not an approved minimum compatibility requirement.
 
 **Next research before approval:** inspect pinned Supervisor backup lifecycle end-to-end (including how integration backup platform callbacks are invoked), Home Assistant OS snapshot paths and archive filters, and the platform's ability to safely shut down/reopen a shared SQLite worker without starving queries. Only then can ADR-0008's backup conditions be resolved.
+
+
+### Supervisor backup handshake source follow-up — 2026-11-06
+
+**Source evidence improved without running tests:** Supervisor code pinned at commit 69848689 calls begin_backup/end_backup around archiving of the Home Assistant config directory; these send authenticated WebSocket backup/start and backup/end commands. Core 2026.11.0 backup/websocket.py routes them to BackupManager pre/post platform hooks, corroborated by Core tests. The corresponding Supervisor archive filter excludes *.db-shm and conditional Recorder DB files but not arbitrary custom SQLite DB/WAL files. See [audit §17](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md#17-supervisor-to-core-backup-handshake-re-audit--2026-11-06-stronger-source-evidence) and [SPEC-009 §11](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md#11-source-update--supervisor-backup-hooks-traced-2026-11-06). **The callback mechanism is source-confirmed; actual PlayStation Hub snapshot correctness, HA OS archive inclusion and restore are still untested and blocked for approval.** No code or hardware testing took place.
