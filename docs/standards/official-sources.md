@@ -343,3 +343,21 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://github.com/iharosi/ps5-remoteplay — separate AGPL-3.0 Python PS5 port with documented byte-exact synthetic vectors (README-only evidence; not audited or selected as runtime dependency).
 
 **Source boundary:** Existence of optional `running-app-titleid`/name in parsers is evidence of a *possible* console LAN metadata source, not verified appearance on a specific PS5 firmware or exact active gaming time. Never copy GPL/AGPL protocol code or key tables into a different licensed integration without explicit licensing analysis. No production code or hardware test executed.
+
+## Secondary source-level protocol triangulation and PSN runtime study — 2026-11-06
+
+**Research index:** [Pinned source-audit, LAN title and PSN runtime comparison](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md), with source/line-referenced differences and planned test trace IDs.
+
+- https://github.com/iharosi/ps5-remoteplay/tree/61e1f7dc065a77f7e8b1de5057889a08b0208d9d — AGPL-3.0 Python port of playactor, not an independent firmware oracle; ported byte-vector tests and permissive status decoding; standby closes/times out without independent 620 confirmation.
+- https://github.com/ktnrg45/pyremoteplay/tree/a127422c2599034ec4428919bbaf8b4db278cd75 — GPL-3.0 archived 2022 Python Remote Play/DDP, recognizes running-app name and unusual colon parsing.
+- https://github.com/iharosi/ps5-wake/tree/4806b2846e0a5c82ca5ad009731087ead6b9bccb — GPL-3.0 PS5-oriented C DDP probe parses `running-app-name` and `running-app-titleid`; 200/620/unknown display handling.
+- https://github.com/leonanluppi/chiaki-km/tree/9f84d0baf82ac87072781f7ad0a909291c46e2b5 — AGPL-3.0 Chiaki fork that uses local discovery app metadata to select controller profiles; CUSA backward-compatible title examples, no proof of all-firmware compatibility.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/discovery/messages.ts — split-on-all-colons / CRLF hazards and permissive status classification.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c — more conservative 200 READY / 620 STANDBY / unknown status and optional LAN app fields.
+- https://github.com/isFakeAccount/psnawp/blob/fcd7e8334495585b5a8d7502b3b527f34f9d7777/src/psnawp_api/core/authenticator.py — inspected synchronous access-token refresh method and expiring-token state.
+- https://github.com/Emkraan/homeassistant-playstationnetwork/blob/aecbd580c39cc00692f06cec80df4b17c02e1e63/custom_components/playstation_network/compat.py — per-account guard, refresh margin and OAuth error compatibility workaround; not a template to monkey-patch globally.
+- https://github.com/Emkraan/homeassistant-playstationnetwork/blob/aecbd580c39cc00692f06cec80df4b17c02e1e63/custom_components/playstation_network/coordinator.py — refreshed token persistence without lifecycle reload.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/playstation_network/helpers.py — selects first provider title within primary platform account session; no unique physical LAN device identity.
+- https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/graphql/operationHashes.ts — reversed persisted GraphQL hashes, not a supported stable licensed API contract.
+
+**Evidence boundary:** Third-party parser field recognition and code tests are not Sony official firmware support or user hardware captures. GPL/AGPL reference code/test assets are not approved for verbatim reuse; no Sony API permission is implied. No actual PlayStation Hub executable work was performed.
