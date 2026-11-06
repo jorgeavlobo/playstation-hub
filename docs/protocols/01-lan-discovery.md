@@ -141,3 +141,13 @@ Exact accepted HTTP-like status codes beyond `620`, firmware-specific response v
 
 **Next specification:** [02 — Console status](02-console-status.md).  
 **Index:** [Protocols](README.md).
+
+## 12. Deep upstream implementation cross-check — multihomed LAN discovery (2026-11-06)
+
+**Source:** [Pinned source audit](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md), sections 2.1–2.3. This is a source-review amendment, not proof of a working PlayStation Hub implementation.
+
+Pinned [PS5-MQTT v1.8.1 discovery adapter](https://github.com/FunkeyFlo/ps5-mqtt/blob/7ab3075d276f3eeecd81a3322c72231af8cd51bd/ps5-mqtt/server/src/playactor/discovery.ts) explicitly handles multihomed systems: a single limited broadcast (`255.255.255.255`) may leave PS5s on a non-default directly attached subnet undiscovered; for each non-internal IPv4 interface, it computes a subnet broadcast from address/netmask, plus global broadcast, with an opt-in override. Its previous one-scanner-per-target implementation triggered excessive listeners on a shared playactor UDP socket (issue #692); the current code sends multiple targets from **one discovery session** and deduplicates by device ID. This does **not** prove successful broadcast across a routed/filtered VLAN.
+
+**Proposed native Python implementation constraints:** bounded enumeration of safe IPv4 interfaces and selectable explicit IP; one integration-/protocol-scoped listener ownership instead of a scanner per interface/console, no accidental extra sockets/callbacks on Config Entry reload; independent per-owner status probes; deduplicate only after verifying physical identity. Use the same test evidence for multiple NICs, Home Assistant OS bridges, VLAN routes, duplicate replies, stale addresses, spoofed host-id and device replacement at same DHCP address. Never copy the Node-specific listener model into Python as-is. The `5s` and `60s` PS5-MQTT poll/discovery recommendations are not Sony guarantees.
+
+**Additional LAN metadata:** Chiaki-ng's parser also extracts `running-app-name` and `running-app-titleid` from optional discovery response headers. Preserve bounded, sanitized app fields as `LAN_RUNNING_APP` candidate facts when available. Protocol 02 and Protocol 10 own the semantics; field existence is NOT guaranteed on PS5 firmware or confirmation of game play.
