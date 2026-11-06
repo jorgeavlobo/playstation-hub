@@ -285,3 +285,26 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/recorder/statistics.py — HA statistics have distinct source/retention and should not be used as hidden app ledger.
 
 **Evidence limits:** SQLite features are documented by upstream, but linked SQLite C library version, Home Assistant OS filesystem, database performance, title and Sony API authorization and exact PlayStation Hub physical schema are not validated. ADR-0020 and SPEC-020 are designs, not executable SQL or HA runtime behavior. Legacy develop SQLite records are fictional and were never deployed; no data migration or backwards old-schema support is required.
+
+## Temporal reducer and session-coverage official-source register — 2026-11-06
+
+**Research:** [Observation-to-session reducer audit](../research/observations-to-sessions-temporal-reducer-source-audit-2026-11.md). **Decision:** [ADR-0021 PROPOSED](../decisions/ADR-0021-observation-to-session-reducer-and-temporal-coverage.md). **Tests:** [SPEC-021, 96 NOT_RUN / 24 OPEN/BLOCKED](../specifications/SPEC-021-observation-to-session-state-machine-and-replay.md).
+
+| Publisher / official resource | Link | Verified research boundary |
+| --- | --- | --- |
+| Sony PlayStation | https://www.playstation.com/en-gb/support/hardware/ps5-ps4-power-indicator-lights/ | LED/physical modes are **not** LAN UDP status code proof |
+| Sony PlayStation | https://www.playstation.com/pt-pt/support/hardware/ps5/ | Rest mode background behaviors are not verified active gameplay |
+| Home Assistant | https://www.home-assistant.io/integrations/playstation_network/ | Account/provider presence is not canonical local console identity |
+| Home Assistant | https://www.home-assistant.io/docs/configuration/state_object/ | HA current entity values/unknown/unavailable are not full durable session history |
+| Home Assistant Contributors | https://contributors.home-assistant.io/core/integrations/fetching-data/ | DataUpdateCoordinator/push lifecycle requires explicit monitor ownership |
+| SQLite | https://www.sqlite.org/lang_transaction.html | One writer; explicit transaction to commit evidence/checkpoints together |
+| SQLite | https://www.sqlite.org/isolation.html | Readers see committed snapshot; report query must pin a consistent cursor |
+| SQLite | https://www.sqlite.org/lang_upsert.html | UPSERT unique conflict cannot replace application id+digest receipt contract |
+| SQLite | https://www.sqlite.org/foreignkeys.html | Enable/check each connection; row overlap requires application-level invariant |
+| SQLite | https://www.sqlite.org/wal.html | WAL, concurrency/checkpoints, and 2026 WAL reset bug caveats |
+| SQLite | https://www.sqlite.org/rescode.html | COMMIT/SQL failures require correct error and uncertainty handling |
+| SQLite | https://www.sqlite.org/lang_savepoint.html | Inner release != outer commit; maintain one final durable boundary |
+| Python 3.14 | https://docs.python.org/3.14/library/time.html | Monotonic runtime freshness, not durable cross-restart absolute clock |
+| Python 3.14 | https://docs.python.org/3.14/library/zoneinfo.html | IANA calendar reporting and DST-aware UTC bounds |
+
+**Evidence limits:** This review did not verify a real firmware response, an authorized Sony PSN API, an actual Home Assistant OS SQLite runtime, any Python worker, a SQL transaction on user data, or Home Assistant backups. The strict two-point bounded coverage policy and maximum B remain unapproved project choices. The old synthetic develop database remains outside scope.
