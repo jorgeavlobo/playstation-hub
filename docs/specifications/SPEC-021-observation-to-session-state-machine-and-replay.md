@@ -232,3 +232,9 @@ No application or testing files should be added until the maintainer explicitly 
 - https://docs.python.org/3.14/library/zoneinfo.html
 
 **Final checkpoint:** 96 case descriptions, 24 gates, 0 RUN/PASSED; new greenfield application only. No executable code, database, SQL migration, hardware test, simulation, or PSN request performed.
+
+## Source-triangulation refinement: no change-only history and no speculative game sessions (2026-11-06)
+
+[Second pinned upstream audit](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md) demonstrates that PS5-MQTT's `check-devices-state.ts` suppresses HA publication for a healthy device with unchanged reported state; history cannot rely on this UI/MQTT change-only stream to prove repeated samples. Entry-owned LAN monitoring must produce independently accepted observations/heartbeats for bounded temporal continuity even when entity-visible state doesn't change.
+
+Potential `LAN_RUNNING_APP` metadata from Chiaki-ng, PS5-Wake C and older pyremoteplay is an **observation candidate** whose data semantics and firmware support need validation; it does not automatically establish that a game is foreground or being played. Keep account/provider-derived titles separate. Use the existing temporal invariants (no interpolation over failed polls, changed title -> transition bracket UNKNOWN, unvalidated header absence != no game) to govern any later title-specific policy. Source trace IDs SRC-HIST-01 and SRC-HIST-02 in the research are review references, not two new executable tests now; the existing 96 scenarios remain all NOT_RUN.
