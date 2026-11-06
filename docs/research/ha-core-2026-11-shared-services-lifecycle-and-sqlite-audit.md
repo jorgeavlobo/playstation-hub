@@ -99,7 +99,7 @@ A counting-only implementation violates S4 if a read was issued just before the 
 
 ## 6. Setup ordering, partial failure and compensation
 
-**Proposed order:** validate canonical identity -> acquire PENDING data lease -> register idempotent fallback cleanup -> allocate per-entry transport/reducer -> register owned tasks and their cleanup -> await platform forward -> start/confirm single entry-owned monitor -> activate lease + publish runtime_data -> return setup success.
+**Corrected proposed order, aligned with official HA runtime-data guidance:** validate canonical identity -> acquire PENDING data lease -> register idempotent fallback cleanup -> initialize shared datastore -> construct typed per-entry transport/reducer/coordinator in an inert state -> **assign entry.runtime_data before forwarding platforms** -> register owned cleanup -> **await platform forward** -> activate lease -> start the single entry-owned monitor only after the lease is active -> return setup success. If activation or monitor startup fails, fence the entry generation and run compensating cleanup. No observation is admitted for durable writing while the entry lease is only PENDING.
 
 **Mandatory change from a naive design:** register cleanup *before* each irreversible allocation. In Home Assistant Core, entry async_on_unload callbacks are executed on setup failure. However, asynchronous callbacks are scheduled and waited together, not sequentially guaranteed by their registration order. Therefore ordered cleanup cannot simply be spread across a stack of callbacks that happen to be registered last-in-first-out.
 
@@ -259,3 +259,8 @@ Classify errors as transient busy/timeout, disk full/read-only, schema mismatch,
 **Refined evidence boundary:** The platform backup notification path is **SOURCE_CONFIRMED** for these specified upstream versions. It is still **NOT_TESTED** whether the user's installed HA OS/Supervisor version executes the hooks when our future custom backup platform is registered and whether our proposed immutable snapshot/manifest will be included together and restored unambiguously. Final decisions on snapshot placement, live DB handling, backup orchestration and restore remain open.
 
 **Test plan impact:** SH-BK02 is now a source-verified mechanism with a **BLOCKED_HA_OS execution test**, not a source-unknown feature. SH-BK04/05/06/07/09/10 remain critical. Freeze/thaw outside a normal backup is documented by the Supervisor API and needs separate coverage. The source chain makes the proposed snapshot design more credible but does not prove it correct.
+
+
+## 18. Runtime data setup-order correction from official contributors documentation — 2026-11-06
+
+The official [Config entries](https://contributors.home-assistant.io/core/integrations/config-entries/) and [runtime-data guidance](https://contributors.home-assistant.io/core/quality-scale/runtime-data/) explicitly assign the typed entry.runtime_data **before** awaiting async_forward_entry_setups, because forwarded platforms read it immediately. The first draft of §6 placed runtime_data after forwarding and incorrectly risked missing runtime state. §6 has now been corrected. Separately, monitor activation must not precede promotion of a PENDING data lease to ACTIVE if the monitor can submit observations. Prepared runtime can expose null/stale cached data to HA entities before observation begins. Add this order to synthetic setup and partial-failure tests; do not code until approved.
