@@ -1,7 +1,7 @@
 # SPEC-019 — Legacy SQLite history migration, provenance and MQTT entity retirement
 
 **Date:** 2026-11-06
-**Status:** PROPOSED / ALL_TESTS_NOT_RUN / NO_EXECUTABLE_CODE
+**Status:** RETIRED / NOT_APPLICABLE — all legacy data synthetic, never deployed (maintainer 2026-11-06)
 **Primary source audit:** [Develop legacy migration research](../research/legacy-develop-to-native-migration-provenance-audit-2026-11.md)
 **Technical ADR:** [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) PROPOSED
 **Source branch:** develop read-only (App v0.5.0, Lovelace card v1.1.2).
@@ -9,6 +9,10 @@
 **Dependencies:** ADR-0004/0006/0008/0009/0011/0015/0018, SPEC-008–018. Source inspection is not a real user backup or deployment proof.
 
 > Legacy data may have sensitive player names/title/time. Only synthetic or explicitly sanitized consented snapshots can be used in future tests. No production SQLite, options.json, MQTT broker, HA registry, automations or live consoles were touched in this research.
+
+
+
+> **SUPERSEDED SCOPE, 2026-11-06:** The maintainer confirmed the legacy PlayStation App never ran in a real deployment and its SQLite history was wholly fabricated for testing. The new application is greenfield. Therefore **ALL 80 test descriptions and all 20 migration gates in this SPEC-019 are RETIRED / NOT_APPLICABLE**, not open implementation requirements; no source export, importer, legacy DB mapping, HA entity cleanup, MQTT broker retirement, old Config Entry migration or physical-console reattribution is needed. This document is preserved as a historical research trace only. The source code on develop may be consulted for technical ideas, not data import. The accepted product architecture is ADR-0011 and the new application's genesis is planned in ADR-0018/SPEC-018. Real future data of the new application will still require safe upgrades and backups.
 
 ## 1. Objective
 
