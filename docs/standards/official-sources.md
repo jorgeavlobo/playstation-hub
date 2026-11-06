@@ -134,3 +134,28 @@ The [new source-pinned audit](../research/ha-core-2026-11-immutable-sqlite-snaps
 - https://www.sqlite.org/backup.html — coherent SQLite online snapshots.
 
 **Evidence limits:** no code, HA OS trial, backup archive inspection or hardware test. Fixed commit/tag source does not prove the user's installed versions. No documented source filter in this pinned pre/post mechanism is not a universal claim about future Home Assistant or all backup programs.
+
+
+## Official administrator recovery, Repairs and Supervisor restore-progress sources — 2026-11-06
+
+[New source audit](../research/ha-core-2026-11-recovery-admin-api-ui-and-upstream-backup-gaps-audit.md), [ADR-0014](../decisions/ADR-0014-admin-recovery-authority-and-upstream-api-requirements.md) and [SPEC-014](../specifications/SPEC-014-admin-recovery-api-ux-and-upstream-gap-tests.md) catalog the following pinned source and official contributor documentation:
+
+- https://contributors.home-assistant.io/frontend/extending/websocket-api/ — custom WebSocket commands, admin decorator, subscriptions and frontend callWS.
+- https://contributors.home-assistant.io/core/internals/websocket-api/ — authenticated WS protocol, commands, context, errors.
+- https://contributors.home-assistant.io/core/internals/permissions/ — backend user permission checks.
+- https://contributors.home-assistant.io/core/integrations/repairs/ — global/per-entry Repair issue lifecycle; 2026.11 supports config_entry_id; new subentry argument belongs to later version.
+- https://contributors.home-assistant.io/core/integrations/diagnostics/ — sensitive data omission and test snapshots.
+- https://contributors.home-assistant.io/security/guides/integrations/ — secure integration entry points.
+- https://contributors.home-assistant.io/core/integrations/backup/ — backup destinations vs pre/post preparation and resumption.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/websocket_api/decorators.py — admin guard and independent scheduled async handler.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/websocket_api/connection.py — subscription cleanup on disconnect.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/websocket_api/__init__.py — global name-to-handler registration.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/issue_registry.py — config_entry_id optional and global Repair API at source pin.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/hassio/backup.py — RESTORE_JOB_ID_ENV and restore progress resumption.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py — RestoreBackupEvent, async_subscribe_events, state.
+- https://github.com/home-assistant/core/blob/2026.11.0/tests/components/hassio/test_backup.py — official restore-progress-after-restart tests.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/docker/homeassistant.py — Supervisor passes job ID to Core on a restore.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/core.py — restore-job environment passed to Core launch.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/backup_restore.py — distinct Core .HA_RESTORE route.
+
+**Correction to older "no restore signal" statements:** The source shows a real first-party Supervisor/Core restore-progress path, but does not prove a universal supported custom-integrations restore intent providing SQLite snapshot digest and pre-data-open ordering. Reviewed custom pre/post backup hooks still have no application-specific archive file-exclusion return contract. No external HA issue/PR was created.
