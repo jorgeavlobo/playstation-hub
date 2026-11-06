@@ -70,3 +70,25 @@ These source facts guide architecture design; no PlayStation Hub test has been e
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — full/partial config copy and Recorder-only exclusion
 
 **Not validated:** installed SQLite C library version, exact HA OS restore session, operational snapshot consistency, dynamic archive-only UI, any executable test. Source findings do not constitute an approved decision or product capability.
+
+
+## Official storage, configuration, Marketplace and backup source review — 2026-11-06
+
+[Source-backed storage and archive entry audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md) with [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) and [ADR-0011](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md). The following distinguish confirmed official framework behavior from untested PlayStation Hub proposals:
+
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core_config.py — hass.config.path, cache_path and cache exclusion purpose
+- https://contributors.home-assistant.io/architecture/core/registries/ — HA Store and .storage as native internal data
+- https://contributors.home-assistant.io/marketplace/guides/integrations/ — custom integration update, persistent_directory
+- https://contributors.home-assistant.io/marketplace/reference/hacs-json/ — persistent_directory versioned key
+- https://www.home-assistant.io/common-tasks/general/backups/ — configuration, Recorder history, share/media/apps selection, encrypted backups
+- https://www.home-assistant.io/common-tasks/os/ — host-side Supervisor storage; never hardcode host-only path in a Core component
+- https://contributors.home-assistant.io/core/integrations/config-entries/ — one persisted Config Entry per instance, loaded at startup
+- https://contributors.home-assistant.io/frontend/architecture/routing-and-panels/ — Core registration owns sidebar panels
+- https://contributors.home-assistant.io/core/integrations/backup/ — backup.py pre/post hooks (not proof that post always runs)
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/integration_platform.py — integration platforms loaded when the integration is active
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py — concurrent pre-hook gather and collective failure
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py — Supervisor backup/start/end handoff
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — begin_backup before post-hook finally; config backup/restore and Recorder-specific exclusion
+- https://www.sqlite.org/backup.html — internally consistent SQLite Online Backup API snapshot
+
+**Evidence boundary:** Pinned source proves a potential unmatched successful pre-hook on collective failure, NOT that PlayStation Hub exists or that a production freeze is occurring. File inclusion in a standard backup is not proof of consistent custom DB restore. Archive-only Hub entry and custom data path are maintainer-unapproved proposals.
