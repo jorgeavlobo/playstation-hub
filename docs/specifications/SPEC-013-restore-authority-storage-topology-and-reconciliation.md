@@ -208,3 +208,8 @@ No mode is declared release-ready or universally compatible. The expected initia
 - https://www.sqlite.org/backup.html
 
 **Current result:** 64 NOT_RUN, 16 OPEN, no implementation authorization.
+
+
+## 10. Administrator-native recovery flow and official restore event qualification — 2026-11-06
+
+[Source-pinned native recovery audit](../research/ha-core-2026-11-recovery-admin-api-ui-and-upstream-backup-gaps-audit.md), [ADR-0014](../decisions/ADR-0014-admin-recovery-authority-and-upstream-api-requirements.md) and [SPEC-014](SPEC-014-admin-recovery-api-ux-and-upstream-gap-tests.md) refine this specification with **72 more NOT_RUN scenarios and 18 OPEN gates**. Prior 64 SPEC-013 cases remain unrun. A new evidence finding is that Supervisor starts Core with a restore job ID and Core's Hassio backup integration can resume restore progress via BackupManager RestoreBackupEvent; this is **real first-party functionality** in pinned 2026.11.0, but not a documented guarantee that a custom integration receives a durable, pre-ledger-open restore-intent token identifying its SQLite snapshot. A stream-only event subscription may miss completed progress before the Hub loads. Default to admin-only source inventory and a two-phase preview/confirm bound to candidate digest, ledger lineage, controller revision and current identity checks. Recovery remains HubController-owned and independent of frontend WebSocket disconnects. Global Repairs must not depend on any removable PS5 entry. No new automatic import/merge or restore authority is approved.
