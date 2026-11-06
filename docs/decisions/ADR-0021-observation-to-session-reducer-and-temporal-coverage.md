@@ -145,3 +145,11 @@ Each item is tracked in SPEC-021 as OPEN; user instruction to document/investiga
 - https://docs.python.org/3.14/library/zoneinfo.html
 
 **Outcome:** Proposed decision only. No software, DDL, schema migration, database, CI, fixture, or executable test created.
+
+## 10. New LAN title evidence from upstream source audit (2026-11-06)
+
+A detailed comparison of [Chiaki-ng's discovery parser](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c#L115-L135) and [playactor's `extras` model](https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/discovery/udp.ts#L115-L126) shows optional LAN headers `running-app-titleid` and `running-app-name`. See [complete upstream audit](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md). These are source code observations, NOT verified PS5 hardware behavior.
+
+**Proposed source-family amendment:** An accepted, verified physical console's status response may yield a separate `LAN_RUNNING_APP` candidate title observation alongside a `LAN_STATUS` power sample. Missing, empty, malformed, unknown namespace and stale app fields must remain distinct. Do not let provider-account PSN presence automatically override this local source field, or infer the PSN player from the local title. Do not accumulate confirmed per-game duration without on-device semantics, foreground/background tests, bounded same-source point continuity, power-state constraints and source-specific policy approval.
+
+**Potential impact:** This opens a LAN-only title metadata route and removes a false assumption that all displayable games require optional Sony PSN calls; it does not guarantee that a console will send the headers, or that they are equivalent to active gameplay. The model of 12 logical SQLite tables remains PROPOSED and should allow adding an optional source-specific app/title payload without mixing user/account identities. No implementation authorized or tested.
