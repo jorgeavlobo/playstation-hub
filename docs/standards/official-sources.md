@@ -264,3 +264,24 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://www.sqlite.org/wal.html — hot WAL sidecar and restore integrity.
 
 **Boundaries:** Reviewed only sanitized repo source and public official docs, NOT the installed private App data, actual entity registry or broker. The old synthetic device identifier ps5_monitoring_service is not a verified physical PlayStation ID. No migration, MQTT deletion, or tests performed.
+
+
+## Official SQLite relational schema, partial indexes and reporting source review — 2026-11-06
+
+[Greenfield SQLite v1 official-source audit](../research/sqlite-greenfield-v1-schema-and-query-model-source-audit-2026-11.md), [ADR-0020](../decisions/ADR-0020-greenfield-sqlite-v1-data-model.md), [SPEC-020](../specifications/SPEC-020-greenfield-sqlite-v1-schema-integrity-and-reports.md) extend the source register:
+
+- https://www.sqlite.org/foreignkeys.html — per-connection foreign_keys enabling; named PK/UNIQUE foreign-key parents.
+- https://www.sqlite.org/lang_createtable.html — column definitions, NOT NULL, CHECK, PRIMARY KEY, named rowid behavior and null semantics.
+- https://www.sqlite.org/lang_createindex.html — UNIQUE indexes and multiple NULLs; composite index behavior.
+- https://www.sqlite.org/stricttables.html — STRICT table typing and minimum SQLite 3.37.0 compatibility.
+- https://www.sqlite.org/partialindex.html — subset indexes and partial UNIQUE for active/open rows, not temporal overlap validation.
+- https://www.sqlite.org/lang_upsert.html — uniqueness-based upsert; FK and CHECK failures remain errors.
+- https://www.sqlite.org/lang_transaction.html — SQL transaction boundary and one-writer semantics.
+- https://www.sqlite.org/wal.html — WAL concurrent readers, single writer, local filesystem and 2026 reset fix issue.
+- https://www.sqlite.org/backup.html — internally consistent completed SQLite backup API destination.
+- https://www.sqlite.org/pragma.html — foreign_key_check, integrity_check, user_version/application_id, busy settings.
+- https://www.sqlite.org/lang_analyze.html — version-aware PRAGMA optimize and query planner statistics.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/recorder/db_schema.py — HA's Recorder owns its own ORM schema, not our custom SQLite tables.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/recorder/statistics.py — HA statistics have distinct source/retention and should not be used as hidden app ledger.
+
+**Evidence limits:** SQLite features are documented by upstream, but linked SQLite C library version, Home Assistant OS filesystem, database performance, title and Sony API authorization and exact PlayStation Hub physical schema are not validated. ADR-0020 and SPEC-020 are designs, not executable SQL or HA runtime behavior. Legacy develop SQLite records are fictional and were never deployed; no data migration or backwards old-schema support is required.
