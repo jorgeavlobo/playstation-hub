@@ -143,3 +143,22 @@ The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtim
 | Same physical console account identity validated across restored HA Config Entries | P0 | BLOCKED_HARDWARE + NOT_RUN | ADR-0004, SPEC-013 RA-ID09–16 |
 
 **SPEC-013:** 64 case IDs enumerated, 16 OPEN gates. The product-level Hub/Archive architecture is accepted; this operational restore strategy is not approved or implemented.
+
+
+## Administrator recovery, restore progress and upstream-interface requirements — 2026-11-06
+
+| Gate | Priority | Status | Source |
+| --- | --- | --- | --- |
+| Single authenticated native administrator recovery UI, no extra service/MQTT | P0 | PROPOSED / NOT_IMPLEMENTED | [ADR-0014](../decisions/ADR-0014-admin-recovery-authority-and-upstream-api-requirements.md) |
+| Hub-only RECOVERY_HOLD when ledger is invalid, with no empty DB creation | P0 | NOT_RUN | [SPEC-014](../specifications/SPEC-014-admin-recovery-api-ux-and-upstream-gap-tests.md), AR-UX02 |
+| Global ledger Repairs issue independent of one console Config Entry | P0 | SOURCE_API_VERIFIED, APP_NOT_RUN | Core 2026.11 issue_registry / HA Repairs docs |
+| Admin require_admin / expiry/revocation and preview-confirm revalidation | P0 | SOURCE_API_VERIFIED, APP_NOT_RUN | Core websocket_api/decorators.py; SPEC-014 |
+| Disconnect cleanup vs durable recovery job ownership | P0 | SOURCE_API_VERIFIED, APP_NOT_RUN | Core websocket_api/connection.py and decorators.py |
+| Real Supervisor restore job progress and backup manager event subscription | P0 | PINNED_SOURCE_VERIFIED, APP_HA_OS_NOT_RUN | Core hassio/backup.py, BackupManager, official test; Supervisor docker/homeassistant.py |
+| Universal custom restore authority with backup source/SQLite digest | P0 | NOT_ESTABLISHED | [Source audit](../research/ha-core-2026-11-recovery-admin-api-ui-and-upstream-backup-gaps-audit.md) |
+| Custom app-owned file exclusion from Core/Supervisor config backup via pre/post | P0 | NO_SUPPORTED_CONTRACT_IN_REVIEWED_API | HA backup developer docs and pinned filters |
+| Two unfiled upstream extensions, scoped artifacts and durable restore intent | P1 | PROPOSED_RESEARCH, NO_ISSUE_FILED | ADR-0014 §6 |
+| Recovery preview/confirm with one job, old bytes preserved, no fork merge | P0 | PROPOSED / NOT_RUN | SPEC-014 72 cases and 18 gates |
+| Privacy-safe diagnostics, hostile archive bounds, physical/PSN ACL | P0 | PROPOSED / NOT_RUN | SPEC-006, SPEC-014 |
+
+All 72 SPEC-014 tests remain NOT_RUN, all 18 gates OPEN; the accepted ADR-0011 product architecture does not automatically accept the operational recovery algorithm. No formal official HA Quality Scale certification is claimed.
