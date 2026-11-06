@@ -308,3 +308,20 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 | Python 3.14 | https://docs.python.org/3.14/library/zoneinfo.html | IANA calendar reporting and DST-aware UTC bounds |
 
 **Evidence limits:** This review did not verify a real firmware response, an authorized Sony PSN API, an actual Home Assistant OS SQLite runtime, any Python worker, a SQL transaction on user data, or Home Assistant backups. The strict two-point bounded coverage policy and maximum B remain unapproved project choices. The old synthetic develop database remains outside scope.
+
+## Final current research-track evidence set — deterministic replay and correction (2026-11-06)
+
+**Research:** [Replay/correction source audit](../research/deterministic-replay-corrections-and-recovery-closure-audit-2026-11.md). **Technical ADR:** [ADR-0022 PROPOSED](../decisions/ADR-0022-deterministic-replay-and-versioned-corrections.md). **Research stop and empirical owner mapping:** [WP-00B](../architecture/WP-00B-research-freeze-and-implementation-readiness.md).
+
+- https://www.sqlite.org/lang_transaction.html — atomic outer SQL COMMIT/ROLLBACK and one-writer transaction semantics.
+- https://www.sqlite.org/lang_savepoint.html — inner RELEASE is not a durable outer COMMIT.
+- https://www.sqlite.org/isolation.html — committed snapshot isolation; compare report data at one cursor.
+- https://www.sqlite.org/wal.html — live WAL and checkpointing must not be divorced from database backup/recovery.
+- https://www.sqlite.org/backup.html — official backup API, candidate coherent stage source requiring actual compatibility proof.
+- https://www.sqlite.org/pragma.html — foreign key, integrity and journal/synchronous settings, not semantic game-time proof.
+- https://www.sqlite.org/lang_upsert.html — uniqueness conflict behavior, not automatic payload-digest idempotency.
+- https://docs.python.org/3.14/library/time.html — process-local monotonic time, not persisted absolute timestamp.
+- https://docs.python.org/3.14/library/zoneinfo.html — IANA timezone/DST semantics for replayable reports.
+- https://developers.home-assistant.io/docs/development_testing/ — Home Assistant implementation test guidance (may need current-path re-verification when tests start).
+
+**Explicit evidence classification:** Official SQLite/Python documentation supports its named primitives only. The replay protocol, versioned correction model, incident response, automatic restore prohibition and research stopping criteria are PlayStation Hub project designs, **not official Sony/HA/SQLite features** and none has run on user's hardware. Further research only if specific implementation test fails or authoritative source/API changes.
