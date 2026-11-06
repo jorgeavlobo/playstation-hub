@@ -113,3 +113,24 @@ The [new source-pinned audit](../research/ha-core-2026-11-immutable-sqlite-snaps
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — pinned config backup filters, copying and restore
 
 **Evidence boundary:** The absence of a custom per-file archive exclude option has been established only for the documented pre/post hook and the inspected pinned implementation, not as an eternal impossibility across all HA versions or external backup tools. Snapshot publication tests, actual HA OS archive contents and automatic restoration remain unverified. Maintainer product approval is recorded separately in [ADR-0011 §12](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06).
+
+
+## Pinned Home Assistant OS/Core storage-mount and restore scope sources — 2026-11-06
+
+[Official-source restore-authority audit](../research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md), [ADR-0013](../decisions/ADR-0013-restore-authority-and-storage-topology.md), [SPEC-013](../specifications/SPEC-013-restore-authority-storage-topology-and-reconciliation.md) preserve exact upstream evidence for why app-owned SQLite in config and separately mounted data roots behave differently:
+
+- https://www.home-assistant.io/common-tasks/general/backups/ — default HA OS automatic backup includes configuration; normally excludes share/media, whose selection is independent.
+- https://www.home-assistant.io/common-tasks/os/ — OS data directory, external storage/mount usages and backup vs share/media purposes.
+- https://contributors.home-assistant.io/core/integrations/backup/ — backup destinations via Backup Agent and preparation/resumption via pre/post; no custom source file-exclusion return contract shown.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core_config.py — config root path/cache path.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py — Core archive exclusions and callback coordination.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/const.py — source-specific standard exclusions.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/backup_restore.py — Core .HA_RESTORE route, not assumed universal Supervisor signal.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/docker/homeassistant.py — Core config/share/media bind-mount list.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — config backup/restore file selection and replacement.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/backups/backup.py — folder backup/restore and network mount handling.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/backups/manager.py — independent full/partial restore selections.
+- https://www.sqlite.org/wal.html — WAL and filesystem restrictions.
+- https://www.sqlite.org/backup.html — coherent SQLite online snapshots.
+
+**Evidence limits:** no code, HA OS trial, backup archive inspection or hardware test. Fixed commit/tag source does not prove the user's installed versions. No documented source filter in this pinned pre/post mechanism is not a universal claim about future Home Assistant or all backup programs.
