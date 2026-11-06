@@ -63,7 +63,7 @@ Not implemented; not an adopted final path. The SQLite WAL and SHM files, if sel
 
 ## 3. Backup consistency and restoration authority
 
-### Option A: write quiescence for archive
+### Option A: write quiescence for archive — BLOCKED until safe-resume proof
 
 Pre-backup stops new DB admissions, drains accepted writes, closes all reader/writer connections, checkpoints under safe SQLite runtime and freezes the database until archive completion. If post-backup never arrives, resumption must not silently occur while the archive is still copying; design backup failure/abort/recovery and require a robust lifecycle handshake. Hardware probes may continue only if historical omission is represented as explicit UNSAVED/gaps, without unbounded buffering.
 
