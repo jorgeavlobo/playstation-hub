@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.44.0 — 2026-11-06  
+> **Document version:** 0.45.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -21,6 +21,9 @@
 
 
 > **Crash recovery / restoration provenance checkpoint (2026-11-06):** The [SQLite, Supervisor and archive-access source audit](docs/research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010 (56 NOT_RUN tests, 14 open gates)](docs/specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) identify the **2026 SQLite WAL-reset bug**, ambiguous COMMIT acknowledgements, and the possibility that an older staged snapshot is mistaken for a restore after a normal HA restart. Pinned Supervisor full/partial Core configuration restores can replace app-owned files; its database-exclusion setting targets the Recorder DB, not arbitrary custom SQLite. Do not automatically apply snapshots simply because they exist. Runtime linked SQLite version, safe backup source selection, restore intent, exact HA OS filesystem path and archive-only menu behavior remain OPEN. Existing ADRs remain Proposed; no code/tests.
+
+
+> **HA OS storage, restoration authority and archive-only lifecycle (2026-11-06):** The [new pinned storage-path and backup source audit](docs/research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [SPEC-011 (64 unrun tests, 16 open gates)](docs/specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) and [ADR-0011 (PROPOSED)](docs/decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md) distinguish HACS folder upgrades, Core configuration backups, Recorder exclusion, and full/partial restoration of the configuration tree. A dedicated private folder derived through hass.config.path is a candidate only; /share, /media and host paths are not equivalent. A persistent logical Hub/Archive Config Entry is recommended **for review**, not approved, to preserve read-only sidebar access with no console. **Critical P0:** pinned Supervisor may skip post-backup if begin_backup raises after our pre hook succeeded; indefinite write-quiescence is BLOCKED until a safe compensation protocol is proven. Immutable Online Backup API snapshots are the preferred next research direction, but archive authority and restored-live consistency remain unresolved. No executable work.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2820,3 +2823,22 @@ In pinned Core 2026.11.0, **hass.async_add_shutdown_job** is called before EVENT
 8. **No implementation stage transition.** SPEC-010 adds 56 unrun cases and 14 open gates on top of SPEC-008 (46) and SPEC-009 (56). These 158 listed scenarios have intentional overlap; they are not 158 unique executable tests. All storage and restore choices are pending explicit approval and later evidence.
 
 **Next research gate:** verify actual installed HA OS SQLite binary and Supervisor release, inspect backup member inclusion and a trusted restore-intent API, then determine whether the first supported version should choose a write-quiescence design or a staged snapshot with unambiguous recovery. These steps require future authorized test execution; do not silently mark them done.
+
+
+## HA OS storage, snapshot authority and logical Hub/Archive entry — 2026-11-06
+
+**Binding checkpoint:** [research report](docs/research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [SPEC-011](docs/specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md), [ADR-0011](docs/decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md).
+
+**Finding 1 — Distinct storage scopes.** The official Core Config.path resolves the configuration directory, while Config.cache_path targets regenerable .cache, excluded from backup. Home Assistant's .storage houses internal registry/Store-managed JSON and is not a license to put every high-volume SQL database there. HACS/Marketplace preserves a named persistent_directory across upgrades only; it is not a consistent backup or restore mechanism. Source candidates: a dedicated private application directory under the HA configuration root for durable ledger; separate Core cache path for evictable artwork. No location approved, created or tested.
+
+**Finding 2 — Restore is destructive for selected scopes.** Pinned Supervisor restoration can remove/copy the HA config directory; its history-database exclusion preserves named Recorder files only, not the separate PlayStation Hub SQLite file. A DB saved outside config may survive a config-only restore on the same installation, but that creates a different risk: older HA Config Entries and credential associations can conflict with newer external history. A full restore/new device may not carry the external DB at all. Physical and account identity associations require generation and ledger UUID checks, not IP/username reassignment.
+
+**Finding 3 — Safe snapshot publication.** The snapshot's durable cursor MUST be read from the completed immutable SQLite snapshot, not borrowed from the live DB before or after a concurrent copy. A snapshot+manifest is a multi-file unit: crash-safe generation directories and final completion marker must be validated. The live database and WAL remain potentially copied in the same Supervisor config archive. Never auto-promote an old staged snapshot on ordinary startup; ask the admin to select a verified recovery copy on ambiguity. Local configuration-only metadata cannot prove that a restore occurred if the whole directory was replaced.
+
+**Finding 4 — Backup hook failure asymmetry (P0).** Under pinned Core 2026.11.0 the backup manager gathers multiple pre-backup integration hooks and can reject if any fails. In the pinned Supervisor path, begin_backup is awaited BEFORE entering the try/finally that calls end_backup. Our successful pre-backup SQLite quiesce could therefore remain without a matching post-backup callback when another platform fails. Resuming on a fixed timeout while archiving might still be active is equally unsafe. **Supersede previous references to quiescence as the preferred first-release candidate: BLOCKED_PENDING_SAFE_RESUME_PROTOCOL**. Research immutable Online Backup API snapshots, source/snapshot separation and explicit restore intent instead. This is upstream-source reasoning, not an executed failure test.
+
+**Finding 5 — Persistent archive UI.** Native Home Assistant Config Entries are loaded after restart while configured and enabled; with zero entries the integration is not guaranteed to load its custom sidebar. Proposed single Hub/Archive Config Entry type (separate from physical console/account entries) can anchor the UI/backup integration platform without starting polling, with one global controller/one panel. Dedicated PlayStation DHCP flow must still discover additional consoles even with Hub entry present. Hub is a configuration anchor, NOT a second integration, hardware console, service process or DB singleton owner. ADR-0011 stays PROPOSED until the maintainer explicitly accepts the UX and new Config Flow model.
+
+**Readiness register:** SPEC-011 adds 64 NOT_RUN cases and 16 OPEN gates; SPEC-008/009/010 remain NOT_RUN. Across these four specifications 222 case identifiers are now enumerated with intended overlap (46+56+56+64); that is NOT 222 unique executable tests. No tested support, build, HA OS database version, hardware evidence or implementation authorization is implied.
+
+**Next logical source research:** verify the official backup orchestration guarantees for fail/timeout/partial archives and whether a verified private outside-config local storage root can be used *without* risking data/identity split-brain. Formally resolve ADR-0011 only after maintainer approval and planned fault tests.
