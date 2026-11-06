@@ -262,3 +262,10 @@ No formal Home Assistant quality tier is claimed. ADR-0011 accepted only product
 | Real installed App backup/old SQLite data retained after cutover | P0 | UNKNOWN, NO_USER_DATA_READ | SPEC-019 LM-G01/02/19/20 |
 
 **SPEC-019:** 80 named NOT_RUN cases, 20 OPEN gates, no actual user database or entity registry inspected. ADR-0011 product architecture remains ACCEPTED; ADR-0019 import policy remains PROPOSED. No formal HA quality certification or migration success claim.
+
+
+## Greenfield scope reset: no deployed legacy application or data — 2026-11-06
+
+**Maintainer-confirmed fact:** The old develop prototype was never deployed and all legacy SQLite records were fabricated for tests. This is a completely new PlayStation Hub. Any legacy data import/DTO mapping, v1-v3 App schema compatibility, prior PS5-MQTT entity cleanup, legacy hardware re-attribution, historical backup extraction, or live App cutover is CLOSED_NOT_APPLICABLE, not a blocker. [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) is SUPERSEDED; [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md)'s 80 test cases and 20 gates are RETIRED. [SPEC-018](../specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md)'s specifically legacy-only FB-CLASS13, FB-OS18 and FB-G14 are also NOT_APPLICABLE.
+
+Keep new-app first-time ledger genesis, versioned forward migrations AFTER actual real records exist, new-app backups/restores/corruption recovery, independent console/PSN identity and admin controls. No legacy data or MQTT broker is to be imported/cleaned up. Historical source-code analyses remain technical reference, not operational deliverables. No tests or source code executed.
