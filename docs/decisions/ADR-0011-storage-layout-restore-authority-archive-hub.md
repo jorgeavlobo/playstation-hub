@@ -55,7 +55,7 @@ Prior ADR-0008 proposes a SQLite file outside the integration source; SPEC-009 p
 | C: External live DB + snapshot within config | Archive only the staged immutable DB when config chosen | More portability and permissions requirements | Config/identity metadata split-brain on restore |
 | D: Raw active DB/WAL copied by Supervisor | No extra implementation | Attractive but unproven | Reject as a consistent-backup guarantee |
 
-**Current preference:** A as the simplest initial proof if its monitoring pauses are acceptable; B as the longer-term goal with explicit restore authority, not an automatically approved evolution. Without real HA OS tests neither A nor B is accepted.
+**Revised research preference:** B (immutable Online Backup API snapshot) deserves priority because §11 establishes an orphan-freeze failure in A; B still requires definitive archive/live-file authority and a guarded restore selector. A is **BLOCKED_PENDING_SAFE_RESUME_PROTOCOL** until post-hook loss and archive-in-progress detection are solved. Neither candidate is accepted.
 
 **Hard boundary:** the application must not silently restore a stale staged snapshot when the live DB is valid on a normal restart. If the Supervisor already overwrote the live files with an old archive, those lost commits cannot be reconstructed without another independent backup.
 
