@@ -186,3 +186,8 @@ The document may be accepted as a **test plan only** without accepting underlyin
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
 
 **Outcome:** 56 unrun cases, 14 open gates, no code or tests performed.
+
+
+## 10. Source/restore/entry scope refinement (2026-11-06)
+
+The [storage/restore/archive source audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [ADR-0011](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md) and [SPEC-011](SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) extend this specification with 64 NOT_RUN tests and 16 new OPEN gates. An out-of-config live database is not automatically safe: restoring an older configuration can leave live ledger identities more recent than Config Entries, forcing explicit reconciliation. A snapshot's manifest committed cursor must be read from the completed snapshot, not the concurrent live writer, and the snapshot/manifest must have a crash-safe publication barrier. **P0:** due to the pinned Supervisor pre-hook path, a quiesce pre hook can succeed without a post hook when another integration's pre hook fails. Whole-archive write freeze must not be selected without a proved cancellation/resume contract; immutable snapshots are a promising but unapproved alternative. Archive-only menu usability may require a user-approved Hub/Archive Config Entry, never a second writer. All earlier 56 tests remain NOT_RUN.
