@@ -1,6 +1,6 @@
 # ADR-0019 — Legacy history provenance, cautious import and staged MQTT retirement
 
-**Status:** PROPOSED — historical attribution, migration and decommission decisions NOT APPROVED / NOT_TESTED
+**Status:** SUPERSEDED / NOT_APPLICABLE — maintainer confirmed no legacy deployment or real data (2026-11-06)
 **Date:** 2026-11-06
 **Legacy source:** jorgeavlobo/playstation-hub develop, read-only old App v0.5.0 / Lovelace v1.1.2, NOT actual deployed private data.
 **Evidence:** [Legacy source/provenance audit](../research/legacy-develop-to-native-migration-provenance-audit-2026-11.md)
@@ -9,6 +9,10 @@
 **Git:** main documentation only; develop unchanged.
 
 > The maintainer requested investigation and documentation only. No authority exists to alter an installed Home Assistant App, SQLite source, Mosquitto retained topics, Lovelace dashboard, entity registry, physical PS5 or user automations. This ADR is not a migration approval.
+
+
+
+> **FINAL SCOPE CORRECTION, 2026-11-06:** Maintainer confirmed the old App was **never deployed**, and every old database row/session was invented for testing. The project is **greenfield**. This document's proposed import, schema compatibility, legacy-identity provenance, MQTT cleanup and uninstall/cutover workflow are **not product requirements**, have NO real user source to act on and must NOT be implemented. No old SQLite data, entity history, old credentials or options will be imported. The develop branch remains a read-only code-design reference. [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) is RETIRED/NOT_APPLICABLE. Source facts in this historical record can still aid technical design, but the proposed migration decisions and sign-off gates are closed as NO_MIGRATION_NEEDED. Backups and future schema upgrades for the *new* application remain in scope.
 
 ## 1. Problem
 
