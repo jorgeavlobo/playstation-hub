@@ -61,10 +61,11 @@ The design must prevent duplicate initialization, premature resource closure, lo
     3. Register idempotent fallback cleanup with Config Entry immediately.
     4. Await one manager-owned HistoryService initialization task.
     5. Validate DB file ownership, schema and migrations before enabling writes.
-    6. Construct per-entry transport/reducer/task; register cleanup on allocation.
-    7. Await HA platform forwarding and finalize entry runtime.
-    8. Activate entry lease; publish runtime and start autonomous monitor.
-    9. Report successful setup only when the documented success conditions hold.
+    6. Construct a typed per-entry transport/reducer/coordinator in prepared/inert mode.
+    7. Assign entry.runtime_data BEFORE forwarding; register cleanup on allocation.
+    8. Await HA platform forwarding; forwarded entities read entry.runtime_data.
+    9. Activate entry lease BEFORE admitting monitored observations to the writer.
+   10. Start autonomous monitor, and report success only when setup contract holds.
 
 **Failure compensation:** Stop source-owned work and explicitly release the pending/active lease through one awaited cleanup path. Core's async_on_unload callback is a secondary idempotent safety net, not the mechanism that guarantees ordering.
 
@@ -251,3 +252,8 @@ The accompanying research audit §17 now traces a concrete path from Supervisor 
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py
 - https://github.com/home-assistant/core/blob/2026.11.0/tests/components/backup/test_websocket.py
+
+
+## 12. Corrected ordering evidence — 2026-11-06
+
+Official Home Assistant [Config Entries guidance](https://contributors.home-assistant.io/core/integrations/config-entries/) requires setting typed entry.runtime_data before async_forward_entry_setups because each forwarded platform accesses the runtime immediately. The setup sequence in §4 was revised accordingly. To avoid writing under an invalid pending owner, the monitor must start only after its lease is ACTIVE. Synthetic future tests SH-INIT01/03/07 and SH-LC07 must assert this ordering explicitly. No tests were run.
