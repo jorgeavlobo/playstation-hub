@@ -51,3 +51,22 @@ The [pinned multi-console source audit](../research/ha-core-2026-11-multi-consol
 - https://contributors.home-assistant.io/core/quality-scale/config-entry-unloading/ — failed setup / unload cleanup
 
 These source facts guide architecture design; no PlayStation Hub test has been executed.
+
+
+## Official SQLite, Python and pinned Supervisor recovery sources — 2026-11-06
+
+**New source-backed reference:** [Crash recovery and restore provenance research](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md), with [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md). Reviewed official upstream SQLite transaction/WAL/backup/corruption and Python sqlite3 documentation, and exact Core 2026.11.0 / Supervisor SHA 69848689 backup and restore code. Upstream source confirms the rare WAL-reset corruption bug fix in 3.51.3 (2026-03-13) and selected backports; do not infer installed HA OS runtime library from Python version alone.
+
+- https://www.sqlite.org/wal.html — WAL safety, checkpoints, 2026 WAL-reset bug
+- https://www.sqlite.org/changes.html — patched SQLite release history
+- https://www.sqlite.org/backup.html — Online Backup API snapshots
+- https://www.sqlite.org/lang_transaction.html — atomic transaction and reader/writer semantics
+- https://www.sqlite.org/howtocorrupt.html — crash recovery and corruption risks
+- https://www.sqlite.org/pragma.html — FULL/NORMAL, integrity_check, foreign_key_check
+- https://www.sqlite.org/rescode.html — SQLite failure classification
+- https://docs.python.org/3.14/library/sqlite3.html — Python wrapper, linked SQLite, Connection.backup
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/backup_restore.py — Core's separate restore entry point
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py — Supervisor-only backup hooks
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — full/partial config copy and Recorder-only exclusion
+
+**Not validated:** installed SQLite C library version, exact HA OS restore session, operational snapshot consistency, dynamic archive-only UI, any executable test. Source findings do not constitute an approved decision or product capability.
