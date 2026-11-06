@@ -168,3 +168,20 @@ Document a private vulnerability-reporting channel before public release, severi
 - https://sqlite.org/backup.html
 
 **Outcome:** Thirty identified threats, thirty corresponding security test cases and twelve unpassed security gates. Research only; no implementation or security validation.
+
+
+## 16. Administrator recovery, untrusted archives and privilege boundaries — 2026-11-06
+
+**Security architecture remains a proposal; no implementation/security tests.** [Official-source audit](../research/ha-core-2026-11-recovery-admin-api-ui-and-upstream-backup-gaps-audit.md), [ADR-0014](../decisions/ADR-0014-admin-recovery-authority-and-upstream-api-requirements.md) and [SPEC-014](SPEC-014-admin-recovery-api-ux-and-upstream-gap-tests.md) specify a protected history restore flow within the single Home Assistant panel.
+
+New threat paths:
+- **Privilege escalation:** A non-admin or a previously admin user with revoked permissions submits a recovery confirm, export or file choice. Require server-side HA require_admin and current authority at each phase; sidebar visibility alone is insufficient.
+- **Stale approval / TOCTOU:** Candidate bytes, file size, ledger cursor, association mapping or canonical console ID changes between preview and confirm. Bind preview to digests, expected revision, admin, expiry and scoped candidate; revalidate under exclusive global restore gate immediately before mutation.
+- **Path traversal / archive bombs / symlinks:** Hostile imported backup attempts arbitrary path reads/writes, huge decompression or disk exhaustion. Accept opaque server-side candidates; future import must impose strict archive member ownership, path containment, file count/decompressed bytes and time limits. Never expose arbitrary local filesystem paths, URL fetches or direct SQL queries.
+- **Replay / double restore:** Two tabs/admins repeat same confirmation after network loss. Manager-owned idempotent job ID, one exclusive promotion, durable journal and no automatic retry of destructive operations.
+- **Connection or Core shutdown:** Client WebSocket disconnect unsubscribes progress only; it does not prove a half-promoted SQLite operation was cancelled. Controller-owned recovery job must settle or restart safely. An uncooperative worker may remain after HA timeout; never reopen the same DB path before confirming closure.
+- **Identity graft:** Restored old console entry at reused IP or old PSN account association causes misattribution / privileged hardware command. Disable affected writes and controls until identity independently validated; ledger UUID/commit cursor alone is not enough to prove same fork.
+- **Diagnostics disclosure:** Repairs and public diagnostics exclude raw game/title/player history, canonical private identifiers, credentials, archived payloads, absolute paths, tokens and opaque authorization preview tokens.
+- **False source trust:** Supervisor restore-progress event proves a job state, not the origin/authentication of an app-owned SQLite file. A SHA hash is integrity evidence only, not a signature when payload and manifest are both user-controlled.
+
+User-created Hub/Archive Config Entry and private history retention remain accepted product directions per ADR-0011; the specific recovery API/UX still needs maintainer approval and all 72 SPEC-014 cases remain NOT_RUN. Existing security gates remain unpassed.
