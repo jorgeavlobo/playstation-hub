@@ -433,3 +433,15 @@ The [2026.11 official-source re-audit](../research/official-source-reaudit-home-
 **Pinned restore source behavior:** Supervisor's full/selected partial Home Assistant configuration restore clears/copies configuration files, preserving only explicitly named Recorder files when its exclude_database mode is enabled. It can overwrite custom PlayStation Hub history. Pinned Core .HA_RESTORE is a distinct restore path; not a universal marker for Supervisor restoration.
 
 **No empty reset:** on corruption, lost acknowledgement, failed restore or unknown-version schema, preserve old files and enter guarded recovery instead of creating a blank replacement history. Keep live current power/availability distinct from persisted historical coverage. No actual HA OS version, filesystem snapshot, power-cut or recovery test has been performed.
+
+
+## Storage-location and backup-hook correction (2026-11-06)
+
+**This ADR remains PROPOSED.** [Source audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [ADR-0011](ADR-0011-storage-layout-restore-authority-archive-hub.md) and [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) supersede any active language calling a whole-archive SQLite write freeze the straightforward safe default.
+
+1. hass.config.path resolves the configuration directory; hass.config.cache_path is explicitly excluded from backup. Dedicated private configuration-root SQLite remains a candidate, separate from HACS assets, HA Store-managed .storage JSON and public /config/www.
+2. Full/selected-partial Supervisor restore may replace the entire application folder under config; database exclusion targets Recorder files only. /share and /media can be excluded from recommended automatic backups, and out-of-config live data can conflict with older restored Config Entry associations.
+3. **P0 backup hook asymmetry:** Core pre hooks run concurrently and may return a collective failure; pinned Supervisor awaits begin_backup before the matching end_backup try/finally. If another pre hook fails after ours quiesces, our post hook may never run. Long-held pre/post SQLite freeze is BLOCKED until explicit rollback/end-of-archive proof; a timer-based unfreeze may invalidate active archive consistency.
+4. Online Backup API immutable snapshot + manifest is the preferred next research direction but still requires excluding/disambiguating the raw live DB/WAL from the archive, trusted restore selection and target HA OS validation. Snapshot cursor must be obtained from the completed snapshot itself.
+5. Snapshot/manifest two-file renames are not atomic as a pair; use a generation-scoped completed-publication contract. Protect the current ledger, last known good copy and private sensitive history; no silent auto-recovery by overwriting the valid live file.
+6. Pending ADR-0011 decides an optional explicit logical Hub/Archive Config Entry for archive-only browsing and backup integration setup. No SQLite path, PRAGMA, worker, backup strategy or Hub entry is now approved or implemented.
