@@ -242,3 +242,23 @@ No formal Home Assistant quality tier is claimed. ADR-0011 accepted only product
 | Full HA OS restore, Container paths and multi-console boot tests | P0 | BLOCKED_HA_OS | SPEC-018 80 tests/20 gates |
 
 **No implementation, no tests, no first-ledger creation and no formal Home Assistant Quality Scale certification.** ADR-0011 accepted the product structure; ADR-0018 is technical PROPOSED.
+
+
+## Legacy historical data migration and MQTT retirement compliance gates — 2026-11-06
+
+| Requirement | Priority | State | Evidence |
+| --- | --- | --- | --- |
+| Read-only audit of develop App v0.5.0 / SQLite v3 structure | P0 | SOURCE_REVIEWED, USER_DB_NOT_INSPECTED | [Legacy audit](../research/legacy-develop-to-native-migration-provenance-audit-2026-11.md) |
+| Coherent WAL-safe export of actual installed App /data | P0 | NOT_RUN / USER_CONSENT_REQUIRED | [SPEC-019 LM-SRC01–20](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) |
+| Never instantiate create/migrate-capable legacy Database on source | P0 | SOURCE_RISK_VERIFIED, IMPORT_NOT_RUN | develop/backend/app/database.py |
+| No physical PS5 UUID in legacy source historical sessions | P0 | SOURCE_CONFIRMED | develop/backend/app/database.py schema v3 |
+| Default import LEGACY_UNATTRIBUTED and no PSN credential graft | P0 | ADR-0019 PROPOSED, NOT_RUN | [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) |
+| Preserve 30-second runtime continuity, checkpoint bounded end and Lisbon DST | P0 | SOURCE_REVIEWED, NOT_TESTED | develop/main.py, session_tracker.py, usage_statistics.py |
+| Namespaced idempotent import batches and active-generation rollback safety | P0 | PROPOSED, NOT_RUN | SPEC-019 LM-IMP01–20, ADR-0015 |
+| 36-month UI history index is not retention cutoff | P1 | SOURCE_REVIEWED, REAL_DB_UNKNOWN | develop/ps5_history_index.py |
+| Exact ten old synthetic monitor MQTT Discovery identities | P0 | SOURCE_REVIEWED, USER_REGISTRY_UNKNOWN | develop/mqtt_publisher.py |
+| Targeted old monitor discovery cleanup independent of PS5-MQTT power/activity | P0 | OWNER_APPROVAL_PENDING, NOT_RUN | Official HA MQTT docs, SPEC-019 LM-CUT01–20 |
+| Old Lovelace references and user automations mapped before retirement | P0 | NOT_RUN / HA_OS_BLOCKED | develop/frontend/ps5-dashboard-card.js |
+| Real installed App backup/old SQLite data retained after cutover | P0 | UNKNOWN, NO_USER_DATA_READ | SPEC-019 LM-G01/02/19/20 |
+
+**SPEC-019:** 80 named NOT_RUN cases, 20 OPEN gates, no actual user database or entity registry inspected. ADR-0011 product architecture remains ACCEPTED; ADR-0019 import policy remains PROPOSED. No formal HA quality certification or migration success claim.
