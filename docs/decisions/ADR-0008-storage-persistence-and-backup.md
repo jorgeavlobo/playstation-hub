@@ -403,3 +403,15 @@ These are abstract contracts. File/folder names are **roadmap suggestions**, not
 ## 19. Official-source update — Home Assistant 2026.11 and Marketplace
 
 The [2026.11 official-source re-audit](../research/official-source-reaudit-home-assistant-2026-11.md) confirms official `backup.py` pre/post hooks and their pinned Core backup manager invocation. The previous uncertainty about the hooks' **existence** is now closed at source level; PlayStation Hub snapshot/backup/restore correctness remains untested. Marketplace `hacs.json.persistent_directory` can preserve integration-owned user files across updates, but it does not prove transactionally safe SQLite backup or encryption. Prefer mutable data outside HACS-managed source until the storage policy has been approved and tested. This ADR remains Proposed.
+
+
+## Source audit addendum — 2026-11-06: shared writer and HA OS backups
+
+**Status unchanged: PROPOSED, not implemented/tested.** See the [Core 2026.11 shared-services and SQLite audit](../research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md) and [SPEC-009](../specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md).
+
+- A single serialized writer is insufficient without a **global single-flight initializer**, a manager-controlled state machine, pending/active entry leases, bounded query/snapshot leases and a non-overlapping writer-generation close/reopen fence. Core's entry-local setup locks do not serialize different Config Entries.
+- Initial schema migration and writer startup must run once; a setup cancellation must not cancel initialization needed by other entries. An unload failure leaves a tracked owner until actual cleanup is proven, not a fake zero reference count. Durable commits and history gaps must be distinct from live LAN observations.
+- The pinned CoreBackupReaderWriter invokes backup platform pre/post hooks, but **HA OS uses SupervisorBackupReaderWriter**; callback invocation, archive filtering and restore semantics on HA OS are not validated by the generic Core path.
+- The generic Core backup exclusion list ignores arbitrary custom SQLite data and WAL: it excludes *.db-shm and conditionally the HA Recorder DB, but not automatically our future DB and -wal. A consistent additional SQLite snapshot could be included alongside an unsafe raw copy; an explicit authoritative restore selection protocol is required.
+- SQLite upstream Online Backup API and VACUUM INTO provide candidate consistent snapshots; WAL synchronous=FULL and bounded snapshot/query/backup leases are candidates requiring OS-level tests, integrity checking, backup manifest and recovery-on-crash review.
+- No claim of successful multi-year history backup or restore, no approved storage path/PRAGMA setting and no change to the current ADR decision state.
