@@ -235,3 +235,8 @@ After promotion begins, an arbitrary cancellation or permission revocation must 
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py
 
 **Result:** 72 NOT_RUN scenarios and 18 OPEN gates; documented source evidence, no code/tests/HA OS install or upstream issue submission.
+
+
+## 10. Crash-atomic journal and promotion linkage — 2026-11-06
+
+[Official SQLite/POSIX audit](../research/ha-core-2026-11-crash-atomic-recovery-journal-and-generation-promotion-audit.md), [ADR-0015](../decisions/ADR-0015-crash-safe-ledger-promotion-and-recovery-journal.md) and [SPEC-015](SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md) now specify the candidate durable backend behind this admin preview/confirm workflow. A RecoveryManager confirmation is not completed merely when the WebSocket handler returns or os.replace runs: live SQL connections and workers must be positively closed; recovery intent and phase revisions are durable; candidate lives at a distinct SQLite path; one small active pointer publication chooses the generation; the journal can lag the pointer after crash. Admin reconnection must inspect selected pointer/journal and never replay an already selected new generation or destroy an older valid source. Host HA Config Entries remain independently reconciled, and a restored older /config may roll pointer+journal+data back together. SPEC-014 retains its own 72 unrun tests and 18 open gates; SPEC-015 adds 80 distinct enumerated fault cases and 20 gates, all unrun.
