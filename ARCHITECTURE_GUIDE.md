@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.45.0 — 2026-11-06  
+> **Document version:** 0.46.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -24,6 +24,9 @@
 
 
 > **HA OS storage, restoration authority and archive-only lifecycle (2026-11-06):** The [new pinned storage-path and backup source audit](docs/research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [SPEC-011 (64 unrun tests, 16 open gates)](docs/specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) and [ADR-0011 (PROPOSED)](docs/decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md) distinguish HACS folder upgrades, Core configuration backups, Recorder exclusion, and full/partial restoration of the configuration tree. A dedicated private folder derived through hass.config.path is a candidate only; /share, /media and host paths are not equivalent. A persistent logical Hub/Archive Config Entry is recommended **for review**, not approved, to preserve read-only sidebar access with no console. **Critical P0:** pinned Supervisor may skip post-backup if begin_backup raises after our pre hook succeeded; indefinite write-quiescence is BLOCKED until a safe compensation protocol is proven. Immutable Online Backup API snapshots are the preferred next research direction, but archive authority and restored-live consistency remain unresolved. No executable work.
+
+
+> **Maintainer approval and immutable snapshot checkpoint (2026-11-06):** The maintainer approved the **conceptual** architecture proposed in [ADR-0011 §12](docs/decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06): a user-confirmed logical Hub/Archive Config Entry, separate physical console/account entries, one integration/panel/controller, retention after console removal, and a private Home Assistant configuration-root storage direction outside HACS-managed code. These design choices are ACCEPTED, not implemented or tested. [ADR-0012](docs/decisions/ADR-0012-immutable-snapshot-backup-and-restore-authority.md), [SQLite/HA backup source audit](docs/research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) and [SPEC-012 (64 NOT_RUN cases)](docs/specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) investigate immutable Online Backup API snapshots, crash-safe generation publication, missing post hooks and backup archive ambiguity. The reviewed Core/Supervisor hooks do **not** expose custom per-file archive exclusion; mutable live DB/WAL can coexist with a consistent snapshot in a config archive. Thus an automatic, safe restore method remains CONDITIONAL/OPEN. No code or tests.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2842,3 +2845,34 @@ In pinned Core 2026.11.0, **hass.async_add_shutdown_job** is called before EVENT
 **Readiness register:** SPEC-011 adds 64 NOT_RUN cases and 16 OPEN gates; SPEC-008/009/010 remain NOT_RUN. Across these four specifications 222 case identifiers are now enumerated with intended overlap (46+56+56+64); that is NOT 222 unique executable tests. No tested support, build, HA OS database version, hardware evidence or implementation authorization is implied.
 
 **Next logical source research:** verify the official backup orchestration guarantees for fail/timeout/partial archives and whether a verified private outside-config local storage root can be used *without* risking data/identity split-brain. Formally resolve ADR-0011 only after maintainer approval and planned fault tests.
+
+
+## Maintainer-approved product design and immutable SQLite snapshot protocol research — 2026-11-06
+
+**Current authoritative scope:** [ADR-0011 approval register](docs/decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06), [ADR-0012 (PROPOSED implementation strategy)](docs/decisions/ADR-0012-immutable-snapshot-backup-and-restore-authority.md), [source-pinned snapshot audit](docs/research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) and [SPEC-012](docs/specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md).
+
+### 1. Maintainer decisions versus operational blockers
+
+Accepted product architecture: one user-created logical Hub/Archive Config Entry, independently owned console and optional PSN account Config Entries, one integration-global HubController and sidebar panel, archive retention after console removal, private data outside executable HACS directory, and immutable SQLite snapshot research priority. No new service, MQTT broker or external database is introduced.
+
+Conditional technical choices: actual data path, SQLite journal/synchronous/linked library settings, account/console stable identity evidence, final SQLite worker, snapshot timing/concurrency/retention, permission model, automatic restore/backup validity. **Acceptance of a design direction does not claim an implementation or test success.**
+
+### 2. Primary new source findings
+
+- Core 2026.11.0 backup platform exposes pre/post hooks for preparation/resumption; pinned Core and Supervisor backup archive filters use built-in patterns, with no verified custom integration-provided per-file exclusion in this API. An app-owned live SQLite database under backed-up configuration and its WAL can be copied alongside a validated immutable snapshot. Even a snapshot produced successfully does not certify that the entire HA backup tar is app-consistent.
+- Pinning source to Core 2026.11.0 and Supervisor commit 69848689 confirms a cross-platform prehook failure can leave a successful PlayStation Hub write-freeze without a matching post hook; archive-long SQL quiescence remains BLOCKED without a safe-resume protocol.
+- SQLite Online Backup API supports live copying while source writers continue, but an incremental backup can restart when other source connections write. Use bounds/deadlines, a dedicated worker, distinct connections and a safe cancellation path; never block HA's event loop.
+- The **snapshot itself**, after successful SQLite destination closure and validation, must furnish ledger_uuid, schema and durable cursor. It is wrong to read cursor from the live writer later and claim it describes the copied data.
+- A snapshot and manifest require an atomic publication *protocol*, not two assumed-atomic file renames. Proposed generation-scoped staging, SQLite integrity_check plus foreign_key_check, checksum, internally fixed relative paths and final committed marker. Only completed immutable generations are eligible.
+- Published locally does not mean archived successfully. An absent post hook should never strand a writer; the snapshot remains immutable, with bounded and safe retention. The archived raw DB/WAL remain untrusted candidates for automatic restore unless a separate authority mechanism is proven.
+- On ordinary startup, valid live data wins over stale staged snapshots. If restore provenance/ledger lineage is ambiguous, preserve originals and require an authorized, explicit recovery choice; never silently invent or erase years of sessions.
+
+### 3. Remaining unresolved P0 gate
+
+There is no proven supported mechanism within the inspected Core 2026.11/Supervisor snapshot hook to say "exclude only my live DB and WAL, include my immutable snapshot." A custom immutable snapshot alone does **not** solve the two-file-source-of-truth problem after a full config restore. Further investigate a genuinely private persistent out-of-config live root **with** approved backup selection and cross-restore identity reconciliation, or a documented user-controlled restore with precise limitations. Do not design by undocumented Supervisor filter monkey-patching.
+
+### 4. Acceptance/testing record
+
+[SPEC-012](docs/specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) adds 64 NOT_RUN scenarios (16 copy, 16 publication, 16 archive, 16 restore) and 16 OPEN gates, in addition to SPEC-008 (46), SPEC-009 (56), SPEC-010 (56) and SPEC-011 (64). There are **286 enumerated case IDs** across these five specs, with intentional overlap and **zero passed tests**. Documentation remains on main, develop frozen, no executable source code or build/HA OS/hardware tests.
+
+**Next high-priority research:** a restore-authority proof and portable, private storage-root capability analysis; clarify native backup filter limits for other supported installation types, whether a safe archive can avoid live DB files without violating Home Assistant conventions, and a user-controlled recovery path with explicit data-loss boundaries.
