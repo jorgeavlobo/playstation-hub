@@ -391,3 +391,18 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://docs.python.org/3.14/library/crypto.html — Python standard cryptographic services (hashlib, hmac, secrets) do NOT offer general AES-128-CFB/CBC encryption.
 
 **Status:** The maintainer's prohibition of third-party libraries remains authoritative. Presence of HA-pinned PyCA is not automatic permission to import it, not proof of Remote Play firmware interoperability, and not a new runtime package requirement. \`BLOCKED_CRYPTO_BACKEND_APPROVAL\` until explicit exception or feature deferral is recorded. [Policy](../architecture/first-party-dependency-sovereignty-policy.md#7-platform-preinstalled-cryptography-clarification--candidate-only).
+
+## DDP wire temporal-correlation / raw monitoring evidence — 2026-11-06
+
+**Current focused audit:** [First-party DDP wire, source temporal quality and UDP monitor](../research/lan-ddp-wire-and-temporal-correlation-audit-2026-11-06.md). The user requires our own PlayStation-specific code with no extra runtime PlayStation libraries.
+
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/protocol.ts — PS5 SRCH static request formatter, no request nonce/ID in inspected packet.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c — PS5 DDP message formatter/send (includes trailing NUL), 200/620/unknown and optional running-app response fields.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/http.c — HTTP-like parser first-colon handling, rejection of explicit empty header values, not normative Sony public documentation.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discoveryservice.c — every accepted reply advances a host's last_ping_index, while state callback only emits on changed fields; host drops after configurable ping cycles.
+- https://github.com/FunkeyFlo/ps5-mqtt/blob/7ab3075d276f3eeecd81a3322c72231af8cd51bd/ps5-mqtt/server/src/redux/sagas/check-devices-state.ts — UI/MQTT publication skips unchanged available device state; not a lossless sample stream.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/network/__init__.py — HA network adapter and broadcast APIs; default-only broadcast policy.
+- https://docs.python.org/3.14/library/asyncio-protocol.html — DatagramTransport.sendto buffering, DatagramProtocol.datagram_received, error_received caveats and connection_lost lifecycle.
+- https://docs.python.org/3.14/library/asyncio-eventloop.html — create_datagram_endpoint parameters including local_addr, remote_addr and allow_broadcast.
+
+**Critical evidence limits:** Absence of nonce/id is demonstrated for the inspected SRCH format, not asserted for every proprietary firmware variant. Local software generation does not create an on-wire response echo. Host ID over unauthenticated UDP is not cryptographic proof. This source audit did not execute code, capture packets, assess actual PlayStation firmware or validate any network host.
