@@ -114,3 +114,9 @@ This is sequencing, not permission to create those implementations. No `next` br
 - **Option C — Narrow targeted research:** only if the maintainer identifies a specific genuine blocker to WP-01 or changes the product scope.
 
 **Outcome:** This is the handoff point. Research stage is sufficiently mapped, not implementation-proven, and no further ADR-series is presumed.
+
+## Targeted upstream-source exception — LAN title metadata (2026-11-06)
+
+The maintainer explicitly requested deeper analysis of existing upstream code rather than more SQLite-backup speculation. The new [commit-pinned upstream source audit](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md) is an **allowed targeted research exception** under this freeze, not permission to continue endless ADR/SPEC creation. It identified a previously underexplored optional `running-app-titleid` / `running-app-name` in Chiaki-ng's LAN discovery parser and corrected the candidate code map to `200` READY/`620` STANDBY/other UNKNOWN. It also identified PS5-MQTT multi-NIC broadcast and first-awake-device PSN attribution heuristics, potential sequential polling starvation, playactor command/state bugs and legal/version drift in candidate dependencies.
+
+**Update WP-01 parser targets, without implementing now:** allowlisted status parsing, optional local app metadata fields, network interface discovery with safe bounds, host-ID collision checks, independent source/freshness dimensions and real-device validation matrix. Real PS5 metadata semantics are still a WP-02/03 empirical gate; PSN authorisation and external GPL/AGPL copy/link licensing remain later-feature gates. A running-app response field must not be counted as verified uninterrupted gameplay. Keep existing package sequence and research stopping rules intact; revise the existing Protocol 01–05/07/09/10, ADR-0005/0020/0021 and Bible rather than creating ADR-0023 or SPEC-023.
