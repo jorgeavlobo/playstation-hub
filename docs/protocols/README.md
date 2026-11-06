@@ -71,3 +71,9 @@ Before implementation, consult [Cross-protocol architecture review (Protocols 01
 **Console and firmware compatibility:** [SPEC-007](../specifications/SPEC-007-console-firmware-compatibility-matrix.md) defines the PS5 candidate models, deferred PS4 families, firmware and network test matrix, and twelve unpassed compatibility gates.
 
 **Initial implementation contracts:** [WP-00A](../architecture/WP-00A-home-assistant-baseline-and-lan-contracts.md) pins Home Assistant Core 2026.11.0 / Python >=3.14.2 as a research/test reference and defines the pure LAN discovery/status parser, identity candidate, observation ordering, fake transport and 20 pending tests. No implementation is authorized by the document.
+
+## Pinned upstream repository audit — 2026-11-06
+
+[Deep source-code comparison: playactor, PS5-MQTT, chiaki-ng, HA Core, psn-api, PSNAWP and alternatives](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md) is now the current upstream-specific supplement to Protocols 01–10. Key corrections: Chiaki maps `200`=READY, `620`=STANDBY, unknown codes to UNKNOWN; `playactor` previously classifies any non-620 code as AWAKE; chiaki recognizes optional `running-app-titleid` / `running-app-name` headers, potentially relevant for LAN-only title metadata; PS5-MQTT's PSN-to-device match is heuristic, and its sequential polling can break on a transitioning device; PS5-MQTT also documents multi-interface broadcast/listener pitfalls. No firmware test has confirmed optional LAN title headers on a real PS5. Chiaki-ng's current canonical repository is `chiaki-ng/chiaki-ng` (AGPL-3.0); the latest `playdirector` PyPI 0.4.2 API is a GPL-3.0-only redesign, not an equivalent of earlier 0.3.x/MIT examples.
+
+This targeted source audit is justified as a newly identified capability under WP-00B, but does not open another numbered ADR/SPEC or reauthorize writing implementation code.
