@@ -176,3 +176,25 @@ The [new source-pinned audit](../research/ha-core-2026-11-immutable-sqlite-snaps
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — whole-config restoration can replace app pointer, recovery journal and generation files with older bytes.
 
 **Evidence status:** Source mechanisms are documented; pointer+generation model is proposed, not an official HA feature. No supported HA OS file-system atomicity test, SIGKILL, power-failure simulation, SQLite worker validation or actual backup/restore was performed.
+
+
+## Recovery Hold and SQLite worker cancellation reference set — 2026-11-06
+
+The [Core/Python/third-party worker deep audit](../research/ha-core-2026-11-recovery-hold-bootstrap-and-sqlite-worker-lifecycle-audit.md), [ADR-0016](../decisions/ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md), and [SPEC-016](../specifications/SPEC-016-recovery-hold-boot-order-and-worker-termination.md) record:
+
+- https://contributors.home-assistant.io/core/integrations/config-entries/ — native entry states, domain and entry setup, runtime_data, unloading and long-running task ownership.
+- https://contributors.home-assistant.io/core/integrations/setup-failures/ — ConfigEntryNotReady vs ConfigEntryError/AuthFailed; platform-level exceptions do not retry parent integration.
+- https://contributors.home-assistant.io/core/integrations/repairs/ — global and Config Entry-scoped issue lifetime; Config Entry deletion hides/deletes scoped issue.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/config_entries.py — pinned per-entry locks, setup/unload, awaited platform forwards, ten-second unload task wait, entry-owned background tasks.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/entity_platform.py — forwarded per-entry platform setup.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/frontend/__init__.py — panel registration duplicate route policy.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core.py — one global pre-stop shutdown job before background task cancellation.
+- https://docs.python.org/3.14/library/concurrent.futures.html — running Future.cancel and cancel_futures cannot stop running thread; shutdown(wait=False) not joined.
+- https://docs.python.org/3.14/library/sqlite3.html — check_same_thread, Connection.interrupt, context manager commit/rollback vs connection close.
+- https://docs.python.org/3.14/library/asyncio-eventloop.html — run_in_executor and executor shutdown semantics.
+- https://aiosqlite.omnilib.dev/en/v0.21.0/api.html — candidate aiosqlite async connection/close/backup API, not approved dependency.
+- https://github.com/omnilib/aiosqlite/blob/v0.21.0/aiosqlite/core.py — pinned third-party single-thread queue: SQL enqueued before await, close queued behind tasks, stop sentinel.
+- https://www.sqlite.org/wal.html — WAL connection lifecycle.
+- https://www.sqlite.org/howtocorrupt.html — open DB rename and hot journal mismatch hazards.
+
+**Evidence boundary:** Python and third-party implementation guarantees were read from documentation/source, not benchmarked or validated as safe HA OS behavior. Neither W1 stdlib executor nor W2 aiosqlite is selected/installed. No code or tests.
