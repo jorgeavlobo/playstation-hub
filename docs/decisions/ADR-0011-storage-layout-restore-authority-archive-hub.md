@@ -1,13 +1,13 @@
 # ADR-0011 — Private storage layout, backup/restore authority and Hub/Archive Config Entry
 
-**Status:** PROPOSED — explicit maintainer approval required; no code or tests
+**Status:** ACCEPTED — product-level architecture (2026-11-06); technical storage/backup/restore execution remains CONDITIONAL / NOT_TESTED
 **Date:** 2026-11-06
 **Domain:** playstation_hub
 **Scope:** Where long-term private SQLite history may live; which files can be restored; whether a permanent, zero-console Hub entry should anchor the sidebar.
 **Evidence:** [Official-source storage research](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md)
 **Depends on:** ADR-0002 (one panel accepted), ADR-0004 (console identity proposed), ADR-0006 (duration/gap accounting proposed), ADR-0007 (credentials proposed), ADR-0008 (SQLite candidate proposed), ADR-0010 (frontend/API proposed), SPEC-008/009/010.
 
-> This is a **decision proposal**, not a decision record in Accepted status. Documenting a preferred option does not authorize coding, selecting a minimum HA version, or changing current users' data. The maintainer has not yet approved SQLite path, backup method or additional Hub Config Entry.
+> **Maintainer approval recorded 2026-11-06:** the user explicitly accepted the proposed directions. The logical Hub/Archive entry and independent console/account entry model, one integration/controller/panel, archive retention and private configuration-root storage *direction* are ACCEPTED as product architecture. Exact file path, SQLite setup, automatic archive/restore algorithm, timeouts and runtime compatibility remain CONDITIONAL. Approval is NOT implementation authorization and does not count as a passed test.
 
 ## 1. Problem statement
 
@@ -65,7 +65,7 @@ Prior ADR-0008 proposes a SQLite file outside the integration source; SPEC-009 p
 
 Console/account entries alone cause integration loading. Historical data remains on disk after last removal, but the panel need not load on next restart. Archived stats might require adding another console or a separate import tool. Low onboarding complexity, weak archive-only UX.
 
-### B — One explicit Hub/Archive entry (preferred for long-term history product)
+### B — One explicit Hub/Archive entry (ACCEPTED product architecture, not implemented)
 
 User adds one permanent logical Hub Config Entry via a normal UI confirmation flow, plus independent physical console/account entries. This logical entry is not a Sony device, not a poller, and is not the physical owner of the shared SQLite service; it is a persistent **integration loading and archive UI anchor**. The process-global controller still owns resources and single panel registration.
 
@@ -82,7 +82,7 @@ Implications:
 
 Ties archival lifecycle to a removable physical console and conflicts with multi-console independent ownership. Not recommended without a substantive re-design of root ownership.
 
-**Recommendation for review:** B, but **NOT ACCEPTED** pending explicit approval, flow/backup tests, documentation and migration UX assessment.
+**Maintainer decision (2026-11-06):** B is **ACCEPTED as the intended product-level configuration model**. Its actual HA Config Flow, entry lifecycle, backup registration, accessibility and migration safety remain UNIMPLEMENTED and NOT_TESTED. Other options remain historical alternatives.
 
 ## 7. Decision matrix and product consequences
 
@@ -141,3 +141,25 @@ Technical proof does not convert a proposal into a maintainer-approved product c
 **Option A (freeze writes through the entire archive) is now BLOCKED, not preferred for first release, pending a verified safe-resume protocol.** In pinned Core, BackupManager.async_pre_backup_actions gathers all backup integration hooks and raises if *any* fails. In pinned Supervisor, HomeAssistant.backup awaits begin_backup **before** entering the try/finally that calls end_backup. PlayStation Hub could therefore successfully quiesce and never receive post-backup if another integration's pre hook fails. Blind timeout-based resumption could corrupt the archive if an archiver is still active.
 
 **Revised research preference:** immutable Online Backup API snapshot avoids a long-held global write freeze, but safe backup/restoration still depends on handling Supervisor's independently archived live DB/WAL and authoritative snapshot selection. A verified external/private live-data root or explicit administrator-confirmed recovery may be necessary. No method is accepted. See [source audit §15](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md#15-new-p0-discovery--pre-backup-can-succeed-without-matching-post-backup) and [SPEC-011 §9](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md#9-p0-pre-backup-orphan-freeze-cases--2026-11-06). Earlier descriptions of A as an initial preference are superseded by this finding. Maintainer approval and HA OS tests remain required.
+
+
+## 12. Maintainer acceptance register — 2026-11-06
+
+The maintainer wrote: **"Aceito as tuas sugestões, documenta tudo. Avança para a próxima investigação recomendada."** This authorizes recording the prior architectural recommendations as decisions while maintaining the existing research-only/no-code boundary.
+
+| Project decision | Status | Exact scope |
+| --- | --- | --- |
+| One integration, one sidebar panel and one integration-wide HubController | ACCEPTED | No duplicate registries or writers per console |
+| Independent Config Entry per physical console and per optional PSN account | ACCEPTED_AS_DIRECTION | Protocol and hardware identity tests remain required |
+| Add one user-confirmed logical Hub/Archive Config Entry | ACCEPTED | Separate from physical hardware, loads read-only archive even with no consoles; no LAN polling by hub |
+| Retain archived history after console removal unless explicit user purge | ACCEPTED | Exact retention defaults, export, permissions and secure deletion still CONDITIONAL |
+| Prefer app-owned private data outside HACS-managed source, resolved from HA config root | ACCEPTED_AS_DIRECTION | Exact private directory and persistence/backup correctness still CONDITIONAL |
+| Prioritize immutable SQLite Online Backup snapshots rather than an archive-long global freeze | ACCEPTED_RESEARCH_DIRECTION | This is a research priority, NOT approval that proposed automatic backup implementation works |
+| Long-held SQLite freeze over whole Supervisor archive | BLOCKED | Orphan pre-hook race, no verified safe-resume protocol |
+| Automatic snapshot selection/restoration after an HA OS restore | UNDECIDED | Separate ADR-0012, SPEC-012 and HA OS tests |
+| Runtime linked SQLite WAL configuration, durability and worker model | UNDECIDED | Tests and compatibility matrix required |
+| Start implementation or alter develop branch | NOT_AUTHORIZED | main documentation only |
+
+**Conflict precedence:** This acceptance register supersedes the earlier historical wording in sections 1–11 that called the Hub entry merely a proposal awaiting approval. Those passages are retained for traceability. It does NOT convert technical/operational backup designs into accepted or tested behavior.
+
+**Next audit:** [ADR-0012 immutable snapshot strategy](ADR-0012-immutable-snapshot-backup-and-restore-authority.md) and [SPEC-012](../specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) record remaining conditional decisions. The first code implementation still requires a separately authorized feature branch and future WP work package.
