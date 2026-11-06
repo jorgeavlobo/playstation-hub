@@ -121,3 +121,8 @@ A single empty directory on a machine that was restored is not sufficient proof 
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/storage.py
 
 **Outcome:** Proposed first-boot/ledger genesis design; 80 SPEC-018 tests NOT_RUN and 20 gates OPEN. Nothing implemented, tested or migrated.
+
+
+## 10. Effective read/write mode is a separate safety condition — 2026-11-06
+
+Official sqlite3_open_v2 may fall back to opening an existing database read-only even when READWRITE was requested, due to filesystem permission constraints; sqlite3_db_readonly can characterize the actual mode. Thus mode=rw is a **no-create** condition but not sufficient to certify that a live ledger is writable. A future data manager must separately validate effective mode, private-root ownership, journal/schema compatibility and active generation before granting DURABLE_WRITE. Unexpected readonly state is STORAGE_INACCESSIBLE/READ_ONLY_DEGRADED, not "no database found" and not permission to retry via rwc. The research proposal and 80 SPEC-018 tests remain unimplemented.
