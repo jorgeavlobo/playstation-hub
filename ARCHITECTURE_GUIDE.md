@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.55.0 — 2026-11-06  
+> **Document version:** 0.56.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -55,6 +55,8 @@
 
 
 > **Greenfield SQLite v1 schema research checkpoint (2026-11-06):** [Source-backed normalized schema study](docs/research/sqlite-greenfield-v1-schema-and-query-model-source-audit-2026-11.md), [SPEC-020 (96 NOT_RUN scenarios / 24 OPEN gates)](docs/specifications/SPEC-020-greenfield-sqlite-v1-schema-integrity-and-reports.md) and [ADR-0020 PROPOSED](docs/decisions/ADR-0020-greenfield-sqlite-v1-data-model.md) define 12 candidate core logical tables (ledger/schema/runtime, console/account/link, game keys, observations/events, session/gaps and source checkpoints), plus optional PSN provider snapshots and localized game metadata. **Greenfield:** develop prototype never deployed; all former SQLite rows synthetic and NONE migrated. Source evidence, local game time, PSN presence and provider cumulative playtime are different scopes. Core v1 requires independent canonical identities, half-open UTC integer-time intervals, UNKNOWN coverage, idempotent observation/receipt, atomic evidence+segment+checkpoint+cursor and no independent durable day/month counter. SQLite FOREIGN KEY constraints must be enabled for every connection; STRICT tables require a compatible linked SQLite >=3.37; UNIQUE nullable values and CHECK NULL semantics require deliberate constraints. The source audit is NOT DDL and no test has run. ADR-0011 Hub product architecture remains ACCEPTED; ADR-0020 is a technical PROPOSAL.
+
+> **Observation-to-session reducer research checkpoint (2026-11-06):** [Source-verified temporal coverage research](docs/research/observations-to-sessions-temporal-reducer-source-audit-2026-11.md), [ADR-0021 PROPOSED](docs/decisions/ADR-0021-observation-to-session-reducer-and-temporal-coverage.md), and [SPEC-021 (96 NOT_RUN scenarios / 24 OPEN or BLOCKED gates)](docs/specifications/SPEC-021-observation-to-session-state-machine-and-replay.md) refine the boundary between PlayStation LAN/PSN observations and durable SQLite sessions. A valid point observation earns **zero** instantaneous duration; two compatible same-state samples may create versioned BOUNDED_CONTINUITY only under an approved maximum gap B and uninterrupted verified source/identity, while state changes, failed polls, stale replies, restart and long gaps create UNKNOWN coverage, never invented OFF or gameplay. A PSN-reported title is not proof of activity on a particular local PS5; provider lifetime time is independent. Atomic idempotent observation/events/covered segments/unknown gaps/checkpoint/cursor, single-writer receipts and cursor-coherent reports remain design targets. The legacy develop 90s gap policy is **not** adopted. Next priority is deterministic replay/correction/policy-version evolution and crash-boundary simulation, before DDL. No implementation, real fixtures or tests.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -3111,3 +3113,46 @@ The maintainer confirmed the old develop application **was never deployed**. Its
 **Research status:** SPEC-020 defines 96 NOT_RUN cases and 24 OPEN gates (schema/identity 24, ingestion 24, reports 24, OS/privacy 24). Prior SPEC-008–018 contain 742 enumerated test IDs with intentional overlap, including two retired legacy-only tests in SPEC-018; SPEC-019's 80 obsolete legacy-migration tests/20 gates are RETIRED/NOT_APPLICABLE. Across SPEC-008–018 plus SPEC-020 there are **838 enumerated IDs** before de-duplication, of which at least two are marked legacy NOT_APPLICABLE; **zero cases passed**. Do not call this a count of unique executable tests.
 
 **Next high-priority research:** refine the exact v1 field/constraint/index mapping and source-to-segment reducer state machine, with a reviewed report query contract and explicit privacy/data-retention boundaries, then consider approval of ADR-0020. This is documentation research, NOT implementation.
+
+
+## Observation-to-session temporal coverage contract — 2026-11-06
+
+**Authority:** [source audit](docs/research/observations-to-sessions-temporal-reducer-source-audit-2026-11.md) · [ADR-0021 PROPOSED](docs/decisions/ADR-0021-observation-to-session-reducer-and-temporal-coverage.md) · [SPEC-021](docs/specifications/SPEC-021-observation-to-session-state-machine-and-replay.md). This is a logical design **not implementation**. The product-level Hub/Archive decision in ADR-0011 remains ACCEPTED, but this reducer policy, physical DDL, the continuity budget B and SQLite worker remain unapproved.
+
+### Point observations are not continuous proof
+
+- Physical console point-sampled status, source health/freshness, PSN account presence, game attribution, durable history availability and unknown coverage are independent dimensions. No LAN timeout = OFF, and no PSN account title = verified local console gameplay.
+- A fresh AWAKE/STANDBY sample at T is a durable **anchor with zero elapsed time**. It cannot prove what happened before T.
+- A second compatible same-state sample at T1 may extend bounded evidence for [T0,T1) **only if** same verified owner/source/generation, no intervening continuity break, chronological clock, and interval <= approved policy B. Such time is called **bounded continuity**, not physically proven measured duration.
+- A state change between samples closes previous covered time at its last checkpoint and opens UNKNOWN for the bracket; a new anchor starts at the second observation. The actual power transition instant remains unknown. A failed poll, identity conflict, loss of history writer, recovery hold, clock anomaly or restart cannot manufacture extra time.
+- Verified OFF is not available by interpreting network silence. Sony LED power indicator documentation is not an authoritative network protocol mapping; Protocol 02 must validate wire codes on firmware before live use.
+- The initial schema's twelve logical tables remain a proposal; ADR-0021 identifies required policy-version, sample anchor, source break, evidence pair, unknown interval and immutable receipt semantics that may affect the final physical DDL.
+
+### Synthetic state transition example (B >= 30 seconds for illustration only)
+
+| UTC | Observation | Durable interpretation |
+| --- | --- | --- |
+| 10:00:00 | AWAKE | Anchor only |
+| 10:00:30 | AWAKE | +30 seconds bounded AWAKE |
+| 10:01:00 | STANDBY | +30 seconds UNKNOWN [10:00:30,10:01:00) |
+| 10:01:30 | STANDBY | +30 seconds bounded STANDBY |
+| 10:02:00 | Timeout | Stop continuity; never invent OFF |
+| 12:00:00 | AWAKE | UNKNOWN [10:01:30,12:00:00); fresh anchor |
+| 12:00:30 | AWAKE | +30 seconds bounded AWAKE |
+
+**Result:** Only 60 seconds of *bounded* awake duration, not two hours. No title/account gaming time is implied. Historical covered time cannot advance past last COMMITTED evidence frontier. Use half-open UTC integer-microsecond ranges, policy version, source and observation provenance, and IANA-zone clipped reports.
+
+### Durability, safety and statistics
+
+- For one accepted logical observation, persist normalized immutable evidence and meaningful event, coverage revisions, explicit gaps, source checkpoint and global cursor in **one SQL transaction**. Same observation ID/digest returns existing receipt; changed digest conflicts. An ambiguous COMMIT must be reconciled after safe worker verification.
+- A report must read one committed generation and consistent ledger cursor; independent durable day/month totals are forbidden. A day with no observed coverage cannot be reported as confirmed zero use.
+- Keep console-hours separate per physical owner, account presence and provider-reported playtime independent, and player/title inference separately marked. Two consoles together may yield >1 device-hour per 1 wall-hour.
+- HA frontend reload/listener removal does not control monitoring lifetime. A REST/WebSocket or entity current state is not history authority.
+- RECOVERY_HOLD permits no durable observation session writes; optional live unsaved source views need independent approval.
+- Old develop prototype has fictional data only, never deployed, is NOT an import/migration target, and its historical 90s continuity policy is not the new policy.
+
+### Research outcomes and next priority
+
+SPEC-021 adds **96 NOT_RUN cases and 24 OPEN/BLOCKED gates**, grouped into normalization, temporal state machine, ordering/idempotency, transaction, crash/restore and attribution/reports. Prior SPEC-008–018 plus SPEC-020 totaled **838 enumerated planned cases**; adding SPEC-021 gives **934 enumerated planned case IDs**, with overlap and zero executable runs. SPEC-019 remains retired and excluded. These are documentation/test requirements, not passing tests, certification, an installed integration or proof of SQLite runtime compatibility.
+
+**Next prioritized investigation:** deterministic observations-to-ledger *replay*, audited manual and late-data corrections, versioned continuity policy upgrades, temporal property-based invariant simulations, and reconciliation of interrupted/recovered generations. Candidate follow-up ADR-0022/SPEC-022. Do not write DDL or application code until separately authorized.
