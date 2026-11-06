@@ -222,3 +222,23 @@ No formal Home Assistant quality tier is claimed. ADR-0011 accepted only product
 | HA OS packaging, SQLite C version, power-cut/multi-console tests | P0 | BLOCKED_HA_OS | SPEC-017 80 NOT_RUN / 20 OPEN |
 
 **No code and no passed tests.** ADR-0011 product direction remains ACCEPTED; operational degraded permissions and worker selection remain proposed.
+
+
+## First-boot SQLite history creation and lost-ledger safety gates — 2026-11-06
+
+| Requirement | Priority | Evidence/status | Source |
+| --- | --- | --- | --- |
+| Existing history opens with SQLite URI mode=rw/ro, never implicit create | P0 | SQLITE_SOURCE_VERIFIED, APP_NOT_TESTED | [First-boot audit](../research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [SPEC-018](../specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md) |
+| Verify effective SQLite read/write mode after READWRITE fallback | P0 | SQLITE_SOURCE_VERIFIED, APP_NOT_TESTED | sqlite3_open_v2/sqlite3_db_readonly |
+| Missing/corrupt/inaccessible/restored ledger classified without empty reset | P0 | PROPOSED, NOT_RUN | [ADR-0018](../decisions/ADR-0018-first-boot-consent-and-ledger-provisioning.md) |
+| Hub Config Flow creation distinct from user-confirmed history genesis | P0 | PROPOSED_PRODUCT_DETAIL, NOT_RUN | HA Config Flow docs, ADR-0018 |
+| Hub unique ID duplicate abort; manifest still supports multiple console/account entries | P0 | CORE_API_VERIFIED, APP_NOT_RUN | HA Config Flow, Config Entries, SPEC-018 FB-FLOW01–07 |
+| Durable CREATE_INTENT before exclusive SQLite staging | P0 | PROPOSED, NOT_RUN | SPEC-018 FB-CREATE01–20 |
+| Schema genesis, close, integrity and FK validation before pointer | P0 | PROPOSED, NOT_RUN | ADR-0015/0018, SPEC-018 |
+| Concurrent admin Create/Import requests serialized and idempotent | P0 | PROPOSED, NOT_RUN | SPEC-018 FB-FLOW08–11 |
+| Restored-old Hub/retained history does not silently reinitialize | P0 | PROPOSED, NOT_RUN | SPEC-018 FB-CLASS03–16 |
+| Permission/mount/symlink/IO failures not conflated with absence | P0 | PYTHON_SOURCE_VERIFIED, APP_NOT_RUN | Python os, SPEC-018 |
+| No true "never had history" proof from empty local directory | P0 | LOGICAL_LIMITATION, UX_NOT_APPROVED | ADR-0018, first-boot source audit |
+| Full HA OS restore, Container paths and multi-console boot tests | P0 | BLOCKED_HA_OS | SPEC-018 80 tests/20 gates |
+
+**No implementation, no tests, no first-ledger creation and no formal Home Assistant Quality Scale certification.** ADR-0011 accepted the product structure; ADR-0018 is technical PROPOSED.
