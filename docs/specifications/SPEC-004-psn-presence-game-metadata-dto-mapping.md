@@ -359,3 +359,9 @@ No gate is satisfied merely by a community repository or a synthetic example. A 
 - https://www.playstation.com/pt-pt/legal/terms-of-service/
 
 **Outcome:** Typed PSN account/presence/game/library/trophy/artwork mappings, 36 deterministic test cases and 12 unpassed release gates documented. No Sony API calls, credentials, runtime modules or hardware tests were performed.
+
+## LAN-versus-PSN application/title evidence (source-triangulated 2026-11-06)
+
+**New candidate data route:** optional `running-app-titleid` and `running-app-name` headers parsed from LAN discovery by Chiaki-ng, PS5-Wake C and older pyremoteplay; consumed by Chiaki-KM for profile selection. See [second deep audit](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md). This is **not** yet a Sony-approved API, verified current foreground game, or universally present PS5 field.
+
+Add future `SRC-PSN-01` / `SRC-PSN-02` evidence cases: multiple PS5 awake with one reported PSN title -> account-only presence/AMBIGUOUS physical attribution; LAN `CUSA` on PS5 versus provider `npTitleId`/concept/PPSA -> preserve source/platform/ID namespace, no name-based merge. A valid physical-console LAN app field can be shown as a **reported title as-of T**, independent of a linked PSN account; it cannot identify the player or create authoritative game-playing seconds. Distinguish ABSENT/EMPTY/VALUE/INVALID local metadata and PSN PRIVATE/RESTRICTED/NO_DATA. These are new test requirements, not executed tests.
