@@ -103,3 +103,10 @@ No new code, test, database, environment mutation or implementation branch is au
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
 
 **Outcome:** Research direction approved; operational protocol and restore correctness still unapproved and untested.
+
+
+## 9. Restore authority and lineage follow-up — 2026-11-06
+
+**ADR-0012 technical status remains PROPOSED.** See [source audit](../research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md), [ADR-0013](ADR-0013-restore-authority-and-storage-topology.md) and [SPEC-013](../specifications/SPEC-013-restore-authority-storage-topology-and-reconciliation.md). Pinned Supervisor mounts Core config, share and media but processes independently selected configuration and share/media restore scopes. Recommended automatic backups include config and omit share/media. Thus moving live SQLite outside config can exclude it from config-only archiving, but is not a universal backup-consistency solution. Selected share backup could include the live DB, and restoring only one scope can cause HA Config Entry/account association versions to disagree with ledger state.
+
+A published snapshot and a raw live DB must have separate provenance classifications. ledger_uuid and even equal committed cursor are insufficient to prove identical histories after restore/fork; lineage epoch, parent snapshot and per-owner association revision are candidates. An admin-approved recovery workflow must preserve original files and constrain physical-console/account reassignment. No source-confirmed universal Supervisor restore intent is available to this integration. No implementation or test was run; only the next research priority was approved.
