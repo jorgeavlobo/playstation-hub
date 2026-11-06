@@ -1,0 +1,244 @@
+# SPEC-009 — Shared service lifecycle, concurrent Config Entries and SQLite safety
+
+**Status:** PROPOSED / NOT_IMPLEMENTED / ALL_TESTS_NOT_RUN  
+**Date:** 2026-11-06  
+**Core source baseline:** home-assistant/core tag 2026.11.0  
+**Primary evidence:** [Shared service source audit](../research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md)  
+**Related plans:** SPEC-008, SPEC-005, ADR-0004, ADR-0006, ADR-0008, ADR-0010  
+**Branch:** main documentation only. develop unchanged. No feature branch or executable work authorized.
+
+> Every normative MUST / SHOULD below is an internal **candidate contract**, not a claim that Home Assistant or PlayStation Hub already implements it. No ADR status changes without explicit maintainer approval.
+
+## 1. Scope and goals
+
+Formalize the interaction between N physical console Config Entries, M optional PSN account Config Entries, one process-global HubController, one serialized SQLite writer, bounded readers, one frontend panel and one authenticated WebSocket command namespace.
+
+The design must prevent duplicate initialization, premature resource closure, lost/duplicated transactions, leaked tasks and misleading historical availability. It must work when setup, unload, network I/O, backup and user dashboard queries overlap.
+
+## 2. Component ownership table
+
+| Component | Construction authority | Holder | Destruction trigger |
+| --- | --- | --- | --- |
+| HubController / lease registry | Integration async_setup, once per HA process | hass.data scoped to domain | HA process shutdown |
+| Static asset path | Domain-level UI registration, once | Home Assistant HTTP router | Core restart unless a verified supported removal mechanism exists |
+| Sidebar panel entry | Domain-level UI registration, once | Frontend panel registry | Explicit panel remove policy; not per-console unload |
+| WebSocket command handlers | Domain-level API registration, once | HA global WebSocket registry | Process lifetime; handlers must resolve active facade dynamically |
+| HistoryService, SQLite writer | HubController single-flight lifecycle | One active/closing DB generation | No holders and no pending accepted operations; bounded close |
+| SQLite read transaction | Authorized query operation | Query lease | Pagination completed / deadline / disconnect |
+| SQLite snapshot | Verified backup/export operation | Snapshot lease | Completed / cancelled / timeout with classified error |
+| ConsoleRuntime / transport | One physical console Config Entry | Typed entry.runtime_data | This entry's unload/failure |
+| PsnAccountRuntime | One account Config Entry | Typed entry.runtime_data | This account's unload/failure |
+| LAN monitor task | Corresponding ConsoleRuntime | Entry-owned task | This console's unload/polling disabled |
+| Frontend subscription | One authenticated WS connection | Connection callback/unsubscribe | Disconnect/unsubscribe/revocation |
+| Historical rows | User-controlled persistent storage | Durable ledger, not in-memory task | Explicit documented purge/archive policy |
+
+## 3. Lifecycle lock, generation and lease contract
+
+**L1.** The controller exposes a single serialized state transition guard; no entry may create/close SQLite directly.
+
+**L2.** The guard protects metadata and lifecycle transitions only. SQL, disk I/O, network activity, migrations, platform setup and arbitrary callbacks occur outside the guard using fenced operations.
+
+**L3.** Exactly one initialization result is shared by all concurrent pending owners. When the initializer fails, all waiters see a classified failure; a controlled subsequent retry is permitted without retaining a broken future indefinitely.
+
+**L4.** The controller is independent of which Config Entry started first and may hold zero ready entries.
+
+**L5.** Each lease has an opaque ID and generation, owner kind (entry/query/snapshot/export), associated canonical scope and explicit state. Duplicate release is harmless. Cross-owner or old-generation release cannot alter another owner's count.
+
+**L6.** At most one database generation may be INITIALIZING/READY/QUIESCING/CLOSING at a time. Acquires arriving during CLOSING wait for completion or fail explicitly; they never bypass a partially closed writer.
+
+**L7.** Every accepted write carries the current canonical target ID, entry runtime generation and globally unique/idempotent observation ID. Late work fails its fence.
+
+**L8.** Once an operation is admitted, release/teardown either completes it or returns a classified failure. It must not silently disappear due to cancellation of an unrelated entry/browser.
+
+**L9.** No pending/active entry, query, snapshot or export may be forgotten during close. All leases have deterministic cleanup and meaningful deadlines.
+
+**L10.** Unload failure cannot assert resource-free or signal fully closed until positive evidence exists; may enter FAILED_UNLOAD/DEGRADED.
+
+## 4. Proposed initialization transaction
+
+    1. Validate source identity (without writing history).
+    2. Acquire PENDING entry lease under controller lifecycle guard.
+    3. Register idempotent fallback cleanup with Config Entry immediately.
+    4. Await one manager-owned HistoryService initialization task.
+    5. Validate DB file ownership, schema and migrations before enabling writes.
+    6. Construct per-entry transport/reducer/task; register cleanup on allocation.
+    7. Await HA platform forwarding and finalize entry runtime.
+    8. Activate entry lease; publish runtime and start autonomous monitor.
+    9. Report successful setup only when the documented success conditions hold.
+
+**Failure compensation:** Stop source-owned work and explicitly release the pending/active lease through one awaited cleanup path. Core's async_on_unload callback is a secondary idempotent safety net, not the mechanism that guarantees ordering.
+
+**Shutdown order:** Invalidate source generation -> stop probes/commands -> settle outstanding writes -> unload HA platforms -> detach listeners -> release entry lease -> close DB only when no other holders/operations remain. On platform unload failure, retain a tracked/fenced lifecycle holder rather than claim clean disposal.
+
+## 5. SQLite transaction and visibility model
+
+**Ingest acceptance is not durability.** The reducer may accept an observation before the writer commits it. The API/HA entities must distinguish fresh observation from successfully persisted session evidence.
+
+One logical history transaction should atomically include the validated observation ID, source and owner, state/session segment changes, unknown interval changes, and durable high-water cursor. No partial committed checkpoint.
+
+Use a single serialized writer; multiple bounded read connections are permitted only under an approved connection/worker model. No synchronous SQLite operations on the Home Assistant event loop. SQLite writes must not depend on a browser subscription or the presence of entity listeners.
+
+**Idempotent replay:** If the caller is cancelled after COMMIT but before receiving acknowledgement, lookup/replay using the same idempotency key cannot double-credit session time.
+
+**Backpressure:** Bound queues/worker count/per-console quotas; prioritize orderly draining and error classification. If the writer is unavailable, avoid unbounded in-memory buffering and expose unrecorded intervals.
+
+**WAL:** Long-lived reads can block checkpoint completion. Control query lifetime and observe WAL size/checkpoint success; a clean shutdown must close underlying connections, not assume WAL file removal proves that all data was saved. Exact synchronous/journal/busy PRAGMAs require measurement on target HA OS.
+
+## 6. UI, API and zero-entry semantics
+
+The single panel and registered WebSocket handlers are process-scoped. They do not own a live SQLite writer and do not create independent console pollers. Every query obtains a short-lived data operation lease after server-side authentication/authorization and checks API version and runtime generation.
+
+Registration must:
+- establish intended panel and static route ownership before publishing;
+- detect route collisions instead of silently hiding them;
+- register WebSocket commands exactly once (Core 2026.11.0 does not reject duplicate command names at the inspected helper);
+- never re-register the entire panel on a Config Entry reload;
+- never return raw provider credentials or unrestricted private history;
+- fail safely when no configured/loaded targets are available.
+
+**Candidate initial zero-entry policy:** panel remains while any actual PlayStation Hub Config Entry exists, even if that entry is offline/disabled, but removal of the last entry hides the menu. The DB remains retained until explicit deletion. An archive-only hub entry is a later product decision, not implemented. This policy is not equivalent to closing on zero runtime leases; configured entries and loaded entries differ.
+
+## 7. Backup and restore acceptance blockers
+
+Core's backup platform hooks exist, but **HA OS Supervisor-specific invocation and archive contents remain unverified**. No claim of safe automatic backup until the exact HA OS route has been tested.
+
+A proposed consistent backup has a separately generated SQLite Online Backup API snapshot and manifest, with integrity, checksum, schema/version, canonical data identity, UTC timestamp, committed cursor and an explicit restore selection policy. Snapshot should be immutable while archived.
+
+Tests must inspect:
+- inclusion of both snapshot and manifest in a real HA OS backup;
+- whether the running DB and WAL are also archived, and if so how unsafe copies are ignored;
+- recovery if pre/post hooks do not run or are interrupted;
+- partial/no-database/system-level backups;
+- backup initiated by other mechanisms or integration disabled;
+- first boot restore with stale state, time gap, new runtime generation and zero fabricated minutes.
+
+Backups of the generic Core path are not a substitute for testing the HA OS Supervisor path. An archive containing files is not proof of a recoverable consistent ledger.
+
+## 8. Test methodology (planned; no tests written)
+
+Use synthetic fake entries, fake transports, fault-injecting SQLite worker and a controlled event scheduler to force interleavings. Simulate process crash/kill and recovery in a separate future test layer; then repeat on Home Assistant OS 2026.11 with real backup exports. Assertions must use ownership tokens, generation IDs, transaction receipts, query result counts and actual task/socket counts. No human-readable log alone counts as proof.
+
+Each test must record PENDING / NOT_RUN / PASS / FAIL / BLOCKED_HARDWARE / BLOCKED_HA_OS, pinned Core version, relevant source evidence and reproducible fixture. The matrix below is a design, **not executable code**.
+
+### 8.1 Initialization, acquisition and retry — 12 NOT_RUN
+
+| ID | Synthetic case | Required result |
+| --- | --- | --- |
+| SH-INIT01 | Entry A and B start simultaneously | One initialized HistoryService, one migration, two independent leases |
+| SH-INIT02 | Five entries initialize together | One initialization future and one ready writer |
+| SH-INIT03 | A cancels while B waits | B completes; A pending token releases |
+| SH-INIT04 | All setup waiters cancel | Initialization and resources quiesce; no orphan |
+| SH-INIT05 | First initialization fails | All waiters receive classified error; no false READY |
+| SH-INIT06 | Retry after classified transient init failure | One new clean generation, no reuse of corrupted future |
+| SH-INIT07 | Init fails after DB connection opens | Connection closed, no dangling worker |
+| SH-INIT08 | Concurrent setup during schema migration | Migration once; no reader sees partial schema |
+| SH-INIT09 | Entry starts during prior generation CLOSING | Wait/reopen; no overlapping writer |
+| SH-INIT10 | Duplicate acquire/release for same entry | Idempotent release; no negative lease count |
+| SH-INIT11 | Old runtime releases against new generation | New generation holder unaffected |
+| SH-INIT12 | Different physical consoles same model/account | Distinct entry owners, shared data service only |
+
+### 8.2 Unload, final close and crashes — 12 NOT_RUN
+
+| ID | Scenario | Required result |
+| --- | --- | --- |
+| SH-LC01 | A unloads while B is ready | B continues monitoring/writing; singleton retained |
+| SH-LC02 | A unloads while B setup pending | No closure during B's pending ownership |
+| SH-LC03 | Last entry unloads with a paged read active | Read completes or fails explicitly before close |
+| SH-LC04 | Last entry unloads during backup snapshot | Snapshot lease prevents premature close |
+| SH-LC05 | Pending write after entry fence | No illegal new write; prior admitted write settled |
+| SH-LC06 | Platform unload raises | FAILED_UNLOAD tracked; no premature shared closure |
+| SH-LC07 | Cleanup callbacks race with explicit cleanup | Exactly-once resource release |
+| SH-LC08 | Background task ignores cancellation | Leak detected; no false closed status |
+| SH-LC09 | HA shutdown with 10 consoles | Bounded shutdown, zero active sources after process exit |
+| SH-LC10 | HA shutdown interrupted by process kill | Restart identifies gap and replay cursor without fake duration |
+| SH-LC11 | Reload one console 100 times | No excess tasks, sockets, leases, panels or writers |
+| SH-LC12 | One account removed while two LAN consoles remain | Account scope only revoked |
+
+### 8.3 Ledger concurrency and fairness — 12 NOT_RUN
+
+| ID | Scenario | Required result |
+| --- | --- | --- |
+| SH-DB01 | Two consoles commit alternating evidence | Ordered per-source, transactional, no cross-ID attribution |
+| SH-DB02 | Same observation submitted twice | One durable row/segment effect |
+| SH-DB03 | Commit succeeds, caller loses acknowledgement | Retry does not add minutes twice |
+| SH-DB04 | Exception midway through logical SQL write | Entire transaction rolled back |
+| SH-DB05 | Queue full on console A | B not starved; A history marked incomplete |
+| SH-DB06 | Disk-full condition | No unbounded queue; current state vs history health separated |
+| SH-DB07 | SQLITE_BUSY under WAL | Bounded retry/degrade, no event-loop block |
+| SH-DB08 | History query cancelled by browser | Query lease released, writer unaffected |
+| SH-DB09 | Long reader holds old WAL snapshot | Bounded cancellation, checkpoint recovers |
+| SH-DB10 | Corrupt DB on open | Fail safe / quarantine; never silently recreate empty history |
+| SH-DB11 | Schema version newer than implementation | No destructive downgrade or migration |
+| SH-DB12 | Stable console reconfigured from old IP | Same history namespace; late old-generation packets rejected |
+
+### 8.4 Panel, WebSocket and access — 8 NOT_RUN
+
+| ID | Scenario | Required result |
+| --- | --- | --- |
+| SH-UI01 | Two entries configured concurrently | Exactly one sidebar route registration |
+| SH-UI02 | 100 unload/reloads | WebSocket registrations not multiplied |
+| SH-UI03 | Panel route occupied by another component | Safe collision error, no overwrite |
+| SH-UI04 | Same WebSocket command accidentally registered twice | Registration guard detects collision before mutation |
+| SH-UI05 | Two browser windows connect | One console probe cadence, independent WS subscriptions |
+| SH-UI06 | Browser disconnect during report query | Cancellation and query lease release |
+| SH-UI07 | Last entry removed | Explicit no-entry panel policy, retained history |
+| SH-UI08 | Old frontend sends unsupported schema/target | Unauthorized or incompatible request rejected, no stale action |
+
+### 8.5 Backup, restore and lifecycle interoperability — 12 NOT_RUN / BLOCKED_HA_OS
+
+| ID | Scenario | Required result |
+| --- | --- | --- |
+| SH-BK01 | Core non-Supervisor backup with custom DB active | Hook invocation and included file paths characterized |
+| SH-BK02 | HA OS Supervisor full backup | **BLOCKED_HA_OS** until hook invocation verified |
+| SH-BK03 | HA OS partial backup excluding HA config | No false promise that history was backed up |
+| SH-BK04 | Live WAL grows while backup is archived | Snapshot remains consistent and attributable to its cursor |
+| SH-BK05 | Archive contains raw DB and WAL | Restore explicitly selects verified snapshot, not unsafe copy |
+| SH-BK06 | Snapshot interrupted before completion | No valid-looking partial snapshot promoted |
+| SH-BK07 | Post-backup hook not called / process killed | Orphan snapshot cleanup and next backup safe |
+| SH-BK08 | Restore backup created before latest sessions | Missing time represented as gap, not retroactive continuous usage |
+| SH-BK09 | Snapshot checksum or schema mismatch | Restore rejected safely, old files preserved |
+| SH-BK10 | Backup overlaps schema migration | Serialized/quiesced; no half-upgraded snapshot |
+| SH-BK11 | Two backup requests overlap | One coherent snapshot policy, no temp overwrite |
+| SH-BK12 | HA OS upgrade/restart after last Config Entry removal | Archive access/retention behavior matches approved policy |
+
+**Total: 56 new SPEC-009 scenarios** (12 INIT + 12 LC + 12 DB + 8 UI + 12 BK); all are test designs only. SPEC-008's previous 46 cases remain separate and unrun; integration-level duplication can later be collapsed into a canonical test suite.
+
+## 9. Sign-off gates (all open)
+
+| Gate | Evidence to close | State |
+| --- | --- | --- |
+| SH-G01 | Chosen global ownership and single-flight lifecycle protocol | PROPOSED |
+| SH-G02 | Safe pending/active/query/snapshot lease semantics | NOT_RUN |
+| SH-G03 | Ordered cleanup that survives failed setup and unload | NOT_RUN |
+| SH-G04 | No concurrent writers or duplicate migrations | NOT_RUN |
+| SH-G05 | Transactional/idempotent ledger and bounded backpressure | BLOCKED_STORAGE |
+| SH-G06 | Verified WAL durability/backup PRAGMAs on target OS | BLOCKED_HA_OS |
+| SH-G07 | Real Supervisor pre/post hook and archive verification | BLOCKED_HA_OS |
+| SH-G08 | Restore integrity and explicit uncertain gaps | BLOCKED_HA_OS |
+| SH-G09 | Once-only panel/static/WS and collision handling | NOT_RUN |
+| SH-G10 | Zero-entry menu, archive retention and access product policy | PROPOSED |
+| SH-G11 | Shutdown/failure leak proof for many simultaneous entries | NOT_RUN |
+| SH-G12 | Privacy-safe diagnostics and ACL for closed/degraded services | NOT_RUN |
+
+**No implementation may claim these gates are passed on the basis of this document.** Hardware status, Sony authorizations, exact SQLite library and minimum Home Assistant version remain separate prerequisites.
+
+## 10. Cross-reference and priorities
+
+**P0 before coding:** approve conceptual ownership, single-flight design, entry cleanup semantics, data failure UX and zero-entry panel policy; source-verify HA OS backups and static route limitations.
+
+**P1 before accepting history functionality:** implement in a later authorized work package and pass SH-INIT, SH-LC, SH-DB suites with fault injection, HA OS backup/restore and schema migration; validate against SPEC-008.
+
+**P2 before release:** longevity, health telemetry, permissions, upgrade/uninstall and catalogue/quality requirements.
+
+Sources:
+- [Pinned official-source shared manager audit](../research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md)
+- [SPEC-008](SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md)
+- [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md)
+- [ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md)
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/config_entries.py
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/hassio/backup.py
+- https://www.sqlite.org/wal.html
+- https://www.sqlite.org/backup.html
+
+**Implementation status:** All 56 new tests NOT_RUN, all 12 gates open; no executables, source files, workflow runs or real console/HA OS tests were created.
