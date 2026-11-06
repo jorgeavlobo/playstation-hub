@@ -147,3 +147,9 @@ Approve the conceptual schema before generating executable SQL migrations or dec
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/recorder/db_schema.py
 
 **Outcome:** schema and constraints recommendation only; no DDL/code/DB/test executed or created, and develop remains unchanged.
+
+## 11. Upstream deep audit: LAN-running-application observation (2026-11-06)
+
+The [pinned cross-repository source review](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md) uncovered optional `running-app-titleid`/`running-app-name` fields recognized by Chiaki-ng's **physical LAN discovery** response parser. Model a future accepted `LAN_RUNNING_APP` sample as a console-scoped evidence payload when actual PS5 firmware semantics are verified, **not** as PSN account presence or automatically measured per-player gameplay. Keep the title ID namespace explicit until independently matched to provider catalog identifiers; absent app header is unknown, not `no game`.
+
+**DDL effect:** The proposed twelve logical tables need not change solely because of this field. The existing `observations` + `domain_events` + `game_titles` / optional metadata could represent source-scoped title evidence, pending physical schema review. Do not add a mandatory title FK to every LAN power observation, rewrite the old greenfield session proposal, or automatically create `player_game` duration. Require real firmware fixtures including home screen, PS5 native games, backwards-compatible PS4 titles, media apps and standby. This ADR remains PROPOSED.
