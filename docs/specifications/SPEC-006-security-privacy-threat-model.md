@@ -208,3 +208,12 @@ The [pinned Home Assistant/Python/sqlite/aiosqlite boot audit](../research/ha-co
 - A shared global Repair issue should survive removal of one console entry; no raw private history/credential/error payload in public diagnostics, and no unprivileged bypass through the recovery panel.
 
 All future mitigations require fault injection and backend ACL tests. No security gate is passed by this documentation.
+
+
+## 19. Backend capability bypass and SQL worker terminality threats — 2026-11-06
+
+[Capability/worker source audit](../research/ha-core-2026-11-degraded-capabilities-worker-proof-and-aiosqlite-022-audit.md), [ADR-0017](../decisions/ADR-0017-degraded-operation-capabilities-and-sqlite-close-evidence.md) and [SPEC-017](SPEC-017-degraded-capability-matrix-and-sqlite-close-proofs.md) extend the threat model. A source may be AWAKE while the historical writer is in RECOVERY_HOLD, and an entity marked unavailable or a hidden power button may still have a callable backend service/action entry path. Physical-control commands, automation/entity service handlers and WebSocket calls must enforce the same server-owned operation capability guard, including current canonical physical-console identity, source/manager generation, user ACL and process/storage health. Identity conflict always denies control and attribution, and shared history Hold denies DURABLE_WRITE.
+
+Proposed optional OBSERVATION_ONLY can report verified source current state UNSAVED with no historical buffer/replay, but the conservative default denies wake/standby/Remote Play during global recovery pending explicit approval. PSN token refresh is per-account and not inherited from historical session records; account reads/refresh during Hold remain a separately controlled policy decision.
+
+Worker-specific threat: aiosqlite v0.21.0 Connection inherited Thread, whereas v0.22.0/v0.22.1 now contains a private Thread; v0.22.1 stop/close Futures can be notified before the worker's thread loop returns. A cancelled awaiter can leave queued SQL executing. Do not rely on private version-specific Thread fields, queue emptiness, cancel() or statement interrupt to prove termination. Safe ADR-0015 pointer cutover requires tracked outstanding operations, acknowledged closure of ALL SQL connections/readers/backups and positive terminal worker evidence. Uncertain terminal status means FAILED_UNSAFE_TO_REOPEN and intact hot SQLite WAL; no second writer. All 80 SPEC-017 scenarios remain NOT_RUN.
