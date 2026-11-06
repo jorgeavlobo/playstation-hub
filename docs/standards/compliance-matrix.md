@@ -269,3 +269,27 @@ No formal Home Assistant quality tier is claimed. ADR-0011 accepted only product
 **Maintainer-confirmed fact:** The old develop prototype was never deployed and all legacy SQLite records were fabricated for tests. This is a completely new PlayStation Hub. Any legacy data import/DTO mapping, v1-v3 App schema compatibility, prior PS5-MQTT entity cleanup, legacy hardware re-attribution, historical backup extraction, or live App cutover is CLOSED_NOT_APPLICABLE, not a blocker. [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) is SUPERSEDED; [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md)'s 80 test cases and 20 gates are RETIRED. [SPEC-018](../specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md)'s specifically legacy-only FB-CLASS13, FB-OS18 and FB-G14 are also NOT_APPLICABLE.
 
 Keep new-app first-time ledger genesis, versioned forward migrations AFTER actual real records exist, new-app backups/restores/corruption recovery, independent console/PSN identity and admin controls. No legacy data or MQTT broker is to be imported/cleaned up. Historical source-code analyses remain technical reference, not operational deliverables. No tests or source code executed.
+
+
+## Greenfield SQLite v1 identity/evidence/time integrity compliance — 2026-11-06
+
+| P0/P1 gate | Priority | Evidence and state | Source |
+| --- | --- | --- | --- |
+| No legacy App data/schema migration; old develop rows fictional | P0 | MAINTAINER_CONFIRMED_GREENFIELD | [ADR-0020](../decisions/ADR-0020-greenfield-sqlite-v1-data-model.md) |
+| One application-owned ledger with 12 candidate normalized core tables | P0 | PROPOSED, NO_SQL_DDL | [Research](../research/sqlite-greenfield-v1-schema-and-query-model-source-audit-2026-11.md) / [SPEC-020](../specifications/SPEC-020-greenfield-sqlite-v1-schema-integrity-and-reports.md) |
+| Console, PSN account, game title and Hub/HA IDs in distinct namespaces | P0 | PROPOSED, HARDWARE_NOT_VERIFIED | ADR-0004 and SPEC-020 |
+| SQLite foreign_keys=ON per writer/reader/backup connection | P0 | SQLITE_SOURCE_VERIFIED, APP_NOT_RUN | SQLite foreignkeys.html |
+| STRICT table type enforcement requires SQLite >=3.37 | P0 | SQLITE_SOURCE_VERIFIED, LINKED_VERSION_OPEN | SQLite stricttables.html |
+| NOT NULL/UNIQUE/CHECK including NULL and open-exclusive partial indexes | P0 | SQLITE_SOURCE_VERIFIED, APP_NOT_RUN | SQLite create table, create index and partialindex |
+| Atomic accepted evidence, event/segment/gap/checkpoint/ledger cursor | P0 | PROPOSED, NOT_RUN | ADR-0006/0020, SPEC-020 |
+| Idempotent observation UUID and ambiguous COMMIT receipt | P0 | PROPOSED, NOT_RUN | SPEC-020 GS-TX06/07/11 |
+| Half-open UTC microseconds and local DST/leap calendar reports | P0 | PROPOSED, NOT_RUN | SPEC-020 GS-RP01–08 |
+| Missing evidence UNKNOWN, no inferred OFF or gameplay | P0 | PROPOSED, NOT_RUN | ADR-0006, SPEC-020 |
+| Provider lifetime/PSN entitlement not part of local session total | P0 | PROPOSED, PSN_AUTH_OPEN | Protocol 10, SPEC-020 |
+| Game localized metadata/cover never changes durable title identity | P1 | PROPOSED, NOT_RUN | Protocol 10, ADR-0020 |
+| No Sony credentials or raw private game history in diagnostics | P0 | SECURITY_DESIGN, NOT_RUN | ADR-0007, ADR-0020 |
+| No history deletion on console Config Entry removal/unlink | P0 | PROPOSED, NOT_RUN | ADR-0004/0008/0020 |
+| 36-month synthetic index/read/backup/retention benchmark | P0 | NOT_RUN | SPEC-020 GS-OS17–21 |
+| New v1 genesis and later NEW-app-only versioned migrations | P0 | PROPOSED, NOT_RUN | ADR-0018/0020, SPEC-020 |
+
+**Status:** SPEC-020 defines 96 NOT_RUN acceptance scenarios and 24 OPEN gates. This does not close earlier ADR-0004/0006/0008, SQLite linked-version/WAL, source/API authorization or HA OS release gates. No executable SQLite model or HA Quality Scale certification.
