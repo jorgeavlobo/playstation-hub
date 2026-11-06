@@ -8,6 +8,10 @@
 
 > Findings refer to SANITIZED REPOSITORY SOURCE, not the user's currently installed configuration. No deployed SQLite DB, Supervisor App backup, options.json, device registry, broker, PS5, credentials or old entity history was opened. Do not claim how many real sessions, accounts or physical consoles exist, nor that any historical backup is recoverable.
 
+
+
+> **AUTHORITATIVE MAINTAINER CORRECTION, 2026-11-06:** The develop App never had a real deployment. Its SQLite rows and sessions were all invented for testing. This research remains a historical *source-code audit*, but the original premise of migrating valuable user history is false and every proposed live-data migration, provenance mapping, MQTT entity retirement or cutover procedure is NOT_APPLICABLE. No importer will be built, and no data from the old prototype will be imported to the greenfield PlayStation Hub. ADR-0019 is SUPERSEDED and SPEC-019 is RETIRED. Real backup/recovery requirements apply only to the **new** application after it first records genuine data.
+
 ## 1. Key findings
 
 1. The old implementation is a Home Assistant App/add-on process depending on PS5-MQTT and Mosquitto, with independent SQLite history and a separate Lovelace card. It is not a native Home Assistant integration Config Entry. Old options live in Supervisor-managed /data/options.json; backend/config.yaml declares slug ps5_monitor, version 0.5.0, manual startup, aarch64 and template DB path /data/ps5_monitor.db. This is a source template, not confirmation of the installed path.
