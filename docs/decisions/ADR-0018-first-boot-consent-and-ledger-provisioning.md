@@ -101,7 +101,7 @@ A single empty directory on a machine that was restored is not sufficient proof 
 
 **Not selected:** final SQLite version/path/worker, safety on target HA OS, schema layout, automatic old-backup restoration, automatic alternate-ledger creation or library packaging.
 
-**Next priority after this research:** investigate precise migration and reconciliation of legacy flat databases/old Config Entries into the new ledger-generation layout without silently converting historic recordings or Sony identities. Alternatively, close the remaining First Boot Config Flow and backup archive source evidence through target HA OS verification when testing is authorized. No executable work under this ADR.
+**Next priority after this research (SUPERSEDED):** legacy import/migration is NOT REQUIRED; old prototype never deployed and its data were synthetic. Prior plan: silently converting historic recordings or Sony identities. Alternatively, close the remaining First Boot Config Flow and backup archive source evidence through target HA OS verification when testing is authorized. No executable work under this ADR.
 
 ## 9. References
 
@@ -131,3 +131,8 @@ Official sqlite3_open_v2 may fall back to opening an existing database read-only
 ## 11. Legacy flat SQLite source requires import, not CREATE_NEW fallback — 2026-11-06
 
 The [develop branch legacy schema/provenance audit](../research/legacy-develop-to-native-migration-provenance-audit-2026-11.md), [ADR-0019](ADR-0019-legacy-history-provenance-and-cutover.md) and [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) give a concrete LEGACY_DATA_PRESENT case: an old App /data SQLite database using schema version 1–3, potentially exported as a protected file and independent of a logical Hub Config Entry. Its existence should direct the first-run administrator to a safe Import Existing Legacy History pathway, not automatic empty-ledger creation or schema conversion by calling legacy Database constructor. Imported sessions lack canonical physical identity and remain LEGACY_UNATTRIBUTED unless separate evidence is approved. An import can be attempted after first Hub Config Entry setup, but Config Entry existence and old MQTT sensor unique IDs prove neither new ledger readiness nor physical-console ownership. No legacy migration was executed.
+
+
+## 12. Maintainer correction: greenfield initialization, no legacy migration — 2026-11-06
+
+The old develop application was never deployed and its database held only fabricated test data. No legacy flat SQLite database, App options, old Home Assistant Config Entry, MQTT entity history or previously recorded Sony identity needs importing into the new application. The explicit first-ledger genesis design in this ADR applies only to **the NEW PlayStation Hub**, whose historical store starts afresh. User consent for new ledger creation and future recovery after actual new-app deployment remain distinct; there is no legacy-data preservation requirement. Earlier references to old v1–v3 App import/cutover, including §11, are superseded/NOT_APPLICABLE. ADR-0019 and SPEC-019 are no longer implementation work. The new application's future upgrades/restores after real data exist remain subject to all normal safety gates.
