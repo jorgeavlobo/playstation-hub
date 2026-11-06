@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.54.0 — 2026-11-06  
+> **Document version:** 0.55.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -52,6 +52,9 @@
 
 
 > **AUTHORITATIVE MAINTAINER CORRECTION — 2026-11-06 (GREENFIELD / NO LEGACY DEPLOYMENT):** The former PlayStation App/integration on develop **was never deployed or used in production**. Every record in its old SQLite database was **invented solely for testing** and has no real historical value. The new PlayStation Hub is being built **from scratch**. **No migration/import of old SQLite rows, sessions, schema versions 1–3, configuration/options, MQTT retained topics, historical entity IDs, Lovelace dashboards or PSN/Remote Play credentials from the old application is required or authorized.** The develop branch is a read-only *technical inspiration/source-review reference*, NOT a migration source or a dependency of the new application. [ADR-0019](docs/decisions/ADR-0019-legacy-history-provenance-and-cutover.md) is SUPERSEDED/NOT_APPLICABLE; [SPEC-019](docs/specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) is RETIRED/NOT_APPLICABLE and its 80 historical test descriptions are **removed from the active release/test scope**. New app initial genesis starts with a fresh empty ledger by explicit future onboarding policy. Future backups/restores, corruption recovery and upgrades **of the new app after actual deployment** remain required; do not confuse these with migrating the throwaway develop prototype. No implementation code or tests were created by this clarification.
+
+
+> **Greenfield SQLite v1 schema research checkpoint (2026-11-06):** [Source-backed normalized schema study](docs/research/sqlite-greenfield-v1-schema-and-query-model-source-audit-2026-11.md), [SPEC-020 (96 NOT_RUN scenarios / 24 OPEN gates)](docs/specifications/SPEC-020-greenfield-sqlite-v1-schema-integrity-and-reports.md) and [ADR-0020 PROPOSED](docs/decisions/ADR-0020-greenfield-sqlite-v1-data-model.md) define 12 candidate core logical tables (ledger/schema/runtime, console/account/link, game keys, observations/events, session/gaps and source checkpoints), plus optional PSN provider snapshots and localized game metadata. **Greenfield:** develop prototype never deployed; all former SQLite rows synthetic and NONE migrated. Source evidence, local game time, PSN presence and provider cumulative playtime are different scopes. Core v1 requires independent canonical identities, half-open UTC integer-time intervals, UNKNOWN coverage, idempotent observation/receipt, atomic evidence+segment+checkpoint+cursor and no independent durable day/month counter. SQLite FOREIGN KEY constraints must be enabled for every connection; STRICT tables require a compatible linked SQLite >=3.37; UNIQUE nullable values and CHECK NULL semantics require deliberate constraints. The source audit is NOT DDL and no test has run. ADR-0011 Hub product architecture remains ACCEPTED; ADR-0020 is a technical PROPOSAL.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -3081,3 +3084,30 @@ The maintainer confirmed the old develop application **was never deployed**. Its
 - **COUNT CORRECTION:** Previous statements adding SPEC-019's 80 tests to the active release plan are superseded. Existing SPEC-008–018 still enumerate 742 overlapping planned cases; these include some references to legacy migration that should be marked NOT_APPLICABLE rather than implemented. Later planning will deduplicate and trim the active suite. No execution/test passes are implied.
 
 **New next priority:** research the clean native schema/genesis and configuration flow for first-time installation of the new PlayStation Hub, with explicit versioning and no legacy input, or return to other open operational persistence/backup gates. No code or test implementation authorized.
+
+
+## Greenfield normalized SQLite v1 data model and historical usage reports — 2026-11-06
+
+**Source-of-truth checkpoint:** [Official SQLite and Home Assistant Core research](docs/research/sqlite-greenfield-v1-schema-and-query-model-source-audit-2026-11.md), [ADR-0020](docs/decisions/ADR-0020-greenfield-sqlite-v1-data-model.md), [SPEC-020](docs/specifications/SPEC-020-greenfield-sqlite-v1-schema-integrity-and-reports.md). No executable SQL, migration or test is authorized. This new product deliberately imports NO data or schema from the discarded develop prototype.
+
+**Core physical/logical proposal:** ONE private integration-owned SQLite ledger and ONE serialized writer, regardless of physical-console/optional PSN account Config Entry count, with 12 normalized conceptual tables:
+- ledger_meta, schema_revisions and runtime_epochs: unique ledger UUID, version/policy, lineage/restore epoch, genesis, run IDs and committed source cursor.
+- console_owners, psn_account_refs and console_account_links: separate immutable physical console and provider account namespaces, optional many-to-many temporal links with provenance; no Sony secrets or IP-as-ID.
+- game_titles: provider+title namespace+external title ID+platform scope identity; localized title names/artwork do NOT determine historical keys.
+- observations and domain_events: accepted immutable/idempotent source evidence and normalized interpreted transitions, with source kind, confidence, observed time/precision, generation, stable UUID/digest and revision.
+- session_segments and unknown_intervals: supported half-open UTC physical awake/game/attribution ranges and explicitly unknown data coverage, separate from PSN presence/lifetime totals.
+- source_checkpoints: per-source accepted sequence/observation/frontier and global durable cursor updated atomically with evidence and segments.
+
+**Optional modules:** game_metadata_locales, game_title_crosswalk, provider_entitlement_snapshots, provider_playtime_snapshots, evidence_corrections and retention_tombstones. Only activate PSN modules under permitted source/API review; LAN-only history needs no PSN account. Never sum Sony lifetime play duration or entitlement data into local observed gaming minutes.
+
+**Integrity layer:** SQLite foreign_keys enabled/verified per connection; explicit NOT NULL/UNIQUE named owner keys, kind-dependent CHECK, no default ON DELETE CASCADE for historical facts, partial unique index for open exclusive console-awake sessions only, serialized reducer checks for overlapping closed periods. SQLite allows multiple NULL values in UNIQUE and CHECK unknown results can pass. STRICT candidate tables require actual linked SQLite >=3.37 and downgrade policy; WAL is independently gated on the documented 2026 WAL-reset fix and local filesystem. No unconditional performance or support claim.
+
+**Ingestion contract:** Under current manager/owner generation, dedupe observation UUID+canonical digest, commit observation, permitted event, session/gap revisions, source checkpoint and ledger_meta cursor as ONE transaction. A COMMIT receipt may be lost even though SQL succeeded; retry returns an existing receipt rather than adding elapsed seconds again. Unchanged compatible samples extend bounded evidence without creating duplicate sessions. Live status UNSAVED is not durable history; missing/late evidence becomes UNKNOWN, not OFF or game time.
+
+**Report contract:** Local day/week/month/year and 12/36-month statistics are deterministic intersections of committed [start,end) UTC microsecond intervals with user-selected IANA timezone calendar windows. Handle DST/leap days, source confidence and unknown gaps. All-console device-hours may exceed wall-clock day if multiple consoles run; separate wall-clock union. Game/player attribution needs source proof; PSN account presence and provider lifetime reported time remain separate. No authoritative independent day/month totals in v1; optional caches are invalidatable by ledger UUID, committed cursor, policy and timezone.
+
+**Greenfield genesis and future-proofing:** Schema v1 is newly initialized by ADR-0018 admin-confirmed CREATE_NEW_HISTORY in an exclusive SQLite generation, never on a generic missing selected path. No compatibility with old fictional App schema v1–v3. Future schema upgrades of THIS new app after real records exist use versioned, backup-safe migrations and explicit downgrade protection. HA Config Entries, recovery pointer/journal and SQLite remain distinct persistence systems.
+
+**Research status:** SPEC-020 defines 96 NOT_RUN cases and 24 OPEN gates (schema/identity 24, ingestion 24, reports 24, OS/privacy 24). Prior SPEC-008–018 contain 742 enumerated test IDs with intentional overlap, including two retired legacy-only tests in SPEC-018; SPEC-019's 80 obsolete legacy-migration tests/20 gates are RETIRED/NOT_APPLICABLE. Across SPEC-008–018 plus SPEC-020 there are **838 enumerated IDs** before de-duplication, of which at least two are marked legacy NOT_APPLICABLE; **zero cases passed**. Do not call this a count of unique executable tests.
+
+**Next high-priority research:** refine the exact v1 field/constraint/index mapping and source-to-segment reducer state machine, with a reviewed report query contract and explicit privacy/data-retention boundaries, then consider approval of ADR-0020. This is documentation research, NOT implementation.
