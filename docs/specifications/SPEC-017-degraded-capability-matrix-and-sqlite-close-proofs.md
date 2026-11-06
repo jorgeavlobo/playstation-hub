@@ -243,3 +243,10 @@ Primary references:
 - https://aiosqlite.omnilib.dev/en/stable/changelog.html
 
 **Outcome:** 80 NOT_RUN, 20 OPEN, no implementation or tests.
+
+
+## 9. Explicit CREATE_NEW_HISTORY is not equivalent to an active writer capability — 2026-11-06
+
+[SQLite/HA first-boot source research](../research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [ADR-0018](../decisions/ADR-0018-first-boot-consent-and-ledger-provisioning.md), and [SPEC-018](SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md) add a new distinct administrative operation CREATE_NEW_HISTORY. A logical Hub Config Entry may be loaded with INITIALIZATION_REQUIRED even though no ledger/writer exists; ordinary console/PSN entity status, physical power controls and history durability remain separately gated. A source-only LAN observation under hold must never silently create SQLite.
+
+The CREATE_NEW_HISTORY capability requires current administrator permissions, explicit choice after bounded private-root inventory, no existing pointer/journal/snapshot/legacy data or root uncertainty, current HubController generation and one exclusive provisioning lease. A durable CREATE_INTENT is emitted before constructing a unique isolated staging generation. Generic SQLite reopen, recovery inspection, report and migration use non-create modes; only the approved new stage can use rwc. Another admin creation attempt or stale confirmation must be rejected/idempotently joined rather than allocate a second ledger. These contracts are PROPOSED; all 80 existing SPEC-017 cases/20 gates remain NOT_RUN/OPEN and SPEC-018 adds 80 new case IDs.
