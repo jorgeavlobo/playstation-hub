@@ -198,3 +198,25 @@ The [Core/Python/third-party worker deep audit](../research/ha-core-2026-11-reco
 - https://www.sqlite.org/howtocorrupt.html — open DB rename and hot journal mismatch hazards.
 
 **Evidence boundary:** Python and third-party implementation guarantees were read from documentation/source, not benchmarked or validated as safe HA OS behavior. Neither W1 stdlib executor nor W2 aiosqlite is selected/installed. No code or tests.
+
+
+## Home Assistant operation guards and aiosqlite versioned worker lifecycle — 2026-11-06
+
+[Degraded capability/SQLite worker source audit](../research/ha-core-2026-11-degraded-capabilities-worker-proof-and-aiosqlite-022-audit.md), [ADR-0017](../decisions/ADR-0017-degraded-operation-capabilities-and-sqlite-close-evidence.md), [SPEC-017](../specifications/SPEC-017-degraded-capability-matrix-and-sqlite-close-proofs.md) extend source references:
+
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/config_entries.py — native entry state is separate from application health/permission.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/entity.py — Entity.available is current presentation availability.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/service.py — entity-service backend registration, admin_only support, independent action dispatch.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/entity_platform.py — entity service registration delegation.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/websocket_api/decorators.py — require_admin and async handler work.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core.py — early shutdown jobs and background task cancellation timing.
+- https://docs.python.org/3.14/library/concurrent.futures.html — cannot cancel already-running ThreadPoolExecutor work; wait=True terminal shutdown semantics.
+- https://docs.python.org/3.14/library/sqlite3.html — interrupt, check_same_thread, sqlite_version, connection closure.
+- https://github.com/omnilib/aiosqlite/blob/v0.21.0/aiosqlite/core.py — Connection subclasses Thread, queued calls.
+- https://github.com/omnilib/aiosqlite/blob/v0.22.0/aiosqlite/core.py — private thread ownership and queued stop.
+- https://github.com/omnilib/aiosqlite/blob/v0.22.1/aiosqlite/core.py — stop(), close, worker sentinel, ResourceWarning.
+- https://aiosqlite.omnilib.dev/en/stable/changelog.html — 0.22.x API/worker changes; not selected for PlayStation Hub.
+- https://www.sqlite.org/wal.html — multiple reader/writer and WAL connection lifecycle.
+- https://www.sqlite.org/howtocorrupt.html — hazards of renaming open SQLite database or deleting hot sidecars.
+
+**Evidence boundary:** Version-tagged third-party source is not proof that aiosqlite 0.22.1 is installed in Core or on user's HA OS. The worker terminal contract, accepted degraded controls and safe automatic restoration are NOT established by source inspection. No code/tests executed.
