@@ -242,3 +242,12 @@ Sources:
 - https://www.sqlite.org/backup.html
 
 **Implementation status:** All 56 new tests NOT_RUN, all 12 gates open; no executables, source files, workflow runs or real console/HA OS tests were created.
+
+
+## 11. Source update — Supervisor backup hooks traced (2026-11-06)
+
+The accompanying research audit §17 now traces a concrete path from Supervisor backup archiving to Core's authenticated **backup/start** and **backup/end** WebSocket handlers, which invoke pre/post integration backup platform hooks (Core tag 2026.11.0; Supervisor pinned commit 69848689). This replaces the weaker "path entirely unverified" source characterization in §7. **SH-BK02 remains BLOCKED_HA_OS for runtime execution**, not for absence of upstream hook code. Exact custom integration platform loading, snapshot location, archiving of live DB/WAL, restore precedence and failure handling are still unproven. The 56 test cases and 12 gates retain their status.
+
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py
+- https://github.com/home-assistant/core/blob/2026.11.0/tests/components/backup/test_websocket.py
