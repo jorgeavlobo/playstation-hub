@@ -239,3 +239,15 @@ The [official HA 2026.11 / Marketplace re-audit](../research/official-source-rea
 ## Crash recovery and archival data policy readiness gate — 2026-11-06
 
 **Research only; implementation not authorized.** [Recovery research](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) require explicit review before committing to SQLite WAL: determine the linked SQLite C version and fixed WAL-reset bug release/backport; choose durable receipt/idempotency and restart-boundary semantics; prove Home Assistant OS full/partial restore and app-specific file inclusion; select stable snapshot authority/intent or a provably quiesced source; settle an archive-only panel policy that does not delete history when the final Config Entry is removed. No project phase advanced and no existing Proposed ADR was accepted.
+
+
+## WP-00 — Private storage, backup authority and archive-only entry review — 2026-11-06
+
+**Research only. No WP-01 code authorization.** [Storage/root source audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [ADR-0011 PROPOSED](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md) and [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) refine the readiness conditions.
+
+1. Define a supported private path under the configuration root and exclude public/static/cache files from durable ledger ownership. Confirm actual OS/Container mount, perms and selected backup scope before choosing it.
+2. Decide how to preserve data when a full/partial Supervisor restore replaces the config directory, and how to detect historical identity mismatches if live DB is outside that directory.
+3. **P0 failure correction:** successful PlayStation Hub pre-backup quiescence can be left without post-backup when another integration pre-hook fails and Supervisor begin_backup aborts. A pre/post long write freeze is **BLOCKED** pending a safe compensation/cancel-completion protocol. Research immutable SQLite snapshots first; raw live db/wal restore selection remains blocked.
+4. Resolve candidate logical Hub/Archive Config Entry onboarding/removal: one configured anchor, one global panel, separate console/account entries, no monitoring in hub-only mode. This product decision requires explicit maintainer approval and Config Flow tests, not automatic ADR acceptance.
+5. Maintain specific retention/export/purge semantics and an unambiguous restore selection protocol. A valid older snapshot does not prove a restore occurred. Recorded history after the most recent available backup cannot be recreated without a newer independent copy.
+6. SPEC-011 adds 64 NOT_RUN tests and 16 OPEN gates. Earlier SPEC-008/009/010 gates remain open and their cases overlap deliberately. No executable code, tests, user data migration or new branch.
