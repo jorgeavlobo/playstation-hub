@@ -1,7 +1,7 @@
 # SPEC-011 — Storage roots, restore authority, and persistent Hub/Archive lifecycle
 
 **Date:** 2026-11-06
-**Status:** PROPOSED; NOT_IMPLEMENTED; ALL_TESTS_NOT_RUN; NO_ADR_APPROVAL
+**Status:** PRODUCT_ARCHITECTURE_ACCEPTED_IN_PRINCIPLE; TEST_SPEC_PROPOSED; NOT_IMPLEMENTED; ALL_TESTS_NOT_RUN
 **Source audit:** [HA OS data paths and archive entry](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md)
 **References:** [SPEC-010](SPEC-010-crash-recovery-restore-provenance-and-archive-access.md), [SPEC-009](SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md), [ADR-0011](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md), [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md).
 **Baseline:** Core 2026.11.0, Supervisor SHA 69848689a1e982ebe92d80e344fc086d8af667db, official Home Assistant 2026.11 backup and Marketplace guidance.
@@ -242,3 +242,8 @@ Pinned Core BackupManager awaits all pre-backup integration-platform hooks and r
 | ST-BK20 | Local watchdog fires while Supervisor is still archiving | Must not unfreeze into unsafe live raw DB copy; error/recovery path explicit |
 
 **Revised total: 64 NOT_RUN cases** (previous 60 + four explicit failure-mode cases); no cases executed and all 16 approval gates remain OPEN. Gate ST-G04 now explicitly requires this cross-platform failure test.
+
+
+## 10. Maintainer acceptance and new immutable snapshot dependency — 2026-11-06
+
+The maintainer accepted the proposed **product-level** Hub/Archive entry, separate console/account ownership, one panel/controller and private storage direction. [ADR-0011 §12](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06) now records the acceptance and remaining technical blockers. The initial 64 SPEC-011 tests remain unrun. New [immutable snapshot research](../research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) and [SPEC-012](SPEC-012-immutable-snapshot-publication-and-backup-admission.md) add source-backed constraints: Online Backup API may restart copying under concurrent writes; published snapshot cursor comes from the snapshot itself; source DB/WAL may remain in the HA archive; Core/Supervisor provide no established custom per-file exclude return contract; no cross-platform post hook is guaranteed after a pre-hook failure. These are operational NOT_TESTED gates and are NOT automatically approved.
