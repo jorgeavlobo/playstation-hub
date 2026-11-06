@@ -162,3 +162,22 @@ The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtim
 | Privacy-safe diagnostics, hostile archive bounds, physical/PSN ACL | P0 | PROPOSED / NOT_RUN | SPEC-006, SPEC-014 |
 
 All 72 SPEC-014 tests remain NOT_RUN, all 18 gates OPEN; the accepted ADR-0011 product architecture does not automatically accept the operational recovery algorithm. No formal official HA Quality Scale certification is claimed.
+
+
+## Crash-atomic recovery journal and generation promotion compliance — 2026-11-06
+
+| Gate | Priority | Evidence status | Reference |
+| --- | --- | --- | --- |
+| Never rename/delete an active SQLite DB or manually detach its hot WAL/journal | P0 | OFFICIAL_SQLITE_SOURCE_VERIFIED / NOT_TESTED | [Crash source audit](../research/ha-core-2026-11-crash-atomic-recovery-journal-and-generation-promotion-audit.md) |
+| Distinct SQLite working generations and one active pointer | P0 | DESIGN_PROPOSAL / NOT_RUN | [ADR-0015](../decisions/ADR-0015-crash-safe-ledger-promotion-and-recovery-journal.md), [SPEC-015](../specifications/SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md) |
+| Application recovery journal distinct from SQLite native rollback/WAL | P0 | PROPOSED / NOT_RUN | SPEC-015 JR-I09 and crash matrix |
+| Positive writer/reader/executor closure before any active source selection | P0 | PROPOSED / NOT_RUN | SPEC-015 JR-SQL01–10 |
+| One-path atomic os.replace; durable file AND parent-directory sync | P0 | PYTHON/POSIX SOURCE_VERIFIED; HA_OS_NOT_RUN | Official Python os.replace, Linux fsync manual |
+| Post-crash pointer/journal mismatch resolved without blind rollback/replay | P0 | NOT_RUN | SPEC-015 JR-PH13–19, JR-BOOT05/06 |
+| HA Config Entry / physical PlayStation / PSN mappings revalidated separately | P0 | NOT_RUN / HARDWARE_BLOCKED | ADR-0004, ADR-0015 |
+| GC never removes selected current / last known good / in-archive source | P0 | NOT_RUN | SPEC-015 JR-OS07–10 |
+| No fabricated historical intervals after old backup or failed commit | P0 | NOT_RUN | ADR-0006 / SPEC-015 JR-BOOT17 |
+| Full HA config restore can rewind entire pointer/journal/generation set | P0 | PINNED_SUPERVISOR_SOURCE_VERIFIED; HA_OS_NOT_RUN | ADR-0013/0015, SPEC-015 JR-OS01 |
+| Source shutdown race and storage filesystem crash matrix | P0 | NOT_RUN | SPEC-015 80 tests, 20 gates |
+
+**Status:** ADR-0015 is a technical PROPOSAL; ADR-0011 product architecture remains ACCEPTED. No tests or real integration code exist and no formal Home Assistant quality certification is claimed.
