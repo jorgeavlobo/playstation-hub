@@ -215,3 +215,10 @@ These are documentation/research tasks, not implementation work packages. They c
 - [Pinned Home Assistant Core source baseline](https://github.com/home-assistant/core/tree/2026.11.0)
 
 **Outcome:** Documented source-grounded legacy code review and future refactoring requirements. No programming performed.
+
+
+## 14. Complete legacy SQLite schema and attribution-safe migration follow-up — 2026-11-06
+
+[New develop source-backed migration audit](legacy-develop-to-native-migration-provenance-audit-2026-11.md), [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) and [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) refine the original DOC-CODE-04 item. The old App schema is v3, with events/sessions/checkpoints/monitoring_state but **no immutable physical PS5 ID in its historical tables**. The old mqtt_topic and player_name are configuration labels, not validated Sony console/PSN identities. Import must default to LEGACY_UNATTRIBUTED physical scope and preserve the source rows and exact old UTC/checkpoint policy. Actual runtime uses a 30-second continuity gap, while helper defaults are 90 seconds; sparse state_update events cannot be assumed to represent every heartbeat; 36-month index is not DB retention. No old current-state MQTT retained message should be admitted as native present-day console truth.
+
+Old Database constructor opens create-capable SQLite and automatically migrates schema; a future importer must read a coherent **exported copy** with non-creating read-only SQLite, not instantiate legacy Database on the real source. Keep user App /data and options/credentials separate from target Core config. Staged target generation import should be idempotent by legacy source namespace + original row ID and preserve an immutable source for recovery. The old synthetic monitor's ten retained MQTT Discovery sensors are separate from external PS5-MQTT device power/activity entities. No production files/tests inspected or executed. This addendum does NOT change the earlier implementation prohibition.
