@@ -361,3 +361,23 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/graphql/operationHashes.ts — reversed persisted GraphQL hashes, not a supported stable licensed API contract.
 
 **Evidence boundary:** Third-party parser field recognition and code tests are not Sony official firmware support or user hardware captures. GPL/AGPL reference code/test assets are not approved for verbatim reuse; no Sony API permission is implied. No actual PlayStation Hub executable work was performed.
+
+## Native Python / Home Assistant first-party runtime feasibility — 2026-11-06
+
+**Maintainer decision:** [First-party dependency sovereignty](../architecture/first-party-dependency-sovereignty-policy.md), with [source-pinned implementation audit](../research/first-party-protocol-implementation-and-runtime-boundaries-2026-11-06.md), now takes precedence over historical proposed runtime library choices.
+
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/network/__init__.py — native async_get_adapters, async_get_ipv4_broadcast_addresses, async_get_enabled_source_ips. When only default interface enabled, broadcast helper returns limited global broadcast only; source-specific directed addresses need native adapter info/prefix and stdlib ipaddress.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/aiohttp_client.py — HA-managed async HTTP clientsession, no own installed HTTP package needed.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/websocket_api/__init__.py — native command registration, collision/owner checks needed.
+- https://contributors.home-assistant.io/core/integrations/manifest/ — pip \`requirements\` versus native HA \`dependencies\`, not equivalent.
+- https://contributors.home-assistant.io/core/internals/blocking-operations/ — event-loop blocking I/O policy and native HA client session.
+- https://docs.python.org/3.14/library/asyncio-protocol.html — native UDP transports, DatagramProtocol.
+- https://docs.python.org/3.14/library/ssl.html — TLS wrapper, not generic raw AES cipher.
+- https://docs.python.org/3.14/library/crypto.html — hashlib/hmac/secrets, not a raw AES-CFB/CBC interface.
+- https://docs.python.org/3.14/library/sqlite3.html — built-in sqlite3, no aiosqlite requirement.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/protocol.ts — source-observed DDP search formatter without explicit NUL.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c — search source and NUL-inclusive \`sendto\`, local source port strategy, parsing and wake.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/crypto/base.ts — HMAC-SHA256 and AES-128-CFB source, **not** an approved dependency or portable code/license grant.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/socket/crypto-codec.ts — distinct AES-128-CBC default codec context.
+
+**Evidence limit:** API/source existence and own-protocol feasibility are source evidence, not successful runtime, Sony permission, actual packet capture or AES backend authorization. No user data or console accessed.
