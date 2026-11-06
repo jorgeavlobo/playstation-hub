@@ -406,3 +406,21 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://docs.python.org/3.14/library/asyncio-eventloop.html — create_datagram_endpoint parameters including local_addr, remote_addr and allow_broadcast.
 
 **Critical evidence limits:** Absence of nonce/id is demonstrated for the inspected SRCH format, not asserted for every proprietary firmware variant. Local software generation does not create an on-wire response echo. Host ID over unauthenticated UDP is not cryptographic proof. This source audit did not execute code, capture packets, assess actual PlayStation firmware or validate any network host.
+
+## LAN app/title identity, Sony Home pause and console-payload boundary — 2026-11-06
+
+**New source report:** [LAN running-app identity/foreground audit](../research/lan-running-app-identity-foreground-and-provider-boundary-2026-11-06.md). **Domain contract:** [First-party source/title scope](../architecture/lan-running-app-evidence-and-title-identity-contract.md).
+
+- https://www.playstation.com/en-us/support/games/customize-ps5-control-center/ — SONY OFFICIAL user guidance: some games/apps pause when Home is displayed; running/loaded title != proof of active player interaction.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c — community DDP response parser recognizes running-app ID/name.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discoveryservice.c — cache-field replacement, including absent optional headers; only changed-state callback.
+- https://github.com/leonanluppi/chiaki-km/blob/9f84d0baf82ac87072781f7ad0a909291c46e2b5/gui/src/qmlbackend.cpp — discovered device app/title UI and registered-session field routing.
+- https://github.com/leonanluppi/chiaki-km/blob/9f84d0baf82ac87072781f7ad0a909291c46e2b5/gui/src/streamsession.cpp — 750ms debounce for keyboard/mouse profile changes, not game-playing measurement.
+- https://github.com/leonanluppi/chiaki-km/blob/9f84d0baf82ac87072781f7ad0a909291c46e2b5/gui/src/inputprofile.cpp — game metadata availability/default/navigation logic and PS4 CUSA on PS5 game example.
+- https://github.com/iharosi/ps5-wake/blob/4806b2846e0a5c82ca5ad009731087ead6b9bccb/ps5-wake.c — user-facing "Home Screen" inferred from absent app header, NOT direct Sony home-state field.
+- https://www.psdevwiki.com/ps5/index.php?section=2&title=Title_ID — COMMUNITY title-ID families PPSA, NPXS, ELJM, ECAS/ELAS; not an official/complete Sony allocation specification.
+- https://consolemods.org/wiki/AV:Sony_model_prefixes — COMMUNITY Sony title/product prefix references, with exceptions.
+- https://github.com/bsgonzalezq/ps-pkg-title-renamer/tree/ba4676de3c0a0e21a4e74849c4eb18e692df137d — GPL-3.0 package file metadata taxonomy for PS4 param.sfo / PS5 param.json. NOT ordinary remote DDP access, NOT a runtime dependency.
+- https://github.com/StonedModder/ps-game-state-lib/tree/963a0e256ab32090143d44dc7964551aca70ed77 — console-side ELF/payload source for foreground/process/controller-focus comparison. **Excluded**: requires installing software on a console and is not normal retail PS5 API support.
+
+**Evidence quality:** Sony's pause-under-Home product behavior is official. All DDP wire/title fields, title-prefix classification, third-party UI policies and on-console payload behaviors are upstream/community code evidence, not direct live verification of the maintainer's PS5. No real firmware test has occurred; prefix type does not identify current player/gameplay. The first-party dependency ban and no extra console software stay binding.
