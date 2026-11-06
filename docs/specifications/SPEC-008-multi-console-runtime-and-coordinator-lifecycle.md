@@ -296,3 +296,8 @@ The optional PSN account may report online activity without proving which physic
 - https://contributors.home-assistant.io/core/quality-scale/config-entry-unloading/
 
 **Result:** A source-pinned multi-console architecture plan, competing scheduler designs, explicit runtime ownership and 46 deterministic tests with 12 unpassed approval gates. No executable implementation was started.
+
+
+## 18. Shared manager and SQLite lifetime follow-up (2026-11-06)
+
+This specification's 46 NOT_RUN tests and 12 open gates remain unchanged. [SPEC-009](SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md) adds **56** targeted concurrency, shared-resource, SQL, panel, backup and restore tests with 12 additional gates. The [source audit](../research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md) establishes that per-Config-Entry setup locks do not serialize a process-global writer. Use manager-owned single-flight setup, generation-fenced leases and ordered cleanups, including FAILED_UNLOAD behavior. Backup hooks in generic Core do not yet prove HA OS Supervisor backup correctness. SPEC-009 elaborates (not supersedes) MC-LC01/03/04/05/06/07/08/09/12/13/14. No tests were executed and no implementation was authorized.
