@@ -134,3 +134,10 @@ Technical proof does not convert a proposal into a maintainer-approved product c
 - https://www.sqlite.org/backup.html
 
 **Status at publication:** PROPOSED. No source code or HA instance altered; no test executed; branch main documentation only and develop frozen.
+
+
+## 11. Critical source correction — 2026-11-06
+
+**Option A (freeze writes through the entire archive) is now BLOCKED, not preferred for first release, pending a verified safe-resume protocol.** In pinned Core, BackupManager.async_pre_backup_actions gathers all backup integration hooks and raises if *any* fails. In pinned Supervisor, HomeAssistant.backup awaits begin_backup **before** entering the try/finally that calls end_backup. PlayStation Hub could therefore successfully quiesce and never receive post-backup if another integration's pre hook fails. Blind timeout-based resumption could corrupt the archive if an archiver is still active.
+
+**Revised research preference:** immutable Online Backup API snapshot avoids a long-held global write freeze, but safe backup/restoration still depends on handling Supervisor's independently archived live DB/WAL and authoritative snapshot selection. A verified external/private live-data root or explicit administrator-confirmed recovery may be necessary. No method is accepted. See [source audit §15](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md#15-new-p0-discovery--pre-backup-can-succeed-without-matching-post-backup) and [SPEC-011 §9](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md#9-p0-pre-backup-orphan-freeze-cases--2026-11-06). Earlier descriptions of A as an initial preference are superseded by this finding. Maintainer approval and HA OS tests remain required.
