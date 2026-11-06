@@ -286,3 +286,9 @@ New tests cover cross-source DHCP/manual in-flight deduplication; known unique I
 | SRC-LAN-12 | Home/game/media/standby/PSN offline hardware matrix | Determine actual running-app header behavior; not asserted before live tests |
 
 **Source independence:** The `ps5-remoteplay` synthetic response fixtures are generated from playactor's behavior, so they cannot count as independent Sony/firmware confirmation. Chiaki-ng's status classifier is safer; Chiaki-KM is a fork and still not a live compatibility test. No test code or packet capture was created.
+
+## Native stdlib/HA-only dependency and transport evidence (2026-11-06)
+
+**Policy:** [Own PlayStation code, no extra runtime packages](../architecture/first-party-dependency-sovereignty-policy.md), [runtime source audit](../research/first-party-protocol-implementation-and-runtime-boundaries-2026-11-06.md). Future LAN implementation must not import/wrap/execute \`playactor\`, Chiaki, pyremoteplay, ps5-remoteplay, PS5-MQTT, \`netifaces\` or other third-party protocol/socket helpers. Use stdlib \`asyncio\` datagrams and native HA network adapters and broadcast targets. Confirm HA Core 2026.11 \`network.async_get_ipv4_broadcast_addresses(hass)\` behavior with enabled/default adapters and local routes; \`network\` is an HA platform component, not a pip requirement.
+
+Additional qualitative future checks FIRST-01/03/04/05/06/15: manifest has zero extra pip \`requirements\`; one bounded socket owner per compatible protocol, independent per-console monitor tasks, clean unload/reload; strict 200/620/UNKNOWN, malformed packet, colon-bearing app title, CRLF/UTF-8, ABSENT/EMPTY headers, spoofed host-ID, multi-NIC duplicates; no external runtime package or shell code. Retain prior test IDs and all NOT_RUN; do not treat source review as executable evidence.
