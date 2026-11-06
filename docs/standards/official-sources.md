@@ -325,3 +325,21 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://developers.home-assistant.io/docs/development_testing/ — Home Assistant implementation test guidance (may need current-path re-verification when tests start).
 
 **Explicit evidence classification:** Official SQLite/Python documentation supports its named primitives only. The replay protocol, versioned correction model, incident response, automatic restore prohibition and research stopping criteria are PlayStation Hub project designs, **not official Sony/HA/SQLite features** and none has run on user's hardware. Further research only if specific implementation test fails or authoritative source/API changes.
+
+## Pinned implementation-repository source audit — 2026-11-06
+
+**Primary:** [Upstream source comparison](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md); version-pinned GitHub repositories and official HA Core tag below. **Not Sony official protocol documentation:** third-party reverse-engineering projects and package releases must be distinguished from official platform interfaces and runtime/hardware validation.
+
+- https://github.com/dhleong/playactor/tree/a9e72d67a3930a8f06455927edb547a1754ef0ac — TS LAN discovery/wake/Remote Play, parser's non-620-is-awake risk, remoteplay isConnected inversion and standby socket closure.
+- https://github.com/FunkeyFlo/ps5-mqtt/tree/7ab3075d276f3eeecd81a3322c72231af8cd51bd — v1.8.1 HA add-on; multi-interface broadcast, shared listener issue, state checking, PSN device-matching heuristic, e2e mock tests.
+- https://github.com/chiaki-ng/chiaki-ng/tree/43728af2e639fecb8a7af1cd68c29820a40de973 — current canonical AGPL-3.0 Chiaki-ng source; discovery parses `200/620/UNKNOWN` and optional `running-app-titleid/name`; registration and crypto known-answer source.
+- https://github.com/home-assistant/core/tree/2026.11.0/homeassistant/components/playstation_network — official HA PSN account-scoped coordinators, Config Entry, media players and app limitations.
+- https://www.home-assistant.io/integrations/playstation_network — official documented 30-second data updates, 300 requests/15min, last-used console status limitation.
+- https://github.com/achievements-app/psn-api/tree/1e9d9a806fcd884a4ddee8086bfe92594611da9f — unofficial account presence, device list, played/recent/purchased queries, refresh.
+- https://github.com/isFakeAccount/psnawp/tree/fcd7e8334495585b5a8d7502b3b527f34f9d7777 — GitHub **mirror** (Codeberg primary), unofficial Python PSN wrapper.
+- https://pypi.org/project/psnawp/3.0.3/ — published version pinned by HA Core, not necessarily current mirror HEAD.
+- https://github.com/Emkraan/homeassistant-playstationnetwork/tree/aecbd580c39cc00692f06cec80df4b17c02e1e63 — custom HA token rotation/compat wrapper for comparison, not official physical-console integration.
+- https://pypi.org/project/playdirector/0.4.2/ — Python package current as-of audit, now GPL-3.0-only and changed public API; old 0.3.0 MIT documentation is stale for dependency adoption.
+- https://github.com/iharosi/ps5-remoteplay — separate AGPL-3.0 Python PS5 port with documented byte-exact synthetic vectors (README-only evidence; not audited or selected as runtime dependency).
+
+**Source boundary:** Existence of optional `running-app-titleid`/name in parsers is evidence of a *possible* console LAN metadata source, not verified appearance on a specific PS5 firmware or exact active gaming time. Never copy GPL/AGPL protocol code or key tables into a different licensed integration without explicit licensing analysis. No production code or hardware test executed.
