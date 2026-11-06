@@ -212,3 +212,48 @@ All source links are commit-pinned above. We did **not** capture any PlayStation
 - User-friendly game title labels and robust historical game time require separate source and semantic validation.
 
 **Outcome:** Source-code-level comparison with actionable parser/command/metadata corrections, no v1 DDL, no new ADR/SPEC, no application implementation.
+
+## 11. Deeper PSN runtime source audit — token rotation, provider title selection and independent failures
+
+### 11.1 Concurrency and refresh-token rotation are per-account concerns
+
+- [PSNAWP authenticator (pinned GitHub mirror)](https://github.com/isFakeAccount/psnawp/blob/fcd7e8334495585b5a8d7502b3b527f34f9d7777/src/psnawp_api/core/authenticator.py#L29-L49) wraps outgoing methods in `pre_request_processing`, checking whether `token_response` is missing or access token expired. Its [`fetch_access_token_from_refresh`](https://github.com/isFakeAccount/psnawp/blob/fcd7e8334495585b5a8d7502b3b527f34f9d7777/src/psnawp_api/core/authenticator.py#L177-L211) checks expiry and sends the refresh request then replaces `token_response`. There is no visible per-account mutex in those exact functions; **multiple executor callers racing near expiry are a plausible failure path**, not independently reproduced by PlayStation Hub. The GitHub mirror is not proof of code in a specific installed wheel.
+- [Emkraan compat.py](https://github.com/Emkraan/homeassistant-playstationnetwork/blob/aecbd580c39cc00692f06cec80df4b17c02e1e63/custom_components/playstation_network/compat.py#L74-L118) explicitly comments on that race and inserts `threading.Lock` around a per-client refresh function, with expiry margin and rotation callback. It additionally monkey-patches PSNAWP's error parser to distinguish an OAuth flat `invalid_grant` from structured API error payloads ([same file](https://github.com/Emkraan/homeassistant-playstationnetwork/blob/aecbd580c39cc00692f06cec80df4b17c02e1e63/custom_components/playstation_network/compat.py#L17-L69)). **Do not copy the global exception monkey-patch**: a future multi-account integration should use explicit adapter-local parsing, thread-safe per-account single-flight and a dependency-version contract.
+- [Emkraan coordinator.py](https://github.com/Emkraan/homeassistant-playstationnetwork/blob/aecbd580c39cc00692f06cec80df4b17c02e1e63/custom_components/playstation_network/coordinator.py#L103-L126) persists a rotated token pair into its HA Config Entry without reloading the whole integration, and its source comments explain why an automatic reload during an active refresh can race with in-flight older client calls. **Trade-off:** Config Entry persistence is separate from remote Sony token rotation; a crash can occur between them. This is a functional reliability concern but not a reason to reopen unrelated SQLite history-backup research.
+- Local PlayStation power and LAN game metadata **must continue to function when the PSN account is reauth-required, forbidden, throttled or offline**. Never share one globally blocking PSN refresh lock across independent physical consoles or different accounts. Keep credentials out of history/diagnostics/UI payload.
+
+### 11.2 Official HA Core PSN implementation's title projection loses multi-title detail
+
+- [HA Core 2026.11.0 helpers.py](https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/playstation_network/helpers.py#L86-L138) calls provider account-device, presence, trophy and profile endpoints in its worker, then constructs an `active_sessions[primary_platform]` value only when the reported `primaryPlatformInfo.platform` exists. It chooses `next(iter(gameTitleInfoList), {})` — **the first available title record** — and maps it into a platform-scoped `SessionData`. This source behavior is a presentation selection, not proof that there was only one returned game or that an individual physical PS5 ran it.
+- [HA Core coordinator.py](https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/playstation_network/coordinator.py#L95-L120) updates its account user coordinator every 30 seconds; errors are scoped to its provider updates. These schedules are not Sony minimum polling requirements, and the platform media player does not carry a verified per-device `host-id`.
+- A future PlayStation Hub account DTO should preserve a bounded `gameTitleInfoList` with source/report time, original platform and visibility, and select a primary display title only as a **labelled UI projection**. A console's `LAN_RUNNING_APP` must remain independently available and not be overwritten simply because HA Core or PS5-MQTT selected a different PSN title.
+
+### 11.3 Provider library data flows are different products, not a single truth table
+
+| Source | Provider scope | What it does not mean |
+| --- | --- | --- |
+| [psn-api getBasicPresence](https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/user/getBasicPresence.ts) | Account provider presence and possibly a list of reported titles | Exact physical console ID, precise game change instant |
+| [psn-api getAccountDevices](https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/user/getAccountDevices.ts) | Account-associated devices | Which DDP host is currently executing the game |
+| [psn-api getUserPlayedGames](https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/user/getUserPlayedGames.ts) | Played-game list/history with provider scope and pagination | Local time interval on a specific PS5 |
+| [psn-api getRecentlyPlayedGames](https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/graphql/getRecentlyPlayedGames.ts) | Recently played cloud library information | Presently running local application |
+| [psn-api getPurchasedGames](https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/graphql/getPurchasedGames.ts) | Purchased/entitled cloud catalog | Installed or currently playing on LAN |
+| [psn-api operationHashes.ts](https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/graphql/operationHashes.ts) | Persisted-query hashes reverse engineered from Sony web JS | Public or stable licensed Sony API; hashes are fragile/version-specific |
+
+Provider cloud API legal/authorization review, privacy, quota and account reauth remain separate gates for WP-07, not LAN-only WP-01. Sony account auth does not have to precede on-LAN DDP status or its optional running-app fields.
+
+### 11.4 New targeted source regression requirements (all future/not run)
+
+| Trace ID | Condition | Expected domain behavior |
+| --- | --- | --- |
+| SRC-PSN-03 | Two concurrent calls on same account reach expiring refresh token | Per-account serialized refresh, no duplicate rotation/credential overwrite |
+| SRC-PSN-04 | Error body OAuth flat `invalid_grant` versus nested provider error | Typed per-account reauth/failure, no global exception monkey patch |
+| SRC-PSN-05 | Token rotated remotely but no local durable receipt yet | Explicit uncertain credential state and reauth path, not false success |
+| SRC-PSN-06 | Presence includes two or more `gameTitleInfoList` records | Preserve bounded list; first-title UI projection not sole historical evidence |
+| SRC-PSN-07 | Account privacy restriction, 429 or provider outage | Source scoped failure; LAN power and reported-app facts unaffected |
+| SRC-PSN-08 | App reports CUSA while PSN reports PPSA/concept/title | Preserve distinct namespaces and provenance; no merge by display name |
+| SRC-PSN-09 | GraphQL persisted-query hash changes upstream | Provider feature gracefully unavailable; no forced local metadata failure |
+| SRC-PSN-10 | Account Config Entry unload/reauth during in-flight refresh | Fence old source generation; no stale write or credential resurrection |
+
+These extend the qualitative trace register; they do **not** add to executed test counts, replace official Sony licensing, or imply Sony endpoints were invoked.
+
+**Final recommendation:** Prioritize PlayStation Hub's independent LAN source contract first; design the optional account client with per-account concurrency/refresh ownership, source-scoped error and data limits only when legally and technically validated. Refuse to infer physical game sessions from account-only data.
