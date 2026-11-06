@@ -171,3 +171,23 @@ Implement SRCH/response framing, strict 200/620/UNKNOWN parser, bounded optional
 **Wire source candidate:** \`SRCH * HTTP/1.1\` + \`device-discovery-protocol-version:00030010\` over UDP to PS5 9302 is evidenced independently in [playactor](https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/protocol.ts) and [Chiaki-ng](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c#L67-L90). These are third-party implementation observations, not Sony official protocol documentation or a PS5 hardware test.
 
 **No package requirement:** No playactor/Chiaki/PS5-MQTT/pyremoteplay, no extra Node/CLI/background service and no Python protocol dependency. The possible non-cryptographic LAN core stays independent of Remote Play and optional PSN.
+
+## 15. DDP wire/correlation deep audit — own UDP driver (2026-11-06)
+
+**Source and primary contract:** [First-party DDP wire, temporal correlation and monitor audit](../research/lan-ddp-wire-and-temporal-correlation-audit-2026-11-06.md). All source code remains **research-only**; no runtime PlayStation libraries or new pip/npm packages.
+
+### Source-observed transmission details
+
+PS5's candidate search datagram uses UDP destination port \`9302\` and \`SRCH * HTTP/1.1\` + LF + \`device-discovery-protocol-version:00030010\` + LF. **There is no request ID/nonce in the inspected SRCH framing**. Playactor sends the text bytes without an explicit trailing NUL; Chiaki sends its formatted length + 1 (NUL). The **client local bind port** may be ephemeral (playactor) or Chiaki's 9303–9319 then ephemeral, independent of remote port 9302. None of these choices is yet validated against a physical PS5 running this integration.
+
+**New temporal uncertainty rule:** Because the inspected DDP request has no echoed generation/nonce, \`request_generation\` is a **local process tag**, NOT evidence that a received UDP datagram uniquely belongs to that request. A response received during a fresh scan could be a delayed prior reply, unsolicited reply or spoof. Fencing an old \`DatagramProtocol\` callback does not prove a packet arriving at a *new* socket belongs to the new scan. Accept within a bounded observation window, but retain \`WINDOW_ASSOCIATED_UNVERIFIED\` freshness/causality quality and never infer exact power-transition time or cryptographically authenticated owner.
+
+### Source-ready parser and transport constraints
+
+- Own Python asyncio datagram service with bounded queue and cancellation; its \`sendto()\` buffers asynchronously and does not prove remote delivery. \`error_received()\` may never fire on a lost UDP packet ([Python official docs](https://docs.python.org/3.14/library/asyncio-protocol.html#datagram-protocols)).
+- Parse \`HTTP/1.1\`-like responses with strict size, status-line, LF/CRLF, first-colon header, duplicate-sensitive-key, UTF-8 and NUL rules, rejecting reflected \`SRCH\`/unexpected protocol packets. Optional DDP \`running-app-titleid/name\` fields have ABSENT/EMPTY/VALUE/INVALID source classification, but no game-playing claims.
+- Chiaki [http.c](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/http.c#L27-L86) rejects an explicitly empty value; our distinction for optional empty headers is a future project choice, NOT an upstream or firmware guarantee.
+- Chiaki's [discoveryservice.c](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discoveryservice.c#L305-L388) advances last-ping provenance on each accepted response but publishes only changed visible fields. Thus do not build history from a change-only callback or HA entity state instead of accepted repeated source observations.
+- HA Core's native \`network.async_get_ipv4_broadcast_addresses(hass)\` may return just \`255.255.255.255\` in default-only setup; use \`network.async_get_adapters(hass)\` and stdlib \`ipaddress\` if explicit directed subnet broadcast is required and approved. No ifaddr/netifaces package is needed; no guarantee that VLAN/firewall routing forwards broadcast.
+
+**Evidence boundary:** \`host-id\` is self-reported over unauthenticated UDP; accepted syntax is not cryptographic owner proof. No auto-binding pairing credentials, old history or verified owner to a single packet. Preserve HA availability and durable accounting independently. See the 20 future DDP-T test traces in the source audit, not another new SPEC.
