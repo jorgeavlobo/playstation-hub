@@ -79,3 +79,18 @@ The [official-source batch 02](../research/official-source-reaudit-batch-02-qual
 ## Multi-console runtime and coordinator official source audit (2026-11-05)
 
 The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) document 46 tests and 12 unpassed MC approval gates. **Critical finding:** Ordinary DataUpdateCoordinator periodic polling ends when its final listener leaves. PlayStation Hub's multi-year history must therefore have an explicit per-console observation owner even with no enabled sensors or open sidebar. Prefer an entry-owned single-probe LanMonitor and push-only coordinator, subject to approval; do not implement a second polling coordinator simultaneously. Per-entry runtime/unload/initial sleeping-PS5 behavior, user disabled-polling, IP rediscovery and shared SQLite/panel lease remain untested. All related ADR statuses remain PROPOSED.
+
+
+## Crash recovery and restore-provenance gate — 2026-11-06
+
+| Requirement | Priority | Current status | Planned evidence |
+| --- | --- | --- | --- |
+| Linked SQLite C runtime patched against the 2026 WAL-reset corruption bug | P0 | BLOCKED_HA_OS, NOT_TESTED | [Recovery audit](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) / [SPEC-010 CR-G01](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) |
+| Atomic observation + segment + commit cursor with stable idempotent receipt | P0 | PROPOSED, NOT_RUN | [SPEC-010 CR-TX01–CR-TX12](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) |
+| No inflated sessions across crash/restore or clock changes | P0 | PROPOSED, NOT_RUN | [ADR-0006](../decisions/ADR-0006-sessions-and-usage-statistics.md) and SPEC-010 |
+| Consistent HA OS backup archive plus explicit restore provenance | P0 | BLOCKED_HA_OS / RESTORE_POLICY_OPEN | [ADR-0008](../decisions/ADR-0008-storage-persistence-and-backup.md) / SPEC-010 |
+| No destructive auto-snapshot promotion on ordinary restart | P0 | PROPOSED, NOT_RUN | SPEC-010 CR-BK12 |
+| Archive-only panel and privacy-safe history retention after final Config Entry removal | P1 | OPEN_PRODUCT_DECISION | [ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md) / SPEC-010 |
+| Custom app data affected by Recorder-only backup exclusion | P1 | SOURCE_VERIFIED, HA_OS_NOT_TESTED | Supervisor pinned source [restore module](https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py) |
+
+**No project implementation, tests, release checks or ADR approval passed.** The historical DOC registers remain for traceability.
