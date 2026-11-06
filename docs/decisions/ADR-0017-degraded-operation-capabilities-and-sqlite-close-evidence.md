@@ -101,3 +101,10 @@ This is not an assertion of unconditional power-loss durability; real HA OS file
 - https://aiosqlite.omnilib.dev/en/stable/changelog.html
 
 **Outcome:** Proposed technical design; no executable code, tests or real connection closed.
+
+
+## 9. Missing-history classifier and separate first-run creation permission — 2026-11-06
+
+[Official first-boot audit](../research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [ADR-0018](ADR-0018-first-boot-consent-and-ledger-provisioning.md) and [SPEC-018](../specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md) add a distinct administrator CREATE_NEW_HISTORY permission, separate from hub Config Entry creation, history recovery, physical control and SQL DURABLE_WRITE. A Hub Config Entry may be HA LOADED but internally INITIALIZATION_REQUIRED, with no provisioned ledger/writer; source-only PS5 observations are optional and cannot create the SQLite file. All existing-ledger opening must use non-creating SQLite modes. Presence of old ledger UUID, pointer, stage, journal, legacy DB or snapshot disallows silently starting an empty new history; permission errors and uncertain filesystem state are STORAGE_INACCESSIBLE, not CANDIDATE_FRESH.
+
+The operation is explicitly confirmed, generation/ACL-revalidated and idempotent under one provisioning lease; it stages a new ledger with an exclusive directory and durable CREATE_INTENT before selecting the new active pointer. Two Config Flows/tabs cannot create parallel genesis ledgers. No implementation or technical acceptance implied; ADR-0017 remains PROPOSED.
