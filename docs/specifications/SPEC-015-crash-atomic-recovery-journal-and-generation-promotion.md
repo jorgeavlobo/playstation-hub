@@ -248,3 +248,10 @@ Do not create code, tests or fixtures as part of this documentation task. Before
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/config_entries.py
 
 **Status at publication:** 80 NOT_RUN cases, 20 OPEN gates, no code or live test.
+
+
+## 10. Boot-time controller gate and worker cancellation boundary — 2026-11-06
+
+[Source audit of pinned HA Core/Python/aiosqlite](../research/ha-core-2026-11-recovery-hold-bootstrap-and-sqlite-worker-lifecycle-audit.md), [ADR-0016](../decisions/ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md) and [SPEC-016](SPEC-016-recovery-hold-boot-order-and-worker-termination.md) add 80 NOT_RUN cases/20 OPEN gates focused on the preconditions of this specification's active-generation pointer switch. A Hub-only entry should be able to load with internal RECOVERY_HOLD and one restricted admin panel while the global historical writer is DENY_WRITE. A console entry LOADED with fresh LAN AWAKE does not imply a durable write lease.
+
+Critical worker fact: standard Python ThreadPoolExecutor running jobs are not cancelled by Future.cancel or cancel_futures=True, and the reviewed aiosqlite v0.21.0 worker may execute already queued SQL after the awaiting Future was cancelled. sqlite3.Connection.interrupt aborts queries, not the underlying worker/connection lifecycle. For SPEC-015 promotion, require separately observed completion of accepted SQL work, connection close, worker terminal/join and zero outstanding related leases before changing the active-generation pointer. Unknown state is FAILED_UNSAFE_TO_REOPEN; preserve old DB path and WAL sidecars, and never assume the pointer can be safely switched due to asyncio timeout. Native HA ConfigEntry migration failure and history recovery are different categories; the accepted Hub entry may load degraded where the control plane still succeeds. The original 80 SPEC-015 tests/20 gates remain NOT_RUN/OPEN.
