@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.42.1 — 2026-11-05  
+> **Document version:** 0.43.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -15,6 +15,9 @@
 > **Official Quality/Discovery checkpoint (2026-11-05):** [Batch 02 source audit](docs/research/official-source-reaudit-batch-02-quality-discovery-runtime-2026-11.md) and [54-rule applicability matrix](docs/standards/internal-quality-scale-applicability.md) add HA discovery ownership, runtime data, coordinator/update/error policies, safe diagnostics, stale-device handling and actual Marketplace installation limits. These are documented requirements, not implemented/tested claims.
 
 > **Multi-console lifecycle research (2026-11-05):** [Pinned Core coordinator audit](docs/research/ha-core-2026-11-multi-console-runtime-source-audit.md) + [SPEC-008 (46 pending tests)](docs/specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) establish that ordinary DataUpdateCoordinator interval polling stops with its final listener. Historical monitoring requires a separate explicit per-console lifetime owner independent of dashboard/entity visibility; preferred proposal is one entry-owned LAN monitor feeding a push-only coordinator. A coordinator with a deliberate permanent internal listener is an alternative. No implementation started.
+
+
+> **Shared-services lifecycle checkpoint (2026-11-06):** The [pinned Core/SQLite shared-services audit](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md) and [SPEC-009 (56 unrun tests)](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md) refine SPEC-008. Each Config Entry has its own setup lock, so shared initialization, migrations, writer ownership, leases, query/snapshot lifetimes and final shutdown need a separately serialized integration-wide controller. Official WebSocket registration can replace handlers by command name and frontend panel registration rejects duplicate routes; one-time registration and collision ownership checks must be explicit. **Important new blocker:** the generic Core backup path supports pre/post integration hooks, but HA OS uses Supervisor backup machinery and consistent custom SQLite backup/restore is not verified. No code or testing occurred; all dependent ADRs remain proposed.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2766,3 +2769,20 @@ The new product remains one multilingual native Home Assistant sidebar panel wit
 
 **Next research:** Compare preferred background monitor with the single polling-coordinator internal-listener alternative using exact lifecycle and disabled-polling semantics; specify failure-safe shared-services acquisition/unload ordering and the identity/reauth/retroactive-history behaviors before any implementation work package is approved.
 
+
+
+## Shared-services concurrency and SQLite lifecycle addendum — 2026-11-06
+
+**Authority:** This checkpoint refines the active architectural direction without altering historical protocol research or accepting any pending ADR. Primary documents: [shared-manager source audit](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md) and [SPEC-009](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md).
+
+1. **One process-level controller, distinct from entry runtimes.** Use a documented integration-wide HubController with once-only panel/WebSocket registration and a separately managed HistoryService. Neither a PS5 nor a PSN account Config Entry becomes the implicit owner of global resources.
+2. **Global single-flight lifecycle is required.** Core's entry-local setup locks do not prevent concurrent entries initializing the same SQLite file. Pending/active entry leases and bounded query/export/snapshot leases, manager generations and an initialization future are preferred design tools; these are proposals, not implemented mechanisms.
+3. **Deterministic teardown, including failures.** New work must be fenced before stop, in-flight commits settled or explicitly failed, HA platforms unloaded, resources released by token and only then may the final storage writer close. Core runs on-unload cleanup on failed setup but not after an unsuccessful unload. Asynchronous cleanup callbacks are not a substitute for ordered awaited shutdown.
+4. **No ghost history or accidental double writing.** Accepted LAN status and durably persisted evidence are separate. One writer, bounded fair queues, unique observation IDs and transactional checkpoints are proposed; current physical status may remain useful during storage failure but history must show UNSAVED/gaps.
+5. **One panel is a global registration guarantee, not a UI process.** Core 2026.11 WebSocket helper registration overwrites by command key; panel URL registration rejects collisions. Guard ownership, register once and serve handlers through the current runtime/controller. Removing panel UI is possible, but deregistration of custom static HTTP paths remains unverified; full hot-uninstall must not be promised.
+6. **Backup is now a critical open verification.** SQLite upstream confirms WAL reader/checkpoint interaction and Online Backup API snapshot support. However, copying an active SQLite file is not a consistent snapshot, and Home Assistant OS uses SupervisorBackupReaderWriter instead of the generic Core backup writer. Verify actual HA OS pre/post platform hooks, snapshot/archive inclusion, live DB/WAL handling and restore selection before claiming that backups work.
+7. **Zero-entry policy is explicit and separate from last writer close.** Initial proposal: panel follows existence of configured entries; historical DB is retained on entry removal until an explicit user-authorized purge. If standalone archive access without any configured entries is required, evaluate a dedicated hub entry; do not silently implement a menu that disappears unpredictably after restart.
+
+**Current state:** The new SPEC-009 defines **56 additional unrun tests** and **12 open sign-off gates**, separate from SPEC-008's **46 unrun tests** and 12 open gates. No code, CI run, hardware test, new branch or accepted ADR. The baseline remains Core 2026.11.0/Python >=3.14.2 as a source reference, not an approved minimum compatibility requirement.
+
+**Next research before approval:** inspect pinned Supervisor backup lifecycle end-to-end (including how integration backup platform callbacks are invoked), Home Assistant OS snapshot paths and archive filters, and the platform's ability to safely shut down/reopen a shared SQLite worker without starving queries. Only then can ADR-0008's backup conditions be resolved.
