@@ -64,3 +64,6 @@ Review process: compare source revisions, update affected protocol document, upd
 
 
 **2026-11-06 — Runtime-data ordering correction:** Compared candidate multi-entry initialization flow to official Home Assistant Config Entries and runtime_data documentation; fixed the design to assign typed entry.runtime_data *before* async_forward_entry_setups. To prevent persistence writes with an inactive lease, monitor observation starts only after lease promotion to ACTIVE. Updated source audit §18, SPEC-009 §12, Bible v0.43.2. No code or tests.
+
+
+**2026-11-06 — Global shutdown source audit:** Verified Core 2026.11.0 async_add_shutdown_job runs before EVENT_HOMEASSISTANT_STOP and HA background task cancellation. Identified staged timeouts (20s shutdown job, 100s stop, 60s final write, 30s close) as source implementation details, not durability guarantees. Recommended one integration-owned pre-stop fence/drain coordinator with idempotent entry-unload interactions. Added research §19, SPEC-009 §13, Bible v0.43.3. No tests or implementation.
