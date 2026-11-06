@@ -381,3 +381,13 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/socket/crypto-codec.ts — distinct AES-128-CBC default codec context.
 
 **Evidence limit:** API/source existence and own-protocol feasibility are source evidence, not successful runtime, Sony permission, actual packet capture or AES backend authorization. No user data or console accessed.
+
+## HA-bundled cryptographic primitives feasibility and explicit exception boundary — 2026-11-06
+
+- https://github.com/home-assistant/core/blob/2026.11.0/pyproject.toml — Core's pinned base dependencies include \`cryptography==50.0.2\`, \`aiohttp==3.14.5\`, \`ifaddr==0.2.0\`; Core requires Python >=3.14.2. These are HA's own dependencies, not PlayStation Hub \`manifest.requirements\`.
+- https://cryptography.io/en/50.0.2/hazmat/decrepit/ — official PyCA 50.0.2 deprecated/legacy compatibility primitive family, includes CFB/CFB8/OFB modes.
+- https://cryptography.io/en/stable/hazmat/decrepit/modes/ — PyCA CFB mode is available for interoperability but use is strongly discouraged except where truly required by legacy protocols.
+- https://cryptography.io/en/stable/hazmat/primitives/symmetric-encryption/ — standard PyCA Cipher/AES/CBC interfaces, distinct from deprecated CFB. No primitive may be swapped without matching the actual protocol.
+- https://docs.python.org/3.14/library/crypto.html — Python standard cryptographic services (hashlib, hmac, secrets) do NOT offer general AES-128-CFB/CBC encryption.
+
+**Status:** The maintainer's prohibition of third-party libraries remains authoritative. Presence of HA-pinned PyCA is not automatic permission to import it, not proof of Remote Play firmware interoperability, and not a new runtime package requirement. \`BLOCKED_CRYPTO_BACKEND_APPROVAL\` until explicit exception or feature deferral is recorded. [Policy](../architecture/first-party-dependency-sovereignty-policy.md#7-platform-preinstalled-cryptography-clarification--candidate-only).
