@@ -194,3 +194,17 @@ User-created Hub/Archive Config Entry and private history retention remain accep
 Proposed mitigations: fixed private storage roots with canonical path allowlist, generated UUID basenames, no symlink/hardlink aliases, bounded versioned journal/pointer content and digest validation; separate user/admin ACL from file metadata (hash is not authentication); exclusive HubController recovery lease; positive closure of all SQLite workers before pointer selection; separate per-generation SQLite paths and SQLite-managed WAL/journal names; same-filesystem atomic pointer update plus file and directory fsync on tested OS; original generation preservation; idempotent startup reconciliation; globally scoped Repairs on uncertainty, and strict secret/identity segregation.
 
 A journal marked COMMITTED does not prove matching HA Config Entry registry/PSN identity because these are separate systems. Recovery must revalidate canonical physical identity before privileged controls resume, and never claim sessions recorded after an old backup if no current copy exists. All 80 SPEC-015 scenarios are NOT_RUN and no threat-control implementation is approved.
+
+
+## 18. Recovery-Hold bootstrap, late queued SQL and wrong-generation attribution — 2026-11-06
+
+The [pinned Home Assistant/Python/sqlite/aiosqlite boot audit](../research/ha-core-2026-11-recovery-hold-bootstrap-and-sqlite-worker-lifecycle-audit.md), [ADR-0016](../decisions/ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md) and [SPEC-016](SPEC-016-recovery-hold-boot-order-and-worker-termination.md) add new security and safety cases without approving code.
+
+- A corrupt historical DB could make the Hub Config Entry SETUP_ERROR/SETUP_RETRY and hide the recovery UI; internal RECOVERY_HOLD with valid control-plane setup is a candidate response. Do not conceal genuine import/schema-migration failure; no silent new empty ledger over old recovery artifacts.
+- Multiple Config Entries may initialize concurrently, and a console with fresh AWAKE state may attempt storage writes before the global recovery verdict. Default DENY_WRITE, current identity/generation-fenced lease and bounded admission required; optional SOURCE_ONLY_UNSAVED cannot grant historical writes.
+- Cancelled browser/admin tasks and Python Future do not prove SQLite worker thread is stopped. A pre-queued aiosqlite SQL function can still run after an awaiting Future is cancelled; old-generation writes after a pointer switch are a cross-owner data corruption threat. Require positive close/terminal worker evidence and protect all previous sidecars.
+- sqlite3.Connection.interrupt can stop an executing SQL statement, but neither this result nor a timeout proves all transactions have safely rolled back or connection has closed. Ambiguous COMMIT receipts need stable idempotency and post-crash checking.
+- Distinguish permission to observe source, permission to persist, and permission to control physical PS5/PSN: an identity conflict must fence controls and attribution even if a loaded HA entry has a current cached LAN status.
+- A shared global Repair issue should survive removal of one console entry; no raw private history/credential/error payload in public diagnostics, and no unprivileged bypass through the recovery panel.
+
+All future mitigations require fault injection and backend ACL tests. No security gate is passed by this documentation.
