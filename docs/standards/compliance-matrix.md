@@ -110,3 +110,19 @@ The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtim
 | User-owned retention, export, private backups and explicit purge | P1 | PROPOSED, NOT_RUN | ADR-0008/0010/0011 |
 
 **All SPEC-011 64 case definitions are NOT_RUN, all 16 gates OPEN; none are formal custom-integration Gold/Platinum certification.**
+
+
+## User-approved Hub architecture and immutable snapshot gates — 2026-11-06
+
+| Area | Requirement | Status | Evidence |
+| --- | --- | --- | --- |
+| Product decision | One user-confirmed logical Hub/Archive entry, separate console/account entries, one panel/controller | ACCEPTED_DESIGN, NOT_IMPLEMENTED | [ADR-0011 §12](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06) |
+| Persistence | Private app-owned configuration-root direction outside HACS source | ACCEPTED_DIRECTION, FINAL_PATH_CONDITIONAL | ADR-0011, ADR-0008 |
+| Snapshot correctness | Bounded SQLite Online Backup API copy; destination closure; own cursor; integrity/FK/schema | RESEARCH_PREFERRED, NOT_RUN | [SPEC-012](../specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md), [source audit](../research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) |
+| Publication | Immutable snapshot+manifest generation, crash-safe marker, safe retention | PROPOSED, NOT_RUN | SPEC-012 |
+| HA archive | Core/Supervisor documented pre/post do not expose custom app-owned per-file exclude; live DB/WAL also may be archived | SOURCE_INSPECTED, HA_OS_NOT_TESTED | Pinned Core backup manager/const, Supervisor module |
+| Backup liveness | Other platform prehook failure cannot strand app SQLite writer; post hook best-effort | P0, NOT_RUN | SPEC-012 SN-ARC06–08 |
+| Restore | No blind selection of potentially copied raw DB or stale snapshot; admin intent/lineage | P0, NOT_APPROVED, NOT_RUN | ADR-0012, SPEC-012 |
+| Privacy | Private snapshots, no generic token/export leakage | CONDITIONAL, NOT_RUN | ADR-0007/0008, SPEC-012 |
+
+**Test status:** SPEC-012 has 64 NOT_RUN cases, 16 OPEN gates. No code or acceptance test has been run.
