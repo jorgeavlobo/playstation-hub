@@ -246,3 +246,10 @@ Project:
 - [SPEC-015](../specifications/SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md)
 
 **Outcome:** Source-backed first-boot classification and initialization proposals only. No data inspected on the user's HA OS, no runnable code, Config Entry, SQLite file, tests or migrations created. 
+
+
+## 13. Source nuance — read/write open does not certify a writable ledger
+
+**SQLITE_OFFICIAL (sqlite3_open_v2):** An existing SQLITE_OPEN_READWRITE open can, for historical compatibility reasons, fall back to read-only when filesystem permissions prevent writing. The sqlite3_db_readonly API can distinguish the effective connection mode. The non-create URI mode=rw is useful for preventing accidental file creation, but the application must not treat successful connection creation as sufficient evidence of usable historical writing. Future initial preflight must separately validate permissions, effective SQLite connection mode, schema ownership, local filesystem and actual commit behavior with a controlled transaction model; none of this is a reason to run test writes against a suspect user ledger during a read-only recovery inventory.
+
+**PROJECT_PROPOSAL:** New-generation bootstrap validates that its isolated staged SQLite connection is writable and belongs to the expected generation before schema commit; ordinary existing-source inventory may use read-only mode first and defer write admission until full verified LIVE_VALID. A readonly fallback is STORAGE_NOT_WRITABLE/RECOVERY_HOLD, not missing data or permission to create a fresh history. Source: https://www.sqlite.org/c3ref/open.html and https://www.sqlite.org/c3ref/db_readonly.html. No current DB connection has been opened.
