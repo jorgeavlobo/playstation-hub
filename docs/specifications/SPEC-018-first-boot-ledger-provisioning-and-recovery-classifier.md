@@ -248,3 +248,8 @@ ADR-0011 remains ACCEPTED only for high-level Hub/Archive product architecture. 
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/storage.py
 
 **Evidence state:** 80 NOT_RUN cases, 20 OPEN gates, no implementation or tests.
+
+
+## 9. Effective SQLite access mode refinement — 2026-11-06
+
+SQLite official sqlite3_open_v2 describes a historical fallback from READWRITE to read-only when permissions prevent writing; therefore a successful existing-file mode=rw connection alone must not set the future manager state READY_FOR_DURABLE_WRITES. Require a verified effective read/write connection state through a supported SQLite API and independently validated generation/permission/owner metadata. A read-only fallback is not an absent file and does not authorize mode=rwc retry or silent new-ledger creation. Future test FB-CLASS08, FB-CREATE06 and FB-OS12 must inject this case without performing writes against the real user's data. Source: https://www.sqlite.org/c3ref/open.html, https://www.sqlite.org/c3ref/db_readonly.html. Tests remain NOT_RUN and their count is unchanged.
