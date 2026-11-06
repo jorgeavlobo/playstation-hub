@@ -362,3 +362,10 @@ Implement request coalescing, bounded concurrency, pagination validation (strict
 - [Architecture guide](../../ARCHITECTURE_GUIDE.md)
 
 **Research checkpoint:** Title field discovery, identifier namespaces, recently played/played/purchased distinctions, PSNAWP metadata and artwork sources, identity mapping, localization, caching, security, legal constraints, persistence boundaries and synthetic tests are specified. No live PSN or console interoperability is claimed, and no authentication or executable integration code was produced.
+
+
+## Greenfield game-title identity and SQLite v1 optional metadata separation — 2026-11-06
+
+[Official SQLite/HA v1 schema research](../research/sqlite-greenfield-v1-schema-and-query-model-source-audit-2026-11.md), [ADR-0020](../decisions/ADR-0020-greenfield-sqlite-v1-data-model.md) and [SPEC-020](../specifications/SPEC-020-greenfield-sqlite-v1-schema-integrity-and-reports.md) refine Protocol 10's title dimensions into one core game_titles stable key defined by explicit provider namespace, title namespace, provider title ID and platform scope; all unique tuple components must be nonnull. A PSN title, trophy communication ID, concept/edition, localized display name and source artwork URL are not automatically equivalent keys. A crosswalk between genuine identities requires separate provenance and confidence evidence, not title-string matching.
+
+Optional game_metadata_locales and game_title_crosswalk may be added after source rights and authorization review. Account-level entitlement and cumulative played-game duration are optional snapshots with exact provider scope/units, never counted as our locally observed console or player game seconds. Changing title names, artwork or metadata rights cannot change historical session identity/duration, and LAN-only usage works without PSN metadata at all. The proposed schema is greenfield with no old fictional App imports; no API authorization, title mapping, database or test has been proven.
