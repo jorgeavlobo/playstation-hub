@@ -94,3 +94,10 @@ Release gating for recovery must include:
 - Explicit admin authorization for history replacement and exact data-loss limits, plus full/partial HA OS and Container real restore tests, are separate release conditions.
 
 An architecture review and a test definition are not a passing release gate. No code, tests, backup or restoration were performed for this update.
+
+
+## Crash-atomic SQLite promotion, fsync and recovery journal release gates — 2026-11-06
+
+[Official source audit](../research/ha-core-2026-11-crash-atomic-recovery-journal-and-generation-promotion-audit.md), [ADR-0015](../decisions/ADR-0015-crash-safe-ledger-promotion-and-recovery-journal.md) and [SPEC-015](../specifications/SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md) add 80 NOT_RUN cases and 20 OPEN technical gates. Release cannot claim crash-safe restore until it demonstrates that no open SQLite database or hot WAL/journal was renamed/deleted, every executor/connection is positively closed before source switch, source and destination have separate namespaces, file and parent directory fsync behavior is correct on the actual HA OS filesystem, one small pointer is durably selected, journal revisions are crash-consistent, and startup resolves pointer/journal discrepancies without blind rollback or repeated promotion.
+
+Required synthetic fault injection: fail at every journal/SQLite copy/destination closure/metadata publish/pointer replacement/reconcile/old-generation GC edge; power-cut and SIGKILL are separate from normal async cancellation. Also test wrong-source symlinks, network mounts, disk-full and private diagnostics; continued backend admin approval/ACL and independent HA Config Entry/physical-console/PSN identity revalidation. A complete old HA config restore may replace all pointers and generations simultaneously and cannot recover newer missing commits. These conditions do not supersede existing immutable snapshot archive consistency/backup hook and release authorization gates. Product-level Hub/Archive was accepted; the generation-pointer strategy remains proposed, not implemented.
