@@ -159,3 +159,20 @@ The [new source-pinned audit](../research/ha-core-2026-11-immutable-sqlite-snaps
 - https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/backup_restore.py — distinct Core .HA_RESTORE route.
 
 **Correction to older "no restore signal" statements:** The source shows a real first-party Supervisor/Core restore-progress path, but does not prove a universal supported custom-integrations restore intent providing SQLite snapshot digest and pre-data-open ordering. Reviewed custom pre/post backup hooks still have no application-specific archive file-exclusion return contract. No external HA issue/PR was created.
+
+
+## Official SQLite, Python and Linux atomic recovery sources — 2026-11-06
+
+[Crash atomicity source audit](../research/ha-core-2026-11-crash-atomic-recovery-journal-and-generation-promotion-audit.md), [ADR-0015](../decisions/ADR-0015-crash-safe-ledger-promotion-and-recovery-journal.md) and [SPEC-015](../specifications/SPEC-015-crash-atomic-recovery-journal-and-generation-promotion.md) add the following upstream references:
+
+- https://www.sqlite.org/howtocorrupt.html — official warnings against unlinking/renaming an open database; hot WAL and rollback journal must remain paired with original filename; multi-connection file locks.
+- https://www.sqlite.org/atomiccommit.html — SQL atomic commit and filesystem synchronization assumptions; SQLite does not provide an application transaction spanning filesystem pointer and HA Config Entries.
+- https://www.sqlite.org/wal.html — WAL lifecycle, checkpointing, last-connection cleanup and persistent WAL after unclean termination.
+- https://www.sqlite.org/backup.html — complete Online Backup API as a consistent source for a separately verified working generation.
+- https://docs.python.org/3/library/os.html#os.replace — os.replace is an atomic POSIX rename of ONE file/directory path on success, but cross-filesystem moves may fail; not an atomic multi-file DB+WAL transaction.
+- https://man7.org/linux/man-pages/man2/fsync.2.html — file fsync does not necessarily guarantee the containing directory entry is durable; directory fsync required under Linux model.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/config_entries.py — independent HA Config Entry/registry lifecycle and per-entry locks.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core.py — ordered global shutdown job and bounded stages.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — whole-config restoration can replace app pointer, recovery journal and generation files with older bytes.
+
+**Evidence status:** Source mechanisms are documented; pointer+generation model is proposed, not an official HA feature. No supported HA OS file-system atomicity test, SIGKILL, power-failure simulation, SQLite worker validation or actual backup/restore was performed.
