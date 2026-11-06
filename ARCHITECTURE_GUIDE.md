@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.46.0 — 2026-11-06  
+> **Document version:** 0.47.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -27,6 +27,9 @@
 
 
 > **Maintainer approval and immutable snapshot checkpoint (2026-11-06):** The maintainer approved the **conceptual** architecture proposed in [ADR-0011 §12](docs/decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06): a user-confirmed logical Hub/Archive Config Entry, separate physical console/account entries, one integration/panel/controller, retention after console removal, and a private Home Assistant configuration-root storage direction outside HACS-managed code. These design choices are ACCEPTED, not implemented or tested. [ADR-0012](docs/decisions/ADR-0012-immutable-snapshot-backup-and-restore-authority.md), [SQLite/HA backup source audit](docs/research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) and [SPEC-012 (64 NOT_RUN cases)](docs/specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) investigate immutable Online Backup API snapshots, crash-safe generation publication, missing post hooks and backup archive ambiguity. The reviewed Core/Supervisor hooks do **not** expose custom per-file archive exclusion; mutable live DB/WAL can coexist with a consistent snapshot in a config archive. Thus an automatic, safe restore method remains CONDITIONAL/OPEN. No code or tests.
+
+
+> **Restore-authority and portable storage checkpoint (2026-11-06):** [pinned Core/Supervisor source audit](docs/research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md), [SPEC-013 (64 NOT_RUN cases / 16 OPEN gates)](docs/specifications/SPEC-013-restore-authority-storage-topology-and-reconciliation.md) and [ADR-0013 PROPOSED](docs/decisions/ADR-0013-restore-authority-and-storage-topology.md) distinguish portable configuration-root history, separately scoped /share or /media data, and administrator-controlled recovery. Pinned Supervisor mounts /config, /share and /media into Core but restores config and separately backed-up folders independently; recommended HA OS backups include config but omit share/media. No verified custom integration per-file archive exclusion or universal trusted Supervisor restore intent is available in the reviewed source. An older configuration paired with a newer external ledger can create identity/credential split-brain, and two histories with the same ledger UUID and cursor may have diverged. Keep a validated live ledger on ordinary restart, but never silently promote raw tar SQLite copies or automatically merge diverged histories after restore. ADR-0011's conceptual Hub/Archive product architecture remains accepted; ADR-0013's concrete topology/recovery method and all tests remain open. No implementation.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2876,3 +2879,23 @@ There is no proven supported mechanism within the inspected Core 2026.11/Supervi
 [SPEC-012](docs/specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) adds 64 NOT_RUN scenarios (16 copy, 16 publication, 16 archive, 16 restore) and 16 OPEN gates, in addition to SPEC-008 (46), SPEC-009 (56), SPEC-010 (56) and SPEC-011 (64). There are **286 enumerated case IDs** across these five specs, with intentional overlap and **zero passed tests**. Documentation remains on main, develop frozen, no executable source code or build/HA OS/hardware tests.
 
 **Next high-priority research:** a restore-authority proof and portable, private storage-root capability analysis; clarify native backup filter limits for other supported installation types, whether a safe archive can avoid live DB files without violating Home Assistant conventions, and a user-controlled recovery path with explicit data-loss boundaries.
+
+
+## Restore authority, portable storage and historical identity reconciliation — 2026-11-06
+
+**Binding source checkpoint:** [official-source audit](docs/research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md), [SPEC-013](docs/specifications/SPEC-013-restore-authority-storage-topology-and-reconciliation.md), [ADR-0013](docs/decisions/ADR-0013-restore-authority-and-storage-topology.md). This is further research consistent with the maintainer-accepted conceptual Hub/Archive architecture in ADR-0011; it does not automatically accept a storage topology or authorize code.
+
+### New confirmed upstream evidence
+
+1. **Storage topology is not only a path choice.** Pinned Supervisor Core mounts /config, /share and /media; /share and /media are distinct folder backup/restoration scopes, omitted by the recommended HA OS automatic backup settings. Core Config.path resolves the configuration root; there is no proven universal integration-private external data path in Core/OS/Container deployments.
+2. **Independent restore scopes cause split-brain.** Supervisor may restore the configuration directory but not /share, or /share without configuration. If the live historical ledger is outside /config, restored Config Entry/device/account associations may be older or newer than the ledger. Don't silently attach a new console or account to a restored old identity by IP, name or HA entry_id.
+3. **Restoring share/media includes mount complexity.** Supervisor folder restore handles nested external share/media mounts before replacing selected directory content. A path under /share does NOT guarantee a local filesystem suitable for SQLite WAL.
+4. **Backup Agent is not an archive source filter.** The official Backup Agent API manages backup destinations; the reviewed custom integration pre/post hook does not expose a per-file exclusion for app-owned live DB/WAL. A complete immutable snapshot can appear alongside copied raw live SQLite files in the same config archive, demanding explicit source authority.
+5. **History provenance needs a lineage dimension.** ledger_uuid and commit_cursor alone are insufficient if the same ledger was independently restored/forked and then modified in different ways. Even equal cursors can have different records. Consider parent snapshot, lineage epoch and association revisions, but do not present a hash chain as a new trusted authentication system.
+6. **No information-theoretic recovery from absent bytes.** If all copies after an old backup have been overwritten, neither startup checks nor a larger cursor algorithm can reconstruct events that no longer exist. A first release must be clear about gaps, old backup as-of cursor and the need for a newer independent copy.
+7. **Recommended conservative UX:** treat current unambiguously healthy live data as authoritative for an ordinary reboot; keep locally published snapshots as validated candidates, not auto-restoration orders. For an ambiguous full/partial restore, enter a protected recovery hold, preserve originals, show administrator-only candidate comparison and require explicit source choice. Do not automatically trust mutable raw files copied by tar.
+8. **Product status:** T1 private HA configuration-root ledger remains the preferred *direction*, not an accepted concrete restore implementation. T2 /share and T3 external private persistent volume are optional advanced candidates only and have privacy, selected-backup and identity-reconciliation obligations. ADR-0011's logical Hub/Archive entry remains ACCEPTED conceptually; no extra mandatory database server or OS mount is introduced.
+
+**Evidence register:** SPEC-013 adds 64 NOT_RUN cases and 16 OPEN gates, with intentional overlap with SPEC-008 (46), 009 (56), 010 (56), 011 (64) and 012 (64). Across these six documents **350 enumerated case IDs** exist, NOT unique runnable tests and ZERO passed. All technical storage/recovery choices in ADR-0013 are PROPOSED and awaiting hardware/HA OS tests and maintainer sign-off.
+
+**Next priority:** formalize an administrator-only recovery UX/API, signed-off source selection, and cross-ledger identity/association reconciliation contracts (without credentials), plus assess whether a first-party backup source filtering or trusted Supervisor restore-event API extension is worth proposing upstream. Keep implementation postponed.
