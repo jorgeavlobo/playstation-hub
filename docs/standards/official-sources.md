@@ -92,3 +92,24 @@ These source facts guide architecture design; no PlayStation Hub test has been e
 - https://www.sqlite.org/backup.html — internally consistent SQLite Online Backup API snapshot
 
 **Evidence boundary:** Pinned source proves a potential unmatched successful pre-hook on collective failure, NOT that PlayStation Hub exists or that a production freeze is occurring. File inclusion in a standard backup is not proof of consistent custom DB restore. Archive-only Hub entry and custom data path are maintainer-unapproved proposals.
+
+
+## Official immutable SQLite snapshot protocol and backup filter audit — 2026-11-06
+
+The [new source-pinned audit](../research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md), [ADR-0012](../decisions/ADR-0012-immutable-snapshot-backup-and-restore-authority.md) and [SPEC-012](../specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md) establish the current evidence baseline:
+
+- https://www.sqlite.org/backup.html — SQLite Online Backup API, copy consistency, concurrency caveats
+- https://www.sqlite.org/c3ref/backup_finish.html — backup_init/step/finish, source/destination connection ownership, restart under writes, busy/fatal results
+- https://www.sqlite.org/uri.html — immutable=1 only truly immutable files; skipped lock/change detection
+- https://www.sqlite.org/pragma.html — WAL checkpoints, FULL/NORMAL, integrity_check and foreign_key_check
+- https://www.sqlite.org/lang_vacuum.html — VACUUM INTO as an alternative consistent copy; incomplete output/crash concerns
+- https://docs.python.org/3.14/library/sqlite3.html — Connection.backup, pages/progress/sleep API, linked runtime version
+- https://contributors.home-assistant.io/core/integrations/backup/ — pre/post preparation hooks; no custom archive-exclude return contract documented
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py — pre-hook gather/exception behavior and generic archive filters
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/const.py — fixed generic exclusion list
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py — authenticated Supervisor backup/start/end bridge
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/knx/backup.py — existing SQLite pre/post backup precedent; not proof against inter-hook failure
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/recorder/backup.py — Recorder's own pre/post lock semantics
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — pinned config backup filters, copying and restore
+
+**Evidence boundary:** The absence of a custom per-file archive exclude option has been established only for the documented pre/post hook and the inspected pinned implementation, not as an eternal impossibility across all HA versions or external backup tools. Snapshot publication tests, actual HA OS archive contents and automatic restoration remain unverified. Maintainer product approval is recorded separately in [ADR-0011 §12](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06).
