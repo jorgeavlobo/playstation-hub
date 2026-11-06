@@ -255,3 +255,25 @@ P1:
 - [ADR-0010](../decisions/ADR-0010-sidebar-panel-and-backend-api.md)
 
 **Outcome:** A source-backed storage/restore/HUB-entry architecture comparison. No user data, runtime code, tests, migrations, PS5 communication, file contents or HA OS storage have been changed or inspected on the user's actual installation.
+
+
+## 15. New P0 discovery — pre-backup can succeed without matching post-backup
+
+**CORE_PINNED and SUPERVISOR_PINNED — cross-integration race:** Pinned Core BackupManager.async_pre_backup_actions uses asyncio.gather over *all* registered backup platforms, then raises if any platform reported Exception. The Core backup/start WebSocket command returns that error. In pinned Supervisor HomeAssistant.backup, the await for begin_backup occurs **before** the try/finally that calls end_backup. If the PlayStation Hub pre hook has successfully stopped/frozen its SQLite writer and another integration's pre hook fails, begin_backup raises **before the finally is entered**, and HomeAssistant.end_backup is not guaranteed to execute for that attempted archive.
+
+This is a **source-demonstrated failure path** in the reviewed versions. It does NOT prove the actual PlayStation Hub hook exists or is installed. No executable failure injection was run.
+
+**Consequence:** Option S1 / ADR-0011's initial preference for a prolonged pre-to-post write freeze MUST be downgraded to **BLOCKED_PENDING_SAFE_RESUME_PROTOCOL**, not called the simplest safe first-release architecture. A mere local timeout is also unsafe: if it resumes writes while an archiver is still reading files, the archive can become inconsistent. A comprehensive solution requires explicit backup job state/cancel completion, guaranteed cross-platform error compensation, or an equivalent contract that can prove the archive no longer reads the DB.
+
+**Revised preferred research direction:** produce a bounded **immutable SQLite Online Backup API snapshot** without holding live writes frozen for the entire archive. BUT the live DB and WAL may still be included by Supervisor when both are inside /config, so backup correctness still requires an authoritative restore policy and potentially a safe, private, verified out-of-config live store. Snapshot immutability reduces pre/post liveness risk; it does not solve restore provenance.
+
+**Important additional nuance:** CoreBackupReaderWriter has its own try/finally around pre/post and cannot be generalized to Supervisor's different path. The exact nested placement matters.
+
+**Mandatory future fault cases:** Other-platform pre hook fails after ours succeeds; Supervisor begin_backup errors; WebSocket connection lost; post hook absent; timeout while archiver may still run. Verify state never silently transitions to a claimed safe resume, and no partial backup is advertised successful.
+
+Pinned evidence:
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/manager.py
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/backup/websocket.py
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
+
+**Correction:** Throughout earlier candidate comparisons, references to S1 as "preferred minimal safe" are historical preliminary assessments now **superseded by this section**, pending new source/tests.
