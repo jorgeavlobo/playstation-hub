@@ -24,7 +24,7 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 
 ## WP-00 prerequisite
 
-[WP-00](../architecture/WP-00-implementation-readiness-and-decision-closure.md) defines the approval and evidence needed before WP-01 implementation on `next`. No test or release gate has passed by writing the readiness plan.
+[WP-00](../architecture/WP-00-implementation-readiness-and-decision-closure.md) defines the approval and evidence needed before WP-01 implementation on a later authorized `feature/<scope>` branch. No test or release gate has passed by writing the readiness plan.
 
 ## Updated HA 2026.11 and Marketplace compatibility gates
 
@@ -49,3 +49,8 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## Multi-console monitoring lifecycle gates (source review only)
 
 [Core 2026.11 runtime review](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) introduce 46 unexecuted tests and 12 approval gates. Required release evidence includes: no-listener historical monitoring; no duplicate per-console UDP probes; explicit disabled polling and missing-data gaps; two-console independence; setup of a previously validated sleeping console; teardown/failed-setup task cancellation; one-console unload without closing shared history/panel; safe identity/IP changes; no false hardware OFF; and correct historical durability state. The exact scheduler architecture is still a proposal, not a tested release capability.
+
+
+## Crash recovery, SQLite version and restore-safety release gates — 2026-11-06
+
+[Source research](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) extend the release evidence requirements with 56 NOT_RUN test scenarios and 14 OPEN sign-off gates. Prioritize actual HA OS linked SQLite C library version (2026 WAL-reset fix/backports), single writer/checkpointer, stable idempotent receipts after ambiguous COMMIT, crash gap correctness, automatic restore-versus-normal-restart discrimination, complete backup snapshot/manifest plus archive file selection, full/partial Supervisor file replacement tests, non-destructive corruption recovery and archive-only panel behavior. Existing SPEC-008/009 scenarios remain open; overlapping scenarios are not independently tested by documentation. No release is qualified.
