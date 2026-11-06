@@ -190,3 +190,41 @@ These paths are illustrative module boundaries, NOT created implementation files
 6. No implementation has been authored, deployed, tested or authorized; no new branch, package or user device operation.
 
 **Outcome:** The user's independence requirement is implementable for passive LAN, backend state/history and plain frontend using native Home Assistant/Python facilities, with substantial protocol code owned by PlayStation Hub. It is **not yet proven** for encrypted Remote Play under strict stdlib-only policy and not a substitute for Sony PSN authorization.
+
+## 10. Second-pass DDP source-byte and interface audit — transport compatibility gates
+
+The first-party strategy enables us to reason about **the wire protocol itself**, rather than selecting a library whose edge cases become ours.
+
+### 10.1 Distinct outbound message terminators (do not assume one standard)
+
+- [playactor \`src/protocol.ts\`](https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/protocol.ts) assembles UTF-8 Buffer bytes for \`SRCH * HTTP/1.1\n\` followed by \`device-discovery-protocol-version:00030010\n\`. No terminating NUL byte is explicitly added by that formatter.
+- [Chiaki-ng \`lib/src/discovery.c\`](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c#L67-L90) formats essentially the same LF-delimited text, **but its send function transmits \`len + 1\`**, including a terminal NUL in its allocated C buffer ([lines 237–260](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c#L237-L260)).
+- These are distinct source observations. We should accept/validate replies robustly with bounded optional trailing NUL (without treating interior embedded NUL as a normal header), and **test send-with-NUL and send-without-NUL against consenting actual PS5 firmware before choosing which is canonical**. The optional NUL is not proof of a firmware requirement and must not be silently appended to arbitrary messages.
+- Don't treat TCP-like \`HTTP/1.1\` in UDP datagrams as a real HTTP web server request; keep DDP parsing separate from the HA-managed aiohttp cloud client.
+
+### 10.2 UDP local binding and receive identity (not simply port 9302 in both directions)
+
+- [Chiaki-ng discovery.h](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/include/chiaki/discovery.h#L20-L30) declares PS5 destination port \`9302\`, but the C implementation [tries local source ports \`9303..9319\` before ephemeral port 0](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/discovery.c#L155-L200).
+- [playactor UDP factory](https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/discovery/udp.ts#L157-L180) defaults \`localBindPort\` to port \`0\` (ephemeral) and uses one shared socket manager across protocol factory calls, with a listener per new discovery session.
+- **Conclusion:** 9302 is the candidate **remote PS5 DDP destination**, not necessarily the client socket's local port. Bind strategy, source-interface selection, SO_BROADCAST, address family, response delivery, socket collisions and firewall restrictions must be validated on HA OS. Do not reserve one arbitrary local port as a universal protocol constant without evidence.
+- Proposed own service: single owned UDP transport per compatible protocol/scope, monitor activity separate from UI listeners, bounded multi-target send and receive queues, local socket version/run generation, and guaranteed close/unload/cancel. No external socket manager.
+
+### 10.3 Native HA network helper has a policy-specific shortcut
+
+[HA Core 2026.11 \`network.async_get_ipv4_broadcast_addresses(hass)\`](https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/components/network/__init__.py#L139-L162) starts with \`255.255.255.255\` and **returns only this limited broadcast when only the default interface is enabled** according to its network configuration. When a non-default adapter is enabled, it computes directed broadcast addresses for all enabled adapters using their IPv4 addresses and prefixes.
+
+Therefore **do not claim that calling this helper always returns every subnet's directed broadcast address**. For more explicit single-interface/multihomed control, consider using the native \`network.async_get_adapters(hass)\` result and Python stdlib \`ipaddress.ip_interface(f"{address}/{network_prefix}")\` to calculate a bounded set of eligible broadcasts, respecting the HA user's enabled adapter settings. This calculation is our own small address-selection policy, not an extra third-party library. It must be verified against HA's network interface configuration and user consent before multicasting/broadcasting into additional subnets.
+
+**Test cases**: one enabled default interface, multiple enabled interfaces, disabled IoT adapter, link-local, /31 or /32, route mismatch, target IP override, duplicated broadcast destination, interface reload and HA OS Docker-bridge topology. Exclude loopback and unsupported/unsafe interfaces according to a documented policy; never assume a directed broadcast gets routed across VLANs.
+
+### 10.4 Wire/reducer compatibility acceptance set
+
+- One PS5 SRCH packet to UDP 9302 with exact protocol-version header; test optional terminal NUL behavior rather than assume it.
+- Multiple UDP responses and duplicates per attempt: source IP+port is not immutable owner; \`host-id\` is unverified until canonical identity protocol is established.
+- Recognized response 200/620, unknown 503, malformed/truncated/oversized, embedded NUL, LF+CRLF, header duplicate/conflict, UTF-8, \`running-app-name\` with colon, optional app fields, version mismatch.
+- Send/receive on ephemeral local port and optional explicit local port must not deadlock or incorrectly assume console replies are sent to a hard-coded port.
+- Cancel and reload while old datagrams are queued: old \`run_id\` and source generation cannot change the new console current state or historical ledger.
+- Every stable same-state successful point remains available for durable bounded history accounting even when the HA entity visible value does not change; a failed poll is not OFF.
+- Source-level **possible** is not hardware-verified. No wire fixture was captured, and no UDP packets were sent in this audit.
+
+**New engineering conclusion:** A true first-party DDP driver has to define packet bytes, transport endpoints, status/metadata grammar, source provenance and complete lifetime itself. That is practical with stdlib + native HA, but requires real on-device compatibility tests before making interoperability claims.
