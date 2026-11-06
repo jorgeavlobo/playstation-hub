@@ -268,3 +268,21 @@ See [Batch 02 official audit](../research/official-source-reaudit-batch-02-quali
 The [official Core 2026.11 multi-console source review](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) clarify that native HA DHCP dispatch is a setup/discovery feature; PlayStation UDP is a bounded identity/status probe, not an independently implemented DHCP watcher. In Core, the default DHCP ConfigFlow step is the generic no-unique-ID fallback, so our dedicated step is required for multi-console setup after the first Config Entry exists.
 
 New tests cover cross-source DHCP/manual in-flight deduplication; known unique ID with moved IP; explicit ignored entries; successful setup followed by a sleeping/nonresponding console; disabled polling behavior; multiple independent ongoing monitors with zero enabled entity listeners; and shutdown cancellation. The detailed MC-CF / MC-MON / MC-LC matrices and gate status are in SPEC-008. All remain NOT_RUN. Physical host-id stability and spoofing risk remain unverified.
+
+## Pinned-source parser regression suite — research addition 2026-11-06 (NOT_RUN)
+
+**Evidence:** [second deep upstream audit](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md); playactor status/header code, Chiaki-ng state mapping and physical metadata, Python playactor port, archived pyremoteplay/PS5-Wake, and Chiaki-KM metadata consumer. The following **additional descriptive fixtures** are to be consolidated into this SPEC's future executable suite, without declaring any old test run/passed or automatically incrementing a global test counter.
+
+| Source trace | Future fixture | Expected assertion |
+| --- | --- | --- |
+| SRC-LAN-01/02/03 | Candidate status 200, 620, 503 | READY/STANDBY/UNKNOWN; never any non-620 as automatically AWAKE |
+| SRC-LAN-04 | Header value `running-app-name:Example: Director's Cut` | Preserve complete value (split at FIRST colon) |
+| SRC-LAN-05 | `host-id:ABC\r\n` and LF-only equivalent | Same normalized `ABC` without trailing carriage return |
+| SRC-LAN-06 | Missing app field, explicitly empty field, actual value | ABSENT / EMPTY / VALUE are distinct; absence != known home screen |
+| SRC-LAN-07 | UTF-8 title, corrupt bytes, long headers | Bounded, sanitized, rejects invalid without unsafe identity adoption |
+| SRC-LAN-08/09 | Duplicate/missing or mismatched host ID, changed same IP | Fail closed for canonical history/commands; preserve prior owner |
+| SRC-LAN-10 | Several interfaces return same physical host | Dedup accepted device identity; no duplicate listener/poller |
+| SRC-LAN-11 | One transitioning PS5 and another active PS5 | Monitoring independently advances for the other console |
+| SRC-LAN-12 | Home/game/media/standby/PSN offline hardware matrix | Determine actual running-app header behavior; not asserted before live tests |
+
+**Source independence:** The `ps5-remoteplay` synthetic response fixtures are generated from playactor's behavior, so they cannot count as independent Sony/firmware confirmation. Chiaki-ng's status classifier is safer; Chiaki-KM is a fork and still not a live compatibility test. No test code or packet capture was created.
