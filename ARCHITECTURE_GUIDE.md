@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.53.0 — 2026-11-06  
+> **Document version:** 0.54.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -48,6 +48,10 @@
 
 
 > **Legacy develop -> native PlayStation Hub migration checkpoint (2026-11-06):** [Read-only develop source audit](docs/research/legacy-develop-to-native-migration-provenance-audit-2026-11.md), [SPEC-019 (80 NOT_RUN cases / 20 OPEN gates)](docs/specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) and [ADR-0019 PROPOSED](docs/decisions/ADR-0019-legacy-history-provenance-and-cutover.md) map the actual old Home Assistant App v0.5.0/MQTT/Lovelace v1.1.2 source into the future native architecture. Its SQLite schema version 3 contains events, sessions, checkpoints and singleton monitoring_state but **NO canonical immutable physical PS5 identifier in historical rows**. The old configured MQTT topic/player_name must NOT be mistaken for verified console/PSN identity. Preferred research: preserve sessions as private **LEGACY_UNATTRIBUTED** history with original UTC/checkpoints and legacy 30-second runtime continuity semantics; import only from a coherent, independent, read-only exported source with idempotent batch and protected rollback. Old ten retained MQTT Discovery monitor sensors need separately consented, targeted retirement; never remove unrelated PS5-MQTT activity/power entities. No real installed database, backups, broker, automations or devices inspected; no code/tests.
+
+
+
+> **AUTHORITATIVE MAINTAINER CORRECTION — 2026-11-06 (GREENFIELD / NO LEGACY DEPLOYMENT):** The former PlayStation App/integration on develop **was never deployed or used in production**. Every record in its old SQLite database was **invented solely for testing** and has no real historical value. The new PlayStation Hub is being built **from scratch**. **No migration/import of old SQLite rows, sessions, schema versions 1–3, configuration/options, MQTT retained topics, historical entity IDs, Lovelace dashboards or PSN/Remote Play credentials from the old application is required or authorized.** The develop branch is a read-only *technical inspiration/source-review reference*, NOT a migration source or a dependency of the new application. [ADR-0019](docs/decisions/ADR-0019-legacy-history-provenance-and-cutover.md) is SUPERSEDED/NOT_APPLICABLE; [SPEC-019](docs/specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) is RETIRED/NOT_APPLICABLE and its 80 historical test descriptions are **removed from the active release/test scope**. New app initial genesis starts with a fresh empty ledger by explicit future onboarding policy. Future backups/restores, corruption recovery and upgrades **of the new app after actual deployment** remain required; do not confuse these with migrating the throwaway develop prototype. No implementation code or tests were created by this clarification.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -3062,4 +3066,18 @@ The new [SPEC-018](docs/specifications/SPEC-018-first-boot-ledger-provisioning-a
 
 **Implementation and testing boundary:** SPEC-019 contains 80 newly enumerated NOT_RUN cases and 20 OPEN sign-off gates (20 source/schema, 20 history/provenance, 20 import/recovery, 20 MQTT/frontend cutover). SPEC-008–018 contained 742 named case IDs (intentionally overlapping); SPEC-008–019 now enumerates **822** source/spec-defined cases, not 822 unique executable tests; **zero were run** in this investigation. ADR-0011 conceptual Hub/Archive product architecture remains ACCEPTED, ADR-0019 technical migration choices PROPOSED. Only documentation in main; develop untouched, no implementation branch or executable code.
 
-**Next priority recommendation:** Source-exact FIELD-LEVEL old-to-new versioned schema/DTO mapping, with confidence annotations and a user-facing dry-run preview; then a separate operational App/MQTT/legacy Lovelace retirement and rollback playbook. Both are research-only until the maintainer approves implementation and the live HA installation is safely backed up.
+**Next priority recommendation (SUPERSEDED 2026-11-06):** Old-to-new field mapping and old database import are NOT REQUIRED. All old rows were synthetic and no prototype was deployed. Retain source audit only as historical inspiration. Next priority is to close greenfield initial schema and bootstrap contracts before implementation. Earlier proposal: operational App/MQTT/legacy Lovelace retirement and rollback playbook. Both are research-only until the maintainer approves implementation and the live HA installation is safely backed up.
+
+
+## Greenfield clarification superseding legacy import/migration research — 2026-11-06
+
+The maintainer confirmed the old develop application **was never deployed**. Its database rows, sessions and usage statistics were **fabricated test fixtures**, not real user history, and must not be brought into the new application.
+
+- **NO LEGACY MIGRATION:** no importer/DTO mapping for old v1–v3 SQLite, old App /data snapshots, legacy player/MQTT provenance, old HA entity registry renames, legacy Lovelace cards or old token transfer. No user cutover plan, live legacy backup or MQTT retirement procedure exists to perform.
+- **NEW PRODUCT:** greenfield native PlayStation Hub implementation, one logical Hub/Archive entry, independent per-console/optional PSN account entries, no MQTT requirement and one controller/panel, consistent with accepted ADR-0011 architecture.
+- **FIRST LEDGER:** new application generates its own SQLite schema/ledger UUID and genesis under the separately proposed explicit first-boot protocol ADR-0018; the synthetic old DB never constitutes a previous real ledger or migration barrier.
+- **FUTURE SAFETY UNCHANGED:** the new application's real data, once generated, require backup, schema upgrades, recovery journal, restoration lineage and safe re-onboarding. The distinction between an existing new-app DB missing after restore and a genuinely fresh first install remains valid.
+- **HISTORICAL TECHNICAL REFERENCE:** old develop source audits remain useful to compare patterns and avoid mistakes, but never govern required data import/compatibility. ADR-0019 is SUPERSEDED/NOT_APPLICABLE. SPEC-019 is RETIRED/NOT_APPLICABLE: all 80 associated migration tests and 20 gates are **not required release acceptance criteria**. Do not quote them as active unrun blockers.
+- **COUNT CORRECTION:** Previous statements adding SPEC-019's 80 tests to the active release plan are superseded. Existing SPEC-008–018 still enumerate 742 overlapping planned cases; these include some references to legacy migration that should be marked NOT_APPLICABLE rather than implemented. Later planning will deduplicate and trim the active suite. No execution/test passes are implied.
+
+**New next priority:** research the clean native schema/genesis and configuration flow for first-time installation of the new PlayStation Hub, with explicit versioning and no legacy input, or return to other open operational persistence/backup gates. No code or test implementation authorized.
