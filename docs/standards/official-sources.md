@@ -241,3 +241,26 @@ The [first-boot official-source audit](../research/ha-core-2026-11-first-boot-le
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — config restore can replace previous local evidence.
 
 **Source boundary:** SQLite opening and HA Config Flow uniqueness are official facts, but the proposed CREATE_NEW_HISTORY consent, journal and unique staging protocol remain unimplemented and untested. No server-side file evidence from the user's actual HA OS has been collected.
+
+
+## Legacy develop branch, Supervisor App storage and targeted MQTT Discovery retirement — 2026-11-06
+
+The [direct legacy develop audit](../research/legacy-develop-to-native-migration-provenance-audit-2026-11.md), [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) and [SPEC-019](../specifications/SPEC-019-legacy-history-migration-and-mqtt-retirement.md) list exact source files supporting future migration from old App and Lovelace:
+
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/config.yaml — source App v0.5.0, slug, aarch64, /data default, MQTT service.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/config.py — options.json parse and single source/player config; never import credentials.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/database.py — legacy SQLite schema v1–3, WAL, auto-creating/migrating constructor, sessions/events/checkpoints/singleton.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/models.py — ConsolePower, ActivityType, EventType, UsageSession.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/session_tracker.py — checkpoint recovery and continuity policy defaults.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/main.py — actual runtime max_gap_seconds=30.0, one selected player.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/usage_statistics.py — UTC half-open sessions and Europe/Lisbon/DST reporting.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/ps5_history_index.py — 36-month index is presentation/coverage view.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/backend/app/mqtt_publisher.py — ten retained synthetic MQTT monitoring sensors.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/frontend/ps5-dashboard-card.js — old Lovelace card version 1.1.2 with hardcoded old entity IDs.
+- https://github.com/jorgeavlobo/playstation-hub/blob/develop/frontend/services/ps5-history-client.js — MQTT request/response via HA WebSocket; new native transport differs.
+- https://www.home-assistant.io/integrations/mqtt/ — retained Discovery, republished ghost entities, exact-topic empty retained cleanup.
+- https://developers.home-assistant.io/docs/apps — Home Assistant App/add-on architecture and Supervisor-managed configuration.
+- https://www.sqlite.org/backup.html — coherent SQLite Online Backup copy, not raw live main file copy.
+- https://www.sqlite.org/wal.html — hot WAL sidecar and restore integrity.
+
+**Boundaries:** Reviewed only sanitized repo source and public official docs, NOT the installed private App data, actual entity registry or broker. The old synthetic device identifier ps5_monitoring_service is not a verified physical PlayStation ID. No migration, MQTT deletion, or tests performed.
