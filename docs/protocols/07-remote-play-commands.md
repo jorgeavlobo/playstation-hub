@@ -187,3 +187,9 @@ These are internal application categories, not official Sony error codes.
 Determine exact standby response semantics beyond socket closure, error-code mapping, behavior on unsupported firmware, and Home Assistant action permission patterns. Full shutdown and other console controls are not yet source-confirmed.
 
 **Related:** [03 — Wake-up](03-console-wakeup.md) · [06 — Session](06-remote-play-session.md) · [Protocol index](README.md).
+
+## 15. Deep source audit: standby is not established by socket closure (2026-11-06)
+
+[playactor `RemotePlayDeviceConnection.standby`](https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/connection/remoteplay.ts) sends a standby packet, then waits for socket receive to end. A connection close does **not** independently prove the PS5 entered standby. [PS5-MQTT's turn-off saga](https://github.com/FunkeyFlo/ps5-mqtt/blob/7ab3075d276f3eeecd81a3322c72231af8cd51bd/ps5-mqtt/server/src/redux/sagas/turn-off-device.ts) publishes STANDBY after this command returns; our integration must instead verify a **fresh, correct physical console `620` response** before changing durable history to standby. Command outcomes remain REQUESTED / SENT / VERIFYING / CONFIRMED / TIMED_OUT / FAILED separately from LAN power facts.
+
+**Upstream defect candidate (source-confirmed inconsistency, runtime not tested):** `RemotePlayDeviceConnection.isConnected` returns `!socket.isConnected` but [playactor TcpDeviceSocket](https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/socket/tcp.ts) reports `isConnected = !isClosed`. Do not replicate the inverted getter. Require an explicit control-connection lifecycle test and post-command status verification. See [full deep audit](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md).
