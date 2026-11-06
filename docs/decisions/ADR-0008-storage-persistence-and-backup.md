@@ -418,3 +418,18 @@ The [2026.11 official-source re-audit](../research/official-source-reaudit-home-
 
 
 **Additional source verification (2026-11-06):** The exact Supervisor-to-Core pre/post hook *mechanism* has now been traced: pinned Supervisor module begin_backup/end_backup sends Core WebSocket backup/start/end, and pinned Core backup/websocket.py invokes BackupManager's pre/post actions. Thus do not interpret the preceding uncertainty as absence of source evidence. **Unresolved and untested:** actual custom platform registration on the target HA OS, snapshot/archive consistency, custom live .db/-wal inclusion, snapshot provenance, safe restore, and interrupted-backup failure modes. Details: [audit §17](../research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md#17-supervisor-to-core-backup-handshake-re-audit--2026-11-06-stronger-source-evidence). This clarification does not approve ADR-0008.
+
+
+## Crash, WAL-reset bug and restore-provenance source checkpoint — 2026-11-06
+
+**ADR state remains PROPOSED.** The new [recovery source audit](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) refine the earlier shared-lifecycle audit.
+
+**New P0 SQLite gate:** Upstream SQLite officially documents a rare concurrent WAL checkpoint/write corruption bug in versions through 3.51.2, fixed in 3.51.3+ and selected backports 3.44.6/3.50.7. Validate the actual C SQLite library in the target HA OS Python runtime; Python or HA Core versions alone do not prove this fix. A single serialized writer plus single checkpoint authority are necessary architectural controls but must not be presented as a substitute for a patched library.
+
+**No automatic snapshot-on-startup:** a fully valid old snapshot can coexist with a newer fully valid live ledger after an ordinary Home Assistant reboot. Reapplying the old snapshot merely because its manifest exists silently erases recent sessions. A restore needs trustworthy one-time intent or an explicit user action, exclusive resource fence, schema/ledger identity/cursor validation and non-destructive original-file preservation. Hash matching is not a proof of freshness or authorization. SQLite integrity_check does not replace foreign_key_check.
+
+**Two alternative backup candidates:** (A) stop new writes and close/checkpoint all SQLite connections for the entire Supervisor config archive; simple restore authority but sustained monitoring gaps. (B) stage immutable Online Backup API snapshot+manifest while writes resume; requires separate authoritative source selection because Supervisor may also copy active DB/WAL. A and B are unapproved and untested; do not treat a generic HA backup's Recorder exclusion as excluding our application SQLite.
+
+**Pinned restore source behavior:** Supervisor's full/selected partial Home Assistant configuration restore clears/copies configuration files, preserving only explicitly named Recorder files when its exclude_database mode is enabled. It can overwrite custom PlayStation Hub history. Pinned Core .HA_RESTORE is a distinct restore path; not a universal marker for Supervisor restoration.
+
+**No empty reset:** on corruption, lost acknowledgement, failed restore or unknown-version schema, preserve old files and enter guarded recovery instead of creating a blank replacement history. Keep live current power/availability distinct from persisted historical coverage. No actual HA OS version, filesystem snapshot, power-cut or recovery test has been performed.
