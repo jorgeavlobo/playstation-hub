@@ -264,3 +264,19 @@ Classify errors as transient busy/timeout, disk full/read-only, schema mismatch,
 ## 18. Runtime data setup-order correction from official contributors documentation — 2026-11-06
 
 The official [Config entries](https://contributors.home-assistant.io/core/integrations/config-entries/) and [runtime-data guidance](https://contributors.home-assistant.io/core/quality-scale/runtime-data/) explicitly assign the typed entry.runtime_data **before** awaiting async_forward_entry_setups, because forwarded platforms read it immediately. The first draft of §6 placed runtime_data after forwarding and incorrectly risked missing runtime state. §6 has now been corrected. Separately, monitor activation must not precede promotion of a PENDING data lease to ACTIVE if the monitor can submit observations. Prepared runtime can expose null/stale cached data to HA entities before observation begins. Add this order to synthetic setup and partial-failure tests; do not code until approved.
+
+
+## 19. Global Home Assistant shutdown ordering — pinned Core 2026.11.0
+
+**CORE_SOURCE:** [homeassistant/core.py at 2026.11.0](https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core.py) defines **hass.async_add_shutdown_job** (~1104-1136), whose documented contract is that registered jobs run (and coroutine returns are awaited) **before** EVENT_HOMEASSISTANT_STOP. In async_stop (~1187-1325) the observed sequence is:
+
+1. Run shutdown jobs under STOPPING_STAGE_SHUTDOWN_TIMEOUT=20 seconds (pinned implementation detail).
+2. Move to stop stage; **cancel HA-owned background tasks**, fire EVENT_HOMEASSISTANT_STOP and await integrations under STOP_STAGE_SHUTDOWN_TIMEOUT=100 seconds.
+3. Fire EVENT_HOMEASSISTANT_FINAL_WRITE and await tasks under FINAL_WRITE_STAGE_SHUTDOWN_TIMEOUT=60 seconds.
+4. Fire EVENT_HOMEASSISTANT_CLOSE and continue terminal cleanup, with CLOSE_STAGE_SHUTDOWN_TIMEOUT=30 seconds.
+
+**Crucial implication:** using only EVENT_HOMEASSISTANT_STOP to begin graceful per-entry monitor cancellation risks racing with Home Assistant's own background-task cancellation. An integration-global shutdown job can instead **begin controlled fencing earlier**, stop new probes, bound completion of accepted writes, close or classify pending query/snapshot leases and ask the shared manager to close before its entry-owned monitor background tasks are automatically cancelled. It must not assume the Core timeouts guarantee its own work finished; other shutdown jobs run concurrently and an uncooperative job can be timed out.
+
+**PROJECT_PROPOSAL:** Register exactly one controller-owned shutdown job at the integration scope, not per console. Use state RUNNING -> STOPPING, generation fence, stop manual commands and browser queries, request all per-console monitors to stop cooperatively, bound writer draining/DB close, and record unresolved/unsaved coverage for the next startup. Make this handler idempotent against a concurrent Config Entry unload; no network probes or new DB admissions after the shutdown fence. Normal entry unload retains its separate ordered cleanup contract. A fallback final-write hook may only finish already admitted writes if supported and safe; do not initiate fresh work after the stop stage.
+
+**TEST REQUIREMENTS:** SH-LC09 and SH-LC10 must assert pre-stop fencing and shutdown job once-only registration, plus forced timeout/kill with conservative restart gaps. Add a distinct synthetic case for a concurrent user unload while global STOPPING. All remain NOT_RUN. Exact global shutdown timing is source-verified only for Core 2026.11.0 and must be rechecked when the supported minimum changes.
