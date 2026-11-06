@@ -293,3 +293,21 @@ Keep new-app first-time ledger genesis, versioned forward migrations AFTER actua
 | New v1 genesis and later NEW-app-only versioned migrations | P0 | PROPOSED, NOT_RUN | ADR-0018/0020, SPEC-020 |
 
 **Status:** SPEC-020 defines 96 NOT_RUN acceptance scenarios and 24 OPEN gates. This does not close earlier ADR-0004/0006/0008, SQLite linked-version/WAL, source/API authorization or HA OS release gates. No executable SQLite model or HA Quality Scale certification.
+
+## First-party implementation / no additional runtime-package compliance — 2026-11-06
+
+**New explicit maintainer requirement accepted:** [Dependency sovereignty policy](../architecture/first-party-dependency-sovereignty-policy.md), with [source-backed technical feasibility audit](../research/first-party-protocol-implementation-and-runtime-boundaries-2026-11-06.md) and Architecture Guide v0.61.0. Previous proposals to import or shell-execute any PlayStation package are superseded.
+
+| Requirement | Authority/status | Future evidence |
+| --- | --- | --- |
+| 100% own PlayStation-specific protocol/data logic | ACCEPTED REQUIREMENT / NOT_IMPLEMENTED | Source code/test and provenance review |
+| No PlayStation third-party runtime libraries (playactor/Chiaki/PSNAWP/etc.) | ACCEPTED REQUIREMENT / NOT_TESTED | Static import and vendored/binary scan |
+| No additional pip/npm runtime requirements | ACCEPTED TARGET / NOT_TESTED | Manifest \`requirements\` empty + hassfest + dependency audit |
+| Use Python standard library and supported HA public helpers | ACCEPTED TARGET / NOT_TESTED | Import review; HA 2026.11 native network/helper tests |
+| Native HA network broadcast and per-interface source/target policy | SOURCE-CONFIRMED API / NOT_TESTED ON HA OS | network.async_get_adapters and async_get_ipv4_broadcast_addresses; allowlisted broadcast |
+| No Node, CLI subprocess, MQTT broker, App or extra service | ACCEPTED REQUIREMENT / NOT_IMPLEMENTED | Release/install/runtime/CI checks |
+| Plain owned JavaScript sidebar without frontend runtime framework | ACCEPTED TARGET / NOT_IMPLEMENTED | Bundle/manifest/asset scan and HA browser/mobile test |
+| AES not self-implemented; Remote Play encrypted control gated | REQUIRED SECURITY CONSTRAINT / BLOCKED_CRYPTO_BACKEND | Only explicit trusted backend choice and interop tests unlock |
+| Sony PSN access is optional and authorization-gated, no SDK | REQUIRED PRIVACY/AUTH CONSTRAINT / BLOCKED_PROVIDER_AUTHORIZATION | Authorized app credentials, rate/error handling, access tests |
+
+Native HA functions may use transitive platform packages. This is not a claim of literally zero third-party code inside Home Assistant; it is **zero extra runtime installations plus independently owned PlayStation behavior**. All tests NOT_RUN and no dependency/code created by documentation alone.
