@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.51.0 — 2026-11-06  
+> **Document version:** 0.52.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -42,6 +42,9 @@
 
 
 > **Degraded capability policy / worker closure update (2026-11-06):** The [pinned Home Assistant/aiosqlite source audit](docs/research/ha-core-2026-11-degraded-capabilities-worker-proof-and-aiosqlite-022-audit.md), [SPEC-017 (80 NOT_RUN cases, 20 OPEN gates)](docs/specifications/SPEC-017-degraded-capability-matrix-and-sqlite-close-proofs.md) and [ADR-0017 PROPOSED](docs/decisions/ADR-0017-degraded-operation-capabilities-and-sqlite-close-evidence.md) separate native Config Entry status, verified physical-console identity/freshness, PSN account auth, ledger provenance, worker health, user ACL and operation type. A Home Assistant entity's available property and a hidden frontend power button are NOT backend authorization; guard physical commands, service/automation entry points, WS and historical writes at one server-owned capability boundary. RECOVERY_HOLD proposes a conservative default DENY for power/Remote Play and all historical writes, optional verified source-only UNSAVED observations, and separately verified read-only snapshot reports. **New version finding:** aiosqlite 0.21.0 Connection inherits Thread; 0.22.0/0.22.1 manages a private thread and 0.22.1 introduces stop()/improved close. Close/stop Future acknowledgement does not itself guarantee a public Thread.join terminal contract. No library chosen, no tests, and no controls policy automatically approved. ADR-0011 Hub product architecture remains ACCEPTED.
+
+
+> **First-boot ledger provisioning and missing-history audit (2026-11-06):** [Official Home Assistant/SQLite/Python research](docs/research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [SPEC-018 (80 NOT_RUN tests / 20 OPEN gates)](docs/specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md), and [ADR-0018 PROPOSED](docs/decisions/ADR-0018-first-boot-consent-and-ledger-provisioning.md) establish a new safety constraint: an absent database file is NOT proof of first installation. SQLite URI mode=rw/ro opens only an existing database, while mode=rwc can create a file; normal boot and recovery must never accidentally create an empty history. Home Assistant Config Entry creation, separate SQLite genesis, active pointer and journal are NOT one atomic transaction. The approved logical Hub/Archive entry may load INITIALIZATION_REQUIRED/RECOVERY_HOLD, and a separately authorized admin CREATE_NEW_HISTORY operation with durable CREATE_INTENT and a unique isolated staging generation is the preferred design. Existing pointer/journal/snapshot/legacy data, permission denied, missing mounts, corrupted files or ambiguous restore evidence must block implicit creation. Hub unique ID, ledger UUID and physical-console/PSN identities remain separate. No technical policy accepted, code or tests run.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -3006,3 +3009,35 @@ There is no proven supported mechanism within the inspected Core 2026.11/Supervi
 **New review evidence:** SPEC-017 adds **80 NOT_RUN tests** (20 mode, 20 action/service, 20 worker, 20 HA OS/security) and **20 OPEN gates**, to the prior SPEC-008–016 total of 582 enumerated case IDs. Across SPEC-008–017: **662 enumerated test cases**, intentionally overlapping and **zero passed/executed**. No SQLite library, Home Assistant installation version, processor thread, executable code or tests selected.
 
 **Next high-priority research:** unambiguous first-ever Hub installation/new ledger vs missing/corrupted/restored-ledger classification and a versioned terminal-proof SQLite worker abstraction, with concrete startup/file-provenance evidence and no executable work. All capability policy variants remain maintainer-unapproved until separately signed off.
+
+
+## Explicit first-boot identity and safe SQLite ledger provisioning — 2026-11-06
+
+**Sources and authority:** [Pinned official-source audit](docs/research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [SPEC-018](docs/specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md), [ADR-0018](docs/decisions/ADR-0018-first-boot-consent-and-ledger-provisioning.md). ADR-0011 remains ACCEPTED at product level; the concrete first-boot UX, SQL genesis journal/path and worker mechanisms remain PROPOSED and NOT_TESTED.
+
+### 1. The missing-file trap
+
+SQLite official URI mode=ro and mode=rw require an existing file; mode=rwc creates a database if absent, and standard SQLite open is create-capable. A generic Python sqlite3.connect during startup without explicit non-creating URI can therefore manufacture an empty database where an old history file, pointer or mount is missing. This is unacceptable for multi-year console/session history. **Use non-create opens for every existing selected generation, and reserve create-capable SQLite opening for an exclusive, authorized new staging generation only.**
+
+An absent filename, a broken symlink, permission denied, a missing external mount, an incompatible/newer schema, an incomplete app journal, a legacy flat DB or a Supervisor restore are NOT equivalent to a first installation. Bounded inventory must classify FileNotFound vs PermissionError/IOERR, expected root containment, old pointer, completed or incomplete generations, snapshots, persisted ledger identity and previous Config Entry associations. Never remove hot SQLite WAL/journal or silently recreate a DB after read error. An empty known private directory does not prove the user never had history off-host.
+
+### 2. Two-phase ownership and user confirmation
+
+1. **Accepted product entry:** User creates one logical Hub/Archive Config Entry through native Home Assistant Config Flow with stable reserved unique ID, duplicate abort and explicit choice. This entry is not a PS5, PSN account, ledger UUID, second database or new process; the integration manifest cannot use domain-wide single_config_entry if multiple console/account entries are supported.
+2. **Separate proposed ledger genesis:** Hub entry may load a restricted INITIALIZATION_REQUIRED/RECOVERY_HOLD admin UI while no historical SQL writer exists. Present explicit CREATE NEW HISTORY or RECOVER/IMPORT EXISTING choices. Do not set history READY because Config Entry creation succeeded.
+3. **Authoritative new intent:** After an administrator consciously chooses CREATE_NEW and the backend revalidates complete inventory/ACL/generation, acquire one global provisioning lease and durably publish one CREATE_INTENT with idempotent op UUID, newly generated ledger UUID and generation UUID BEFORE any new SQLite file is created.
+4. **Exclusive preparation:** Create a private unique stage, fail on unexpected existing directory/path, use SQLite create-capable mode only in that stage, write schema/genesis/empty committed cursor transactionally, close/validate full SQLite, verify foreign keys/schema/identity, and durably publish completion.
+5. **Controlled activation:** Use ADR-0015's READY_TO_COMMIT journal and one verified active-generation pointer selection. Only when the selected ledger and canonical owner/entry association are valid may HubController open one writer generation and change global DENY_WRITE to READY.
+6. **Crash-safe retry:** Config Entry saved but no CREATE_INTENT -> INITIALIZATION_REQUIRED. Intent valid but stage absent -> same operation resumes/reviews, not new UUID. Stage exists but pointer absent -> not active. Pointer new, journal acknowledgement missing -> verify selected DB and return same creation receipt, not recreate. Browser cancellation or two admin flows cannot create parallel genesis ledgers.
+
+**Explicit user-information boundary:** If a full older Home Assistant backup removed every local hint of newer history, there is no way to reconstruct missing post-backup records. A first-run dialog must say "No local history detected here" and offer recovery/import; it must NOT claim the installation has never contained data. A new ledger is a distinct empty lineage, not a repair of an unlocated old one.
+
+### 3. Distinct identity and storage namespaces
+
+Logical Hub Config Entry unique ID, HA entry_id, ledger_uuid, active generation_uuid, provision_op_uuid, canonical PS5 device key and optional PSN account ID are separate values. A restored older Hub entry with a different ledger UUID must not adopt data silently or reauthorize Sony credentials. A private directory resolved via hass.config.path is only a candidate location; metadata may use safe exclusive file creation, but SQLite requires its own filename/VFS protocol. No SQLite file descriptor is conjured from Python os.open. HA Store JSON may help UI metadata yet is not one atomic transaction with SQLite, Config Entries or application journal.
+
+### 4. New evidence and readiness
+
+The new [SPEC-018](docs/specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md) enumerates 80 NOT_RUN scenarios (20 classifier, 20 create/crash, 20 flow/concurrency, 20 OS/security) and 20 OPEN gates. The previous SPEC-008–017 suite enumerated 662 IDs with intentional overlap; the overall SPEC-008–018 set now enumerates **742** case IDs, **zero tested**. This count does not mean 742 independent runnable tests. No actual code, SQLite file, Config Entry, Home Assistant OS data, migrations, worker or test has been created.
+
+**Recommended following research:** the safe import/migration contract for legacy flat PlayStation Hub database/configuration/recordings into one newly versioned ledger-generation layout, preserving hardware identity and session provenance. Do not begin code until WP-00 and relevant ADRs are approved and the user explicitly requests implementation.
