@@ -86,7 +86,7 @@ An application-private subdirectory resolved under the Home Assistant configurat
 - Best portability and straightforward inclusion in HA configuration backups.
 - At pre-backup: fence new SQL admissions and monitoring-derived commits; await all accepted transactions and reads; checkpoint/close all SQLite connections and keep DB immutable until post-backup. Work from an explicitly bounded global backup lease; verify failure/cancel behavior.
 - No raw live WAL writes may resume during archive. An unanswered post hook creates a serious liveness trade-off; if a timed auto-unfreeze happens while the backup still copies, the consistency guarantee fails. Define fail-safe backup cancellation, timeout, repair state, and guarded recovery.
-- **Preferred minimal safe candidate for first implementation**, subject to actual HA OS testing and acceptable gaps. Not yet approved.
+- **BLOCKED_PENDING_SAFE_RESUME_PROTOCOL**, because §15 identifies a source-backed missing-post-hook failure path. Not approved.
 
 **Option S2 — Online snapshot and live DB inside same HA config backup.**
 - Snapshot + manifest are internally consistent and history can continue while Supervisor archives.
