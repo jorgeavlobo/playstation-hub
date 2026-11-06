@@ -252,3 +252,9 @@ The requirement for automatic Sony sign-in remains a product goal, **not a curre
 ## Deep upstream PSN concurrency tests — 2026-11-06 (source trace only, NOT_RUN)
 
 [Source triangulation §11](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md#11-deeper-psn-runtime-source-audit--token-rotation-provider-title-selection-and-independent-failures) compares PSNAWP authenticator's expiry/refresh code with Emkraan's explicit per-client mutex and immediate token-pair persistence. Add future trace assertions `SRC-PSN-03` same-account simultaneous expiry -> one refresh, `SRC-PSN-04` flat OAuth error vs nested API error -> typed reauth, `SRC-PSN-05` crash between provider token rotation and local store -> recover without false durable success, `SRC-PSN-07` PSN permission/429 outage -> LAN unaffected, `SRC-PSN-10` unload while in-flight refresh -> old run fenced. No Sony authentication, token or real data was accessed in this review; these cases are not executed or added as a new SPEC.
+
+## First-party optional Sony API client / no SDK dependency (2026-11-06)
+
+[Dependency sovereignty policy](../architecture/first-party-dependency-sovereignty-policy.md) forbids PSNAWP, psn-api or any other external Sony SDK at runtime. A future provider-authorized PSN feature must own its HTTP request/response parsing, per-account token manager, rate-limit budget, single-flight refresh and typed error handling. Use HA's managed aiohttp client session **via native HA helper**, not a new runtime dependency or blocking stdlib request on the event loop. This does NOT waive Sony's permission/credential requirements; no unauthorised public client reuse.
+
+Future trace requirements FIRST-11/12: PSN inaccessible/missing authorization does not interrupt LAN; concurrency/refresh token rotation handled independently per account; no external PSN package import. All NOT_RUN; optional WP-07 only, not WP-01 blocker.
