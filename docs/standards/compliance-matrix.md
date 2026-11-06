@@ -126,3 +126,20 @@ The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtim
 | Privacy | Private snapshots, no generic token/export leakage | CONDITIONAL, NOT_RUN | ADR-0007/0008, SPEC-012 |
 
 **Test status:** SPEC-012 has 64 NOT_RUN cases, 16 OPEN gates. No code or acceptance test has been run.
+
+
+## Restore authority and cross-scope identity safeguards — 2026-11-06
+
+| Evidence gate | Priority | Status | Reference |
+| --- | --- | --- | --- |
+| One default private ledger direction, no required extra OS mount/SQL server | P0 | ACCEPTED_DIRECTION; final path conditional | [ADR-0011](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md), [ADR-0013](../decisions/ADR-0013-restore-authority-and-storage-topology.md) |
+| Pinned Core OS bind mounts for config/share/media | P1 | PINNED_SOURCE_VERIFIED, runtime NOT_TESTED | [Research](../research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md) |
+| Recommended automatic backup configuration vs share/media | P0 | OFFICIAL_DOC_VERIFIED, actual backup NOT_TESTED | https://www.home-assistant.io/common-tasks/general/backups/ |
+| App backup preparation vs custom source archive exclusion | P0 | NO_PUBLIC_CONTRACT_FOUND_IN_PINNED_API | Core/Supervisor backup source audit, ADR-0013 |
+| Config-only restore with newer share ledger, and inverse share-only restore | P0 | PROPOSED, NOT_RUN | [SPEC-013 RA-REST02/03](../specifications/SPEC-013-restore-authority-storage-topology-and-reconciliation.md) |
+| Equal ledger UUID/cursor but differing event lineage | P0 | PROPOSED, NOT_RUN | SPEC-013 RA-ID01/02 |
+| No silent raw DB/WAL or largest-cursor automatic promotion | P0 | PROPOSED, NOT_RUN | [ADR-0013](../decisions/ADR-0013-restore-authority-and-storage-topology.md) |
+| Privileged admin restoration with old file preservation and explicit UNKNOWN gaps | P0 | PROPOSED, NOT_RUN | SPEC-013 RA-UX01–16 |
+| Same physical console account identity validated across restored HA Config Entries | P0 | BLOCKED_HARDWARE + NOT_RUN | ADR-0004, SPEC-013 RA-ID09–16 |
+
+**SPEC-013:** 64 case IDs enumerated, 16 OPEN gates. The product-level Hub/Archive architecture is accepted; this operational restore strategy is not approved or implemented.
