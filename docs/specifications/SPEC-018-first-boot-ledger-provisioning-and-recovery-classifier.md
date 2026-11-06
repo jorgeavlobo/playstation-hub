@@ -49,7 +49,7 @@ A brand-new logical Hub can be configured without physical PlayStations. Histori
 | FB-I26 | Simultaneous Hub entries, console setup and two admin creation attempts cannot create parallel live writers or genesis ledgers. |
 | FB-I27 | sqlite3.connect default create semantics are never used in generic history preflight; use explicit SQLite non-create modes. |
 | FB-I28 | Preserve SQLite native hot WAL/journal companions, never remove them to force a new empty file. |
-| FB-I29 | Existing legacy flat-format data requires a separate migration/import decision and no empty reset. |
+| FB-I29 | **NOT_APPLICABLE (legacy prototype never deployed):** no import/migration of old flat-format synthetic test data. Preserve future NEW-app histories on supported upgrades/restores. |
 | FB-I30 | A new logical ledger does not create Sony credentials or assert physical console identity. |
 | FB-I31 | Any first-run consent is bound to a current user/preview/controller generation and must revalidate inventory before committing. |
 | FB-I32 | A full Home Assistant backup restore may roll back all local files; the application never claims to recover absent later commits. |
@@ -116,7 +116,7 @@ No unsafe assumption that an async Home Assistant Config Entry save and an app-o
 | FB-CLASS10 | Root is unexpected symlink | Fail closed, no traversal |
 | FB-CLASS11 | Existing file is wrong type or link | Reject, preserve and report |
 | FB-CLASS12 | Unsupported/newer schema | Hold; no destructive downgrade |
-| FB-CLASS13 | No current DB but old legacy flat DB exists | LEGACY_DATA_PRESENT, offer migration |
+| FB-CLASS13 | Historical legacy DB scenario (prototype never deployed) | NOT_APPLICABLE; no old database import or migration test required |
 | FB-CLASS14 | Hub deleted but archived generation retained | Existing data discovered on explicit re-onboarding |
 | FB-CLASS15 | Config restored older than external ledger | RESTORE_AMBIGUOUS, identity reconciliation |
 | FB-CLASS16 | Snapshot foreign ledger UUID | FOREIGN_OR_FORKED; no adoption |
@@ -196,7 +196,7 @@ No unsafe assumption that an async Home Assistant Config Entry save and an app-o
 | FB-OS15 | Diagnostics under first-run failure | No personal history, credentials or raw paths |
 | FB-OS16 | Concurrent backup while provisioning | Do not archive an incomplete stage as valid snapshot |
 | FB-OS17 | Restore after successful creation | Ledger lineage and cursor/source revalidated |
-| FB-OS18 | Large legacy flat DB import candidate | No auto migration/destruction, bounded inspection |
+| FB-OS18 | Legacy v1–v3 synthetic database import scenario | NOT_APPLICABLE; no legacy importer required |
 | FB-OS19 | Multiple HA installation types | Exact path, permissions and SQLite non-create behavior verified |
 | FB-OS20 | Three-year historical data re-onboarded after Hub reinstall | Old records preserved and correct owner association |
 
@@ -219,7 +219,7 @@ No unsafe assumption that an async Home Assistant Config Entry save and an app-o
 | FB-G11 | Stable Hub unique ID and separate console/account IDs | NOT_RUN |
 | FB-G12 | Duplicate Config Flows and concurrent admin creation | NOT_RUN |
 | FB-G13 | Old retained history found after Hub reinstall | NOT_RUN |
-| FB-G14 | Legacy flat DB import/migration safety | NOT_RUN |
+| FB-G14 | Legacy prototype import/migration | CLOSED_NOT_APPLICABLE — never deployed, data fabricated |
 | FB-G15 | Full/partial HA OS restore classification and limits | BLOCKED_HA_OS |
 | FB-G16 | No overwritten original after permissions/IO/storage errors | NOT_RUN |
 | FB-G17 | Admin ACL/preview/confirm and bounded inventory | NOT_RUN |
@@ -258,3 +258,8 @@ SQLite official sqlite3_open_v2 describes a historical fallback from READWRITE t
 ## 10. Legacy v1–v3 App history is a positive LEGACY_DATA_PRESENT classifier — 2026-11-06
 
 [Verified develop SQLite source audit](../research/legacy-develop-to-native-migration-provenance-audit-2026-11.md), [ADR-0019](../decisions/ADR-0019-legacy-history-provenance-and-cutover.md) and [SPEC-019](SPEC-019-legacy-history-migration-and-mqtt-retirement.md) establish a concrete old installed App data category: sqlite3 source with schema_version table and v1 events/sessions, v2 checkpoints, v3 singleton monitoring_state, under user-specific App /data storage. The old Database constructor is create-capable and migrates automatically; NEVER use it to inventory old user history in place. If a coherent imported/exported legacy source exists, classify LEGACY_DATA_PRESENT and present an explicit read-only legacy-import review, not CREATE_NEW by default. A new Hub entry and the old monitor's synthetic MQTT unique IDs do not prove source ledger or physical-console identity. Import retains old source as LEGACY_UNATTRIBUTED; old App secrets/options must be excluded. The SPEC-018 80 genesis tests remain NOT_RUN; SPEC-019 adds 80 migration/cutover scenarios.
+
+
+## 11. Greenfield scope correction to first-boot tests — 2026-11-06
+
+The maintainer explicitly confirmed the old develop application NEVER deployed and all its database records were invented test fixtures. First release is a **brand-new application**; there is no old SQLite, App options, MQTT, old entity identity or historical game session to migrate. **FB-I29, FB-CLASS13, FB-OS18 and FB-G14 are RETIRED/NOT_APPLICABLE**; older notes classifying "legacy v1–v3" as a live-positive input are historical proposals and superseded. Do not implement the old importer, identity-provenance bridge, schema v1–v3 migration, dry-run of fake rows or MQTT cutover. SPEC-019's 80 migration tests/20 gates are likewise RETIRED and excluded from release blockers. The remaining future-safe classifier still distinguishes NEW-app prior data after actual deployment, incomplete provisioning, restoration, corruption and permission failures. The original SPEC-018 catalogue retains 80 named slots for traceability, **78 remaining active planned cases** and **19 remaining active gates**, all unrun/open. This is a scope correction, not executed tests or implemented code.
