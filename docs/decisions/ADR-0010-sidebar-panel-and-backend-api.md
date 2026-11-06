@@ -420,3 +420,13 @@ The [2026.11 multi-console source audit](../research/ha-core-2026-11-multi-conso
 - Query, subscription and snapshot lifetime are different: subscriptions belong to browser connections; one bounded history query owns a short-lived read lease; neither should spawn LAN probes or keep an unused writer open indefinitely.
 - **Proposed zero-entry policy:** hide the panel after removal of the last configured entry, retain private history according to ADR-0008, and expose explicit archive-recovery options in future. Whether an archive-only persistent hub entry is needed remains undecided.
 - If storage is degraded, frontend state must distinguish fresh LAN readings from UNSAVED history; cross-console state remains isolated.
+
+
+## Archive-only and restored-history panel semantics — 2026-11-06
+
+**Status remains PROPOSED.** See [recovery source audit](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md).
+
+- If no console is currently configured/loaded, a retained SQLite history file alone does not guarantee the integration-wide panel will exist after a Home Assistant restart. Compare a simple panel-when-configured policy with a separately approved Hub/Archive Config Entry and an offline import/export recovery path.
+- Frontend must distinguish current fresh observation, last durably committed historical cursor, provisional UNSAVED evidence, historical restore-as-of timestamp and UNKNOWN coverage after a crash/restore.
+- Never let a browser select a random local SQLite snapshot or issue restore/purge actions without explicit administrator authorization, provenance checks, validation and a protected backend operation. No Sony tokens, pairing keys or raw personal data in generic diagnostics or exported UI events.
+- Last entry removal preserves history under the retention policy but may intentionally remove menu access. A product decision is required before implementation; the panel must not disappear unpredictably after a first reboot and remain misleadingly visible before it.
