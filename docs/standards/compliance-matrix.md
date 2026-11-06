@@ -181,3 +181,23 @@ All 72 SPEC-014 tests remain NOT_RUN, all 18 gates OPEN; the accepted ADR-0011 p
 | Source shutdown race and storage filesystem crash matrix | P0 | NOT_RUN | SPEC-015 80 tests, 20 gates |
 
 **Status:** ADR-0015 is a technical PROPOSAL; ADR-0011 product architecture remains ACCEPTED. No tests or real integration code exist and no formal Home Assistant quality certification is claimed.
+
+
+## Recovery Hold bootstrap and SQLite worker lifecycle compliance — 2026-11-06
+
+| Requirement | Priority | Source/implementation state | Evidence |
+| --- | --- | --- | --- |
+| Accepted Hub/Archive control plane can load with internal RECOVERY_HOLD | P0 | PROPOSED, HA_OS_NOT_RUN | [ADR-0016](../decisions/ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md), [SPEC-016](../specifications/SPEC-016-recovery-hold-boot-order-and-worker-termination.md) |
+| Distinguish HA LOADED/SETUP_RETRY/SETUP_ERROR/MIGRATION_ERROR from internal history health | P0 | CORE_PINNED, APP_NOT_RUN | Home Assistant 2026.11 Config Entries + setup failures |
+| Typed runtime_data before awaited platform forwarding | P0 | SOURCE_VERIFIED, NOT_TESTED | Core config_entries.py, contributor config-entries guide |
+| One global controller DENY_WRITE before concurrent Hub/console/account entries | P0 | PROPOSED, NOT_RUN | SPEC-016 BH-I01/02/08/09 |
+| Optional SOURCE_ONLY_UNSAVED no persisted history writes | P0 | PROPOSED, MAINTAINER_POLICY_OPEN | ADR-0016 §7 |
+| Running ThreadPoolExecutor job cannot be cancelled through Future.cancel/cancel_futures | P0 | PYTHON_SOURCE_VERIFIED, NO_APP_TEST | Python 3.14 concurrent.futures |
+| sqlite3.interrupt abort is not proof of closed connection | P0 | PYTHON_SOURCE_VERIFIED, NO_APP_TEST | Python 3.14 sqlite3 reference |
+| aiosqlite v0.21.0 queued operation may run after await cancellation | P0 | THIRD_PARTY_SOURCE_VERIFIED, NOT_SELECTED | pinned aiosqlite/core.py, SPEC-016 |
+| SQLite connection close, queue drain and worker terminal before generation switch | P0 | PROPOSED, NOT_RUN | SPEC-016 BH-WORK01–20, ADR-0015 |
+| Hub global Repairs through physical console removal | P1 | CORE_API_VERIFIED, APP_NOT_RUN | Core issue_registry, SPEC-016 BH-BOOT14 |
+| Old-source WAL/journal preservation with FAILED_UNSAFE_TO_REOPEN | P0 | SQLITE_SOURCE_VERIFIED, NOT_TESTED | ADR-0015/0016 |
+| HA OS/Container and physical console multi-entry boot tests | P0 | BLOCKED_RUNTIME/HARDWARE | SPEC-016 80 cases and 20 gates |
+
+No formal Home Assistant quality tier is claimed. ADR-0011 accepted only product architecture; ADR-0016 remains a technical proposal.
