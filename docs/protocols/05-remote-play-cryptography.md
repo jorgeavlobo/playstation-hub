@@ -164,3 +164,9 @@ The module must expose typed, deterministic functions for derivations and an iso
 Complete the independent PS5 auth derivation fixtures, review full lookup tables and provenance, confirm AES-CFB segment behavior in chosen Python library, and inspect packet error recovery and heartbeat details in Protocol 06.
 
 **Related:** [04 — Registration](04-remote-play-registration.md) · [06 — Session](06-remote-play-session.md) · [Protocol index](README.md).
+
+## 13. Independent C implementation and known-answer test boundary (2026-11-06)
+
+The current canonical [chiaki-ng source repository](https://github.com/chiaki-ng/chiaki-ng) (moved from `streetpea/chiaki-ng`) provides independently reviewed PS5 registration/session crypto in [`lib/src/rpcrypt.c`](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/rpcrypt.c), with PS5 IV and key known-answer assertions in [`test/rpcrypt.c`](https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/test/rpcrypt.c). This adds cross-implementation evidence beyond playactor's TypeScript strategy, but chiaki-ng is **AGPL-3.0**. Do **not** copy key tables, code or test data wholesale into our separately licensed integration without formal licensing review. Independently specified behavior, original clean tests and user-authorized device interoperability remain future implementation work.
+
+Python `playdirector` version **0.4.2** is a changed GPL-3.0-only embedded pyremoteplay engine and not API/license-equivalent to the previous MIT `0.3.x` package ([current PyPI](https://pypi.org/project/playdirector/0.4.2/)). No crypto dependency, library, PS5 firmware compatibility or Remote Play registration behavior has been approved or tested. See the [pinned upstream source audit](../research/upstream-source-deep-audit-lan-remoteplay-psn-ha-2026-11-06.md).
