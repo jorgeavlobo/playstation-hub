@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.60.0 — 2026-11-06  
+> **Document version:** 0.61.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -65,6 +65,8 @@
 > **Second upstream protocol triangulation checkpoint (2026-11-06):** [New source-level forensics](docs/research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md) deepens the pinned playactor/PS5-MQTT/Chiaki-ng audit by reviewing archived `ktnrg45/pyremoteplay` (2022), `iharosi/ps5-remoteplay` Python port (2026), `iharosi/ps5-wake` PS5-specific C and `leonanluppi/chiaki-km` operational input-profile consumer. **Lineage correction:** Python `ps5-remoteplay` and its synthetic vectors are ported from playactor, so they are NOT independent firmware confirmation; both map non-620 status to AWAKE. Chiaki-ng and PS5-Wake distinguish 200 READY, 620 STANDBY and other UNKNOWN. **Parser hazard:** playactor's split of every header colon can truncate a game title, and CRLF may contaminate host-id; first-colon split and CRLF normalization are essential. **LAN-title opportunity:** several parsers recognize `running-app-name` / `running-app-titleid`, and Chiaki-KM actually uses them for dynamic controls (including PS4 `CUSA` games on PS5); none proves universal PS5 firmware support or true gameplay duration. **Command risk:** Python `ps5-remoteplay` may log a standby socket-close timeout and still return `True`, so command return is not physical 620 confirmation. **History:** PS5-MQTT suppresses unchanged HA UI state updates; our durable time accounting requires independent repeated accepted samples. The source audit supplies 20 trace-only future validation scenarios in existing SPECs, no new ADR/SPEC or executed tests, and no code. The WP-00B finite research policy remains in force.
 
 > **Optional PSN upstream runtime source verification (2026-11-06):** The second [upstream protocol triangulation audit §11](docs/research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md#11-deeper-psn-runtime-source-audit--token-rotation-provider-title-selection-and-independent-failures) compared pinned PSNAWP authenticator refresh with Emkraan's explicit per-client lock and prompt token rotation persistence. PSNAWP's inspected refresh path lacks its own visible per-account mutex, while the HA custom integration explicitly protects multi-thread refresh, normalizes flat OAuth `invalid_grant`, and saves rotated tokens without triggering a Config Entry reload. HA Core 2026.11's `helpers.py` selects the **first** `gameTitleInfoList` record into a provider account/platform session, which is a UI projection, not complete evidence or a verified physical device. `psn-api` uses version-sensitive reverse-engineered GraphQL persisted-query hashes. A future PSN adapter must independently own per-account token lifecycle, privacy/rate limiting, bounded title candidates, and versioned cloud errors while LAN power and optional `LAN_RUNNING_APP` continue unaffected. All PSN features remain optional/permission-gated, and no Sony call, code or test was performed.
+
+> **AUTHORITATIVE NEW MAINTAINER REQUIREMENT — FIRST-PARTY PROTOCOLS / ZERO EXTRA RUNTIME PACKAGES (2026-11-06):** [Dependency sovereignty policy](docs/architecture/first-party-dependency-sovereignty-policy.md) and [pinned Python standard-library + HA Core native API audit](docs/research/first-party-protocol-implementation-and-runtime-boundaries-2026-11-06.md) **supersede any previous proposal to adopt a runtime PlayStation library or extra pip/npm package**. PlayStation Hub will implement its own DDP/UDP discovery, console state, optional local title fields, per-console monitors, evidence/session reducer, sqlite3 storage and vanilla JS panel. Upstream playactor, Chiaki, PS5-MQTT, PSNAWP, pyremoteplay and similar remain *read-only research sources*, never bundled/imported/spawned dependencies. Use Python stdlib and **supported native Home Assistant APIs** (including \`network.async_get_adapters\`, \`network.async_get_ipv4_broadcast_addresses\` and managed HTTP sessions) rather than copying platform capabilities. Zero **additional** runtime pip/npm packages is the target, NOT a claim that Home Assistant itself has no transitive dependencies. Critical limits: Python stdlib provides HMAC/hash/secrets but **not** raw AES-128-CFB/CBC needed by the reviewed Remote Play session protocol; never hand-code AES, vendor crypto tables or use unstable OpenSSL ctypes FFI. Encrypted Remote Play registration/standby is BLOCKED_CRYPTO_BACKEND pending an independently vetted platform primitive and explicit maintainer choice. Sony PSN account APIs also remain permission-gated; own HTTP logic does not establish Sony authorization. New source nuance: Chiaki-ng can send DDP search bytes with a trailing NUL while playactor does not, local UDP bind can be 9303–9319 or ephemeral (PS5 **destination** remains 9302), and native HA broadcast helper may return only limited broadcast on default-only adapter configurations. These require firmware/interface tests and do not change the documentation-only status.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -3253,3 +3255,41 @@ The [WP-00B](docs/architecture/WP-00B-research-freeze-and-implementation-readine
 - **Remaining gates:** Provider authorization and terms, secure token persistence/reauth under failure, version-specific Python distribution and privacy; WP-07 only, not blockers for WP-01's pure LAN parser.
 
 **Status:** Final deep source audit now covers local networking, command semantics, conditional LAN-running-app metadata and optional PSN account lifecycle; research claims are source-pinned but not hardware-verified, executed or released. The next valuable evidence is test code and actual console response fixtures after the maintainer authorizes implementation.
+
+
+## First-party protocol independence / zero additional runtime requirements — 2026-11-06
+
+**Accepted new product requirement:** [First-party dependency sovereignty](docs/architecture/first-party-dependency-sovereignty-policy.md). **Primary source research:** [Python stdlib / HA Core native runtime feasibility](docs/research/first-party-protocol-implementation-and-runtime-boundaries-2026-11-06.md). The user's latest explicit decision is higher precedence than earlier proposals to use an external PlayStation package.
+
+### Implementation ownership and permitted platform services
+
+1. **Our own PlayStation protocol implementation:** UDP discovery/status/wake formatting, physical identity, source-specific normalized evidence, optional DDP running-app title, per-console polling, source/command state machine, sqlite3 ledger and reports, integration WebSocket and vanilla JavaScript frontend. No runtime use of playactor, PS5-MQTT, Chiaki, PSNAWP, psn-api, pyremoteplay, playdirector or other external PlayStation libraries.
+2. **Zero additional installed runtime packages:** Target \`manifest.json\` \`requirements: []\` or omitted after actual hassfest check. Native HA \`dependencies\`, such as the \`network\` component when used, are not pip requirements and are allowed. The platform already depends on packages internally, which does not invalidate the new **no independently installed packages** goal.
+3. **Use supported Home Assistant runtime APIs:** HA Core 2026.11 network component exposes \`async_get_adapters(hass)\` / \`async_get_ipv4_broadcast_addresses(hass)\`; managed HTTP session is \`homeassistant.helpers.aiohttp_client.async_get_clientsession(hass)\`. Use \`asyncio\` datagrams for UDP, \`sqlite3\` in a correctly owned executor/worker and Config Flow/Entity/Repairs/WebSocket APIs. No blocking \`urllib/http.client\` on HA event loop.
+4. **Frontend owned by the same integration:** plain JavaScript ES modules, custom elements and CSS; no React/Vue, external npm runtime, browser CDN, external service or Node daemon.
+5. **Source-review evidence only:** Existing upstream repositories remain useful to compare byte layouts, error cases and firmware assumptions. Code is independently authored in English with detailed comments; no proprietary/AGPL/GPL vendoring or copying protocol key tables without a distinct source rights decision.
+
+### Deep DDP byte/transport constraints
+
+- PS5 search uses source-observed \`SRCH * HTTP/1.1\` plus \`device-discovery-protocol-version:00030010\` over UDP **destination port 9302**, independently seen in playactor and Chiaki-ng. PS4's source-observed profile uses UDP 987 and \`00020020\`, separate from PS5. Do not confuse destination port 9302 with the client local bind port.
+- Source implementations differ on trailing NUL: Chiaki-ng sends formatted length+1 (NUL terminated) while playactor's buffer formatter does not visibly append a NUL; compatibility must be tested rather than inventing a universal requirement.
+- Chiaki-ng prefers local UDP bind 9303–9319, falling back to ephemeral; playactor defaults to ephemeral. Properly own UDP sockets/receive lifetimes on HA OS rather than assuming one fixed source port.
+- HA Core network helper may return **only 255.255.255.255** when only the default interface is enabled; obtain enabled IPv4 address/prefix through HA \`async_get_adapters\` and use stdlib \`ipaddress\` when directed per-interface broadcast is required. Do not import \`netifaces\`, \`ifaddr\` or claim VLAN/firewall traversal.
+- Parse only strict allowed 200 READY, 620 STANDBY, unknown otherwise; optional \`running-app-titleid/name\` are source-reported metadata, not proven gameplay. Validate CRLF, first-colon header split, UTF-8, absent/empty/invalid, identity conflicts and stale callbacks.
+
+### Capability feasibility and honest blockers
+
+| Capability | Extra runtime packages required by target | Status / gate |
+| --- | --- | --- |
+| Passive LAN discovery, status and optional source-reported local title | No — own asyncio UDP + HA native network | Design viable; firmware verification unrun |
+| Console-specific HA entities, multi-console monitoring and reports | No — HA public APIs and stdlib | Proposed; implementation/HA OS tests unrun |
+| SQLite durable history | No — stdlib sqlite3 and owned worker | Proposed; crash/backup and worker tests still required at WP-04 |
+| Own sidebar and authenticated WS API | No — bundled vanilla JS and native HA | Proposed; UI/ACL tests unrun |
+| UDP WAKEUP | Own packet code only, but pairing-derived credential required | Credential provisioning not established |
+| Remote Play pairing and authenticated standby | Secure AES cipher required; no general AES in Python stdlib | BLOCKED_CRYPTO_BACKEND; never implement AES ourselves |
+| PSN account login, presence, library, metadata | Own client via native HA HTTP helper, subject to authorization | BLOCKED_PROVIDER_AUTHORIZATION, optional |
+| React/Node/MQTT/extra Docker/App/PlayStation package | Not used | Explicitly prohibited runtime dependencies |
+
+**Prioritization:** We continue investigating protocol bytes, Home Assistant network/lifecycle and test evidence, rather than selecting a third-party package. All optional encrypted Remote Play and Sony cloud blockers are **separate** from LAN-only implementation. The research-stop guard in WP-00B still prevents unbounded documents, but it does not override this new explicit product requirement or prevent targeted source research.
+
+**Evidence/status:** This is documentation, not a Python package, HA Config Entry, hardware capture, packet transmission, code, DDL, test or successful release. New design requirements are accepted; detailed methods, compatibility and crypto/provider gates remain unimplemented/unverified.
