@@ -54,3 +54,12 @@ The [formal ADR review](../architecture/formal-architecture-review-adr-0004-0010
 ## Crash recovery, SQLite version and restore-safety release gates — 2026-11-06
 
 [Source research](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) extend the release evidence requirements with 56 NOT_RUN test scenarios and 14 OPEN sign-off gates. Prioritize actual HA OS linked SQLite C library version (2026 WAL-reset fix/backports), single writer/checkpointer, stable idempotent receipts after ambiguous COMMIT, crash gap correctness, automatic restore-versus-normal-restart discrimination, complete backup snapshot/manifest plus archive file selection, full/partial Supervisor file replacement tests, non-destructive corruption recovery and archive-only panel behavior. Existing SPEC-008/009 scenarios remain open; overlapping scenarios are not independently tested by documentation. No release is qualified.
+
+
+## HA OS storage root, backup deadlock and archive-only lifecycle gates — 2026-11-06
+
+[Storage/restore research](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [ADR-0011](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md) and [SPEC-011](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) add 64 NOT_RUN cases and 16 OPEN gates. First release must verify private config-root placement, Core/OS/Container file paths, real archive members and exclusion semantics, atomic snapshot/manifest generation, restart-vs-restore authority, recovery of mixed config/ledger identities, one panel and Hub/Archive-only mode, reinstallation/uninstallation, privacy and retention.
+
+**P0 source-proven inter-hook race:** Home Assistant Core's pre-backup hook manager gathers all loaded integration pre hooks and errors when any fails; pinned Supervisor awaits begin_backup before its end_backup finally. Thus a successful write-freeze in PlayStation Hub could remain without post-backup after another integration's error. The long-held SQL quiescence approach cannot be released without rigorous failure compensation and active-archive safety evidence. A static immutable SQLite snapshot avoids depending on a multi-minute freeze but still needs a safe restore selector.
+
+All 64 cases remain definitions only; no tests, CI, HACS validation or hardware exercises have run. This extends (not replaces) SPEC-005, SPEC-008/009/010 and the explicit maintainer ADR approval gates.
