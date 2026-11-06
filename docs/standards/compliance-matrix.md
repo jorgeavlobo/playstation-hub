@@ -201,3 +201,24 @@ All 72 SPEC-014 tests remain NOT_RUN, all 18 gates OPEN; the accepted ADR-0011 p
 | HA OS/Container and physical console multi-entry boot tests | P0 | BLOCKED_RUNTIME/HARDWARE | SPEC-016 80 cases and 20 gates |
 
 No formal Home Assistant quality tier is claimed. ADR-0011 accepted only product architecture; ADR-0016 remains a technical proposal.
+
+
+## Degraded operation capability matrix and SQLite 0.22.x terminal-proof gates — 2026-11-06
+
+| Required safety boundary | Priority | Current evidence/status | Reference |
+| --- | --- | --- | --- |
+| Backend operation guard independent of HA Entity.available and UI visibility | P0 | CORE_SOURCE_VERIFIED, APP_NOT_RUN | [Source audit](../research/ha-core-2026-11-degraded-capabilities-worker-proof-and-aiosqlite-022-audit.md), [SPEC-017](../specifications/SPEC-017-degraded-capability-matrix-and-sqlite-close-proofs.md) |
+| One policy shared by Home Assistant service/automation, WS, background probe and device control | P0 | PROPOSED, NOT_RUN | [ADR-0017](../decisions/ADR-0017-degraded-operation-capabilities-and-sqlite-close-evidence.md) |
+| Distinguish current source reading from durable historical writing | P0 | PROPOSED, NOT_RUN | ADR-0006, SPEC-017 |
+| Identity conflict always denies power/Remote Play, PSN re-link and attribution | P0 | PROPOSED, HARDWARE_NOT_VERIFIED | ADR-0004, SPEC-017 |
+| RECOVERY_HOLD console source-only status and no backfill | P0 | CONDITIONAL_PRODUCT_POLICY, NOT_RUN | SPEC-017 CAP-MODE04/18/19 |
+| RECOVERY_HOLD power/Remote Play defaults DENY | P0 | CONSERVATIVE_PROPOSAL, PENDING_OWNER_APPROVAL | ADR-0017 |
+| PSN account read/refresh under history Hold | P1 | CONDITIONAL_ACCOUNT_POLICY | ADR-0017 |
+| Verified immutable snapshot read while live worker fenced | P1 | PROPOSED, NOT_RUN | SPEC-017 CAP-MODE12 |
+| aiosqlite 0.21 Thread inheritance vs 0.22.0/0.22.1 private worker | P0 | THIRD_PARTY_PINNED_SOURCE_VERIFIED | v0.21.0, v0.22.0, v0.22.1 aiosqlite/core.py |
+| aiosqlite 0.22.1 stop Future callback vs actual thread terminal | P0 | SOURCE_VERIFIED, WORKER_NOT_TESTED | Source audit §5, SPEC-017 CAP-WORK03/06 |
+| Stdlib ThreadPoolExecutor shutdown(wait=True) off event loop | P0 | PYTHON_SOURCE_VERIFIED, APP_NOT_RUN | Python 3.14 concurrent.futures |
+| No generation cutover before all connections and worker terminal proved | P0 | PROPOSED, NOT_RUN | ADR-0015/0017, SPEC-017 |
+| HA OS packaging, SQLite C version, power-cut/multi-console tests | P0 | BLOCKED_HA_OS | SPEC-017 80 NOT_RUN / 20 OPEN |
+
+**No code and no passed tests.** ADR-0011 product direction remains ACCEPTED; operational degraded permissions and worker selection remain proposed.
