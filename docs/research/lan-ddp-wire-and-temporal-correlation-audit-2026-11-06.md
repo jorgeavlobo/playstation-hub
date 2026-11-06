@@ -57,7 +57,7 @@ This represents a **single UDP datagram** with LF-separated lines, not a TCP con
 - Closing/fencing old callback handlers guards **our code**, but after a new UDP socket opens it may still see a late datagram indistinguishable from a fresh one if the packet lacks a correlation token. This is a **new explicit unresolved temporal confidence boundary**, not a bug solved by in-memory run IDs.
 - Identity headers are self-reported and DDP is not authenticated by the inspected source. No irreversible physical owner merge, credential binding, command authorization or historical reassignment from one untrusted reply.
 
-**Future observation labels proposed:** \`CORRELATED_IN_PROCESS_WINDOW\` (received during bounded current scan), \`UNSOLICITED_OR_LATE_POSSIBLE\`, \`SOURCE_UNVERIFIED\`. Never display these as proof of cryptographic identity or exact temporal freshness.
+**Future observation labels proposed:** \`WINDOW_ASSOCIATED_UNVERIFIED\` (received during bounded current scan), \`UNSOLICITED_OR_LATE_POSSIBLE\`, \`SOURCE_UNVERIFIED\`. Never display these as proof of cryptographic identity or exact temporal freshness.
 
 ## 4. Defensive inbound parser profile — pure first-party module
 
