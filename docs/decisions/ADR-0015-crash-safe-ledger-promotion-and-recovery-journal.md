@@ -134,3 +134,8 @@ The product-level Hub/Archive acceptance of ADR-0011 remains intact regardless o
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
 
 **Status:** PROPOSED. No executable code, database migration, test, HA OS event, new feature branch or changes to develop.
+
+
+## 11. Required positive SQLite worker stop before active pointer promotion — 2026-11-06
+
+**ADR-0015 remains PROPOSED; pointer strategy unimplemented.** [New pinned Core/Python/aiosqlite worker audit](../research/ha-core-2026-11-recovery-hold-bootstrap-and-sqlite-worker-lifecycle-audit.md), [ADR-0016](ADR-0016-recovery-hold-startup-and-sqlite-worker-ownership.md) and [SPEC-016](../specifications/SPEC-016-recovery-hold-boot-order-and-worker-termination.md) make explicit a critical precondition for the versioned active pointer: cancelling the asyncio awaiter of a SQLite operation cannot prove the underlying thread stopped. Official ThreadPoolExecutor running tasks cannot be cancelled, sqlite3.interrupt can abort a statement but not close the connection, and inspected aiosqlite v0.21.0 worker may still execute previously enqueued calls after its awaiting Future is cancelled. Thus FENCING -> DRAINING -> CONNECTION_CLOSING -> WORKER_TERMINATING -> CLOSED must be a positively observed lifecycle contract, not derived from task.cancel or a timeout. If any prior connection/worker state is unknown, the manager remains FAILED_UNSAFE_TO_REOPEN and MUST NOT change the active pointer or start another writer on the same path. Hub/Archive may still load in internal RECOVERY_HOLD to offer safe admin recovery. No library, close API or test evidence has been selected.
