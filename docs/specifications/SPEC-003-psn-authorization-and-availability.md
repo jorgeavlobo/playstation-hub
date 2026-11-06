@@ -248,3 +248,7 @@ The requirement for automatic Sony sign-in remains a product goal, **not a curre
 - https://github.com/FunkeyFlo/ps5-mqtt
 
 **Outcome:** A 30-case synthetic matrix and 12 PSN release gates separate proven HA/community mechanisms from Sony-authorized access. All gates remain open; G1–G3 explicitly blocked. No executable code, credentials, login or live provider requests were performed.
+
+## Deep upstream PSN concurrency tests — 2026-11-06 (source trace only, NOT_RUN)
+
+[Source triangulation §11](../research/upstream-protocol-triangulation-and-lan-title-forensics-2026-11-06.md#11-deeper-psn-runtime-source-audit--token-rotation-provider-title-selection-and-independent-failures) compares PSNAWP authenticator's expiry/refresh code with Emkraan's explicit per-client mutex and immediate token-pair persistence. Add future trace assertions `SRC-PSN-03` same-account simultaneous expiry -> one refresh, `SRC-PSN-04` flat OAuth error vs nested API error -> typed reauth, `SRC-PSN-05` crash between provider token rotation and local store -> recover without false durable success, `SRC-PSN-07` PSN permission/429 outage -> LAN unaffected, `SRC-PSN-10` unload while in-flight refresh -> old run fenced. No Sony authentication, token or real data was accessed in this review; these cases are not executed or added as a new SPEC.
