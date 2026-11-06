@@ -408,3 +408,15 @@ The new single sidebar Web Component must **not** reuse legacy hardcoded `sensor
 ## 21. Multi-console frontend subscription and monitoring independence (2026-11-05)
 
 The [2026.11 multi-console source audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) clarify that the single sidebar panel is a **consumer** of cached, source-aware state and bounded historical reports. Opening additional tabs or enabling more entities must not create extra LAN polling workers; closing all panels must not halt intended history sampling while polling remains enabled. All user-triggered manual refresh requests should be coalesced through the existing console probe owner, not by opening an independent UDP socket from the frontend. Explicit HA user disabled-polling state and historical coverage gaps should be visible with honest source timestamps. A panel can remain available as a setup/repair entry point when all consoles are removed only after its global lifecycle has been approved; do not assume panel registration is owned by any one console Config Entry.
+
+
+## Shared panel registration and lifecycle addendum — 2026-11-06
+
+**Status unchanged: PROPOSED.** See the [pinned Core shared-service audit](../research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md) and [SPEC-009](../specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md).
+
+- In Core 2026.11.0 the global websocket_api.async_register_command writes into a command-name dictionary without rejecting an existing key; duplicate registration may silently replace a handler. Project-level collision/once-only guards must verify command ownership rather than relying on that helper to prevent overwrite.
+- The frontend panel registry rejects a duplicate route without an explicit update, and provides async_remove_panel. Dynamic removal of previously registered HTTP static paths remains unverified. Do not equate hiding the menu with completely uninstalling all routes or handlers.
+- Register the panel, static assets and WebSocket handlers through one integration-level controller, not inside each physical console setup. Handlers must resolve current authorized entry/data scopes on every call, not hold a stale SQLite connection across reloads.
+- Query, subscription and snapshot lifetime are different: subscriptions belong to browser connections; one bounded history query owns a short-lived read lease; neither should spawn LAN probes or keep an unused writer open indefinitely.
+- **Proposed zero-entry policy:** hide the panel after removal of the last configured entry, retain private history according to ADR-0008, and expose explicit archive-recovery options in future. Whether an archive-only persistent hub entry is needed remains undecided.
+- If storage is degraded, frontend state must distinguish fresh LAN readings from UNSAVED history; cross-console state remains isolated.
