@@ -258,3 +258,10 @@ No worker library is chosen, no executable code or test fixtures created, no new
 - https://github.com/omnilib/aiosqlite/blob/v0.21.0/aiosqlite/core.py
 
 **Outcome:** 80 unrun test designs, 20 open gates; official/third-party research only.
+
+
+## 10. Capability matrix and aiosqlite v0.22.x worker behavior — 2026-11-06
+
+[Source-pinned audit](../research/ha-core-2026-11-degraded-capabilities-worker-proof-and-aiosqlite-022-audit.md), [ADR-0017](../decisions/ADR-0017-degraded-operation-capabilities-and-sqlite-close-evidence.md) and [SPEC-017](SPEC-017-degraded-capability-matrix-and-sqlite-close-proofs.md) refine internal Recovery Hold behavior with **80 more NOT_RUN cases / 20 OPEN gates**. Current console entity availability, native ConfigEntry LOADED, current physical source status, ledger write authorization and backend caller ACL are separate. A hidden frontend button or entity.available=False is not a server-side identity or capability guard for entity service/automation/WebSocket paths. A source-only LAN state under HOLD requires an explicitly approved OBSERVATION_ONLY capability, never a DURABLE_WRITE lease or accumulated historical time; conservative control policy denies wake/standby and Remote Play pending maintainer review.
+
+Earlier aiosqlite v0.21.0 analysis is not transferable unchanged to v0.22.1: Connection no longer subclasses Thread in 0.22.0/0.22.1; close/stop queue behavior changed, and v0.22.1 adds stop/ResourceWarning. Its stop Future callback is published before the underlying worker loop break. Future completion is not literally a public join API; production pointer promotion still requires actual positive terminal proof of all tracked SQLite connections/workers. Neither stdlib nor aiosqlite has been approved. SPEC-016's original 80 scenarios and 20 gates remain NOT_RUN/OPEN.
