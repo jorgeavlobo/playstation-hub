@@ -180,7 +180,7 @@ Lifecycle constraints:
 | ST-REC11 | Public static asset route probed for SQLite file | No history file served |
 | ST-REC12 | Automatic backup with personal history and Recorder excluded | Privacy notice clear: custom history may still be in config backup |
 
-**Total: 60 proposed cases** (16 PATH + 16 BK + 16 HUB + 12 REC). They refine and overlap SPEC-008/009/010; the enumerated count is not the number of distinct executable tests and no cases have run.
+**Initial suite: 60 proposed cases** (16 PATH + 16 BK + 16 HUB + 12 REC). They refine and overlap SPEC-008/009/010; the enumerated count is not the number of distinct executable tests and no cases have run.
 
 ## 6. Sign-off gates (all OPEN)
 
@@ -227,4 +227,18 @@ Lifecycle constraints:
 - https://www.sqlite.org/wal.html
 - https://www.sqlite.org/backup.html
 
-**Current evidence state:** all 60 proposed tests unrun; all 16 gates open; no code or physical HA OS tests.
+**Current evidence state:** 64 proposed cases including four P0 failure cases in §9, all unrun; 16 gates open; no code or physical HA OS tests.
+
+
+## 9. P0 pre-backup orphan-freeze cases — 2026-11-06
+
+Pinned Core BackupManager awaits all pre-backup integration-platform hooks and raises on any failure. Pinned Supervisor awaits begin_backup **before** the try/finally that calls end_backup. A successful PlayStation Hub quiesce followed by another integration's pre-hook failure can therefore lack a corresponding post hook. The review now treats prolonged write freeze **BLOCKED_PENDING_SAFE_RESUME_PROTOCOL** and emphasizes immutable snapshot investigation instead of accepting S1 as a safe baseline.
+
+| ID | Fault injection | Expected outcome |
+| --- | --- | --- |
+| ST-BK17 | Our pre hook quiesces; different integration pre hook raises | Detect lack of guaranteed post; no indefinite silent freeze and no unsafe automatic resume |
+| ST-BK18 | Supervisor begin_backup fails after Core pre hook | Abort/compensate with a proven lifecycle policy; no successful-backup claim |
+| ST-BK19 | WebSocket connection is lost between successful pre and end | Source remains safe; recovery cannot mutate while archive copying may be active |
+| ST-BK20 | Local watchdog fires while Supervisor is still archiving | Must not unfreeze into unsafe live raw DB copy; error/recovery path explicit |
+
+**Revised total: 64 NOT_RUN cases** (previous 60 + four explicit failure-mode cases); no cases executed and all 16 approval gates remain OPEN. Gate ST-G04 now explicitly requires this cross-platform failure test.
