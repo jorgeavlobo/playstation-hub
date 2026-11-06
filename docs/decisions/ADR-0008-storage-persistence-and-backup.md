@@ -445,3 +445,15 @@ The [2026.11 official-source re-audit](../research/official-source-reaudit-home-
 4. Online Backup API immutable snapshot + manifest is the preferred next research direction but still requires excluding/disambiguating the raw live DB/WAL from the archive, trusted restore selection and target HA OS validation. Snapshot cursor must be obtained from the completed snapshot itself.
 5. Snapshot/manifest two-file renames are not atomic as a pair; use a generation-scoped completed-publication contract. Protect the current ledger, last known good copy and private sensitive history; no silent auto-recovery by overwriting the valid live file.
 6. Pending ADR-0011 decides an optional explicit logical Hub/Archive Config Entry for archive-only browsing and backup integration setup. No SQLite path, PRAGMA, worker, backup strategy or Hub entry is now approved or implemented.
+
+
+## 2026-11-06 — Maintainer acceptance scope and immutable SQLite snapshot source audit
+
+**ADR-0008 stays PROPOSED** for the final SQL storage and backup implementation. The maintainer accepted *product-level* choices recorded in [ADR-0011 §12](ADR-0011-storage-layout-restore-authority-archive-hub.md#12-maintainer-acceptance-register--2026-11-06). The exact SQLite backend, PRAGMAs, file path and automatic restore method remain conditional. See the independent [ADR-0012](ADR-0012-immutable-snapshot-backup-and-restore-authority.md), [official-source deep dive](../research/ha-core-2026-11-immutable-sqlite-snapshot-protocol-source-audit.md) and [SPEC-012](../specifications/SPEC-012-immutable-snapshot-publication-and-backup-admission.md).
+
+- Pinned Core and Supervisor archive filters have fixed exclusions; the documented pre/post hooks do not supply a custom per-file exclude contract. Under backed-up /config, live SQLite DB/WAL might be included in the same archive as a valid immutable app-owned snapshot. A successful app pre-hook is NOT a proven whole-archive restore guarantee.
+- SQLite Online Backup API has distinct source/destination connection ownership; incremental copy can restart under concurrent source writes. Bound duration and memory, close destination, verify integrity_check+foreign_key_check, ledger UUID and DB-owned durable cursor. Only then publish a generation-specific immutable snapshot+manifest with a final completion barrier.
+- Two independently renamed files are not an atomic pair; never accept partial artifact publication. Safe storage sync/rename behavior must be tested on the supported filesystems.
+- No archive-long write freeze: Supervisor may fail begin_backup after our pre-hook already froze writes if another integration pre-hook errors; no matching post is guaranteed. Live writes must not depend on a callback that can be absent.
+- No automatic overwrite of a valid live DB just because an older published snapshot exists. Restore intent, full-config restore, copied live DB/WAL, lineage mismatch and admin-guided recovery remain open.
+- Snapshots and historical data contain personal usage information; protect with private paths, scoped API authorization and separate credential store. No production snapshot/backup/restore has run.
