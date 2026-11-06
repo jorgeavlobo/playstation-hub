@@ -225,3 +225,8 @@ No source code, fixture, test or migration was created by publishing this specif
 - https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py
 
 **Status:** 64 NOT_RUN cases, 16 open gates, no code/tests/HA OS invocation.
+
+
+## 9. Restore source authority after a verified immutable snapshot — 2026-11-06
+
+[Restore authority source audit](../research/ha-core-2026-11-restore-authority-and-portable-storage-source-audit.md), [SPEC-013](SPEC-013-restore-authority-storage-topology-and-reconciliation.md) and [ADR-0013](../decisions/ADR-0013-restore-authority-and-storage-topology.md) show why an immutable snapshot does not create a universal automatic restore rule. A standard config backup can include both validated snapshot and mutable raw DB/WAL. Moving the live source to share can separate it from config-only archives, but recommended automatic backups omit share and a separate share restore can replace or leave a ledger version incompatible with restored Config Entries. The next restore gate must classify LIVE_VALID / VERIFIED_SNAPSHOT / RAW_ARCHIVED_SQLITE / EXTERNAL_LIVE / FOREIGN_OR_FORKED and preserve originals. Even equal ledger UUID and committed cursor are insufficient to select from divergent post-restore branches; no largest-cursor heuristic or automatic merge is approved. The 64 SPEC-012 snapshot tests and 16 gates remain unrun; SPEC-013 adds distinct storage/identity/recovery scenarios. No code or actual archive was created.
