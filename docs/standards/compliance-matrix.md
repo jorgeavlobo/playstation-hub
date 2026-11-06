@@ -94,3 +94,19 @@ The [Core 2026.11 source audit](../research/ha-core-2026-11-multi-console-runtim
 | Custom app data affected by Recorder-only backup exclusion | P1 | SOURCE_VERIFIED, HA_OS_NOT_TESTED | Supervisor pinned source [restore module](https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py) |
 
 **No project implementation, tests, release checks or ADR approval passed.** The historical DOC registers remain for traceability.
+
+
+## HA OS storage path, archive-only UI and backup-hook failure findings — 2026-11-06
+
+| Requirement | Priority | Status | Evidence |
+| --- | --- | --- | --- |
+| App-specific SQLite path outside HACS source but inside selected backup scope | P0 | PROPOSED, NOT_TESTED | [Storage audit](../research/ha-core-2026-11-storage-layout-restore-authority-archive-root.md), [ADR-0011](../decisions/ADR-0011-storage-layout-restore-authority-archive-hub.md) |
+| HA config, Recorder, share/media and cache inclusion clearly separated | P0 | SOURCE_RESEARCHED, HA_OS_NOT_TESTED | Core core_config.py, pinned Supervisor restore/module, official HA backup docs |
+| No invisible long-held pre-backup freeze on another platform failure | P0 | SOURCE_CONFIRMED_RISK, MITIGATION_OPEN | Source audit §15, [SPEC-011 ST-BK17–20](../specifications/SPEC-011-storage-roots-restore-authority-archive-hub-lifecycle.md) |
+| Immutable backup snapshot with self-derived durable cursor and crash-safe manifest publication | P0 | PROPOSED, NOT_RUN | ADR-0011 / SPEC-011 |
+| Valid live DB never auto-replaced with older staged snapshot | P0 | PROPOSED, NOT_RUN | SPEC-010 and SPEC-011 |
+| Ledger/config identity divergence after selective old-config restore | P0 | PROPOSED, NOT_RUN | SPEC-011 ST-REC01, ST-BK13 |
+| One logical user-confirmed Hub/Archive Config Entry for no-console panel | P1 | ADR-0011 PROPOSED; owner approval pending | SPEC-011 ST-HUB01–16 |
+| User-owned retention, export, private backups and explicit purge | P1 | PROPOSED, NOT_RUN | ADR-0008/0010/0011 |
+
+**All SPEC-011 64 case definitions are NOT_RUN, all 16 gates OPEN; none are formal custom-integration Gold/Platinum certification.**
