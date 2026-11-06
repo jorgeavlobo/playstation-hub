@@ -257,3 +257,8 @@ The accompanying research audit §17 now traces a concrete path from Supervisor 
 ## 12. Corrected ordering evidence — 2026-11-06
 
 Official Home Assistant [Config Entries guidance](https://contributors.home-assistant.io/core/integrations/config-entries/) requires setting typed entry.runtime_data before async_forward_entry_setups because each forwarded platform accesses the runtime immediately. The setup sequence in §4 was revised accordingly. To avoid writing under an invalid pending owner, the monitor must start only after its lease is ACTIVE. Synthetic future tests SH-INIT01/03/07 and SH-LC07 must assert this ordering explicitly. No tests were run.
+
+
+## 13. Global graceful shutdown checkpoint — 2026-11-06
+
+Pinned Core 2026.11.0 [core.py](https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core.py) provides **hass.async_add_shutdown_job** ahead of the stop event and automatic background-task cancellation. Stage limits in this source are 20 seconds for shutdown jobs, 100 seconds for stop, 60 seconds for final write and 30 seconds for close. These are **upper execution stages, not per-integration guarantees of successful flushing**. The candidate HubController must register exactly one global shutdown job, fence writers/probes, and request orderly bounded monitor stop/commit drain before the event-based cancellation stage. SH-LC09/10 now require evidence that this pre-stop job prevents new work; add the interleaving "last Config Entry unloads while global STOPPING" to the existing suite fixture coverage. Do not count this extra fixture as a passed test or silently alter the existing 56 IDs. An interrupted close must be detected and reconciled at restart without fabricating sessions.
