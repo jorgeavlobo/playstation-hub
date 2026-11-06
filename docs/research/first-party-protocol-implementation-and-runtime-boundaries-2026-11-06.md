@@ -245,3 +245,11 @@ The earlier **stdlib-only** blocker remains technically accurate: Python's *stan
 5. No package, primitive, import or crypto code has been selected or executed. This is a **candidate for a future explicit maintainer decision**, not a reversal of the zero-new-package requirement or authorization for Remote Play coding.
 
 **Refined blocker status:** \`BLOCKED_CRYPTO_BACKEND_APPROVAL\` rather than "no conceivable built-in platform AES route." First-party passive LAN remains ready for later implementation independently of the answer. If the maintainer rejects even the platform-pinned PyCA primitive, the encrypted Remote Play feature stays \`DEFERRED_STRICT_NO_EXTERNAL_CRYPTO\`; never solve it with homemade AES or undocumented OpenSSL \`ctypes\` calls.
+
+## 12. Further first-party DDP fidelity: no wire correlation and raw heartbeat required
+
+[New source-level DDP wire and temporal-correlation audit](lan-ddp-wire-and-temporal-correlation-audit-2026-11-06.md) examined exact static SRCH bytes, NUL versus non-NUL terminators, source-port choices, native HA broadcast helper's default-only behavior, Chiaki's header and host-change logic, and Python official UDP transport semantics.
+
+**Important correction:** Local \`request_generation\` and listener fencing cannot prove that an incoming DDP reply belongs to a particular outgoing scan because inspected request packets have **no per-request echo identifier**. A late UDP datagram can be received on a new socket after our old code callbacks were fenced. Treat accepted status/titles as received point samples with explicit \`WINDOW_ASSOCIATED_UNVERIFIED\` temporal quality, not a precise physical transition instant or cryptographically verified host identity.
+
+**History and UI split:** Chiaki's service updates \`last_ping_index\` on each accepted reply but only publishes changed host data; PS5-MQTT likewise suppresses unchanged HA UI state. Our native source monitor must retain successful unchanged heartbeat observations for bounded time accounting without flooding native HA entity listeners. A scan timeout and Python UDP \`sendto\` return are not OFF or proof of delivery. Detailed 20 future DDP-T test traces are in the new study; no executable tests were run or packages selected.
