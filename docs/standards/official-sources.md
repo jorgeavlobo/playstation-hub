@@ -220,3 +220,24 @@ The [Core/Python/third-party worker deep audit](../research/ha-core-2026-11-reco
 - https://www.sqlite.org/howtocorrupt.html — hazards of renaming open SQLite database or deleting hot sidecars.
 
 **Evidence boundary:** Version-tagged third-party source is not proof that aiosqlite 0.22.1 is installed in Core or on user's HA OS. The worker terminal contract, accepted degraded controls and safe automatic restoration are NOT established by source inspection. No code/tests executed.
+
+
+## First-run Config Flow uniqueness and SQLite non-creating database opening — 2026-11-06
+
+The [first-boot official-source audit](../research/ha-core-2026-11-first-boot-ledger-provisioning-and-missing-data-audit.md), [ADR-0018](../decisions/ADR-0018-first-boot-consent-and-ledger-provisioning.md), and [SPEC-018](../specifications/SPEC-018-first-boot-ledger-provisioning-and-recovery-classifier.md) add:
+
+- https://www.sqlite.org/uri.html — URI filename modes ro, rw, rwc and immutable caveats; no-create versus create.
+- https://www.sqlite.org/c3ref/open.html — sqlite3_open_v2 READONLY, READWRITE, READWRITE|CREATE, and historical READWRITE read-only fallback on permissions.
+- https://www.sqlite.org/c3ref/db_readonly.html — actual connection read-only mode validation.
+- https://docs.python.org/3.14/library/sqlite3.html — sqlite3.connect with URI parameter, existing-only open and linked runtime version.
+- https://docs.python.org/3.14/library/os.html — EAFP file operations, mkdir exclusive/exists error, os.open O_EXCL/O_NOFOLLOW where supported, permission and file errors.
+- https://contributors.home-assistant.io/core/integrations/config-flow/ — user-confirmed Config Flows, stable unique IDs, async_set_unique_id and duplicate abort.
+- https://contributors.home-assistant.io/core/quality-scale/unique-config-entry/ — forbid IP/name as unique hardware identity; duplicate entry quality rule.
+- https://contributors.home-assistant.io/core/integrations/config-entries/ — persisted Config Entry data vs ephemeral runtime_data, setup/migrations, enabled/disabled.
+- https://contributors.home-assistant.io/architecture/core/registries/ — native HA Store and .storage files distinct from private SQLite.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/config_entries.py — pinned Config Flow duplicate and entry save behavior; no cross-system transaction.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/helpers/storage.py — Store versioned data and delayed save, not an atomic SQLite+entry commit.
+- https://github.com/home-assistant/core/blob/2026.11.0/homeassistant/core_config.py — config-root and evictable cache path.
+- https://github.com/home-assistant/supervisor/blob/69848689a1e982ebe92d80e344fc086d8af667db/supervisor/homeassistant/module.py — config restore can replace previous local evidence.
+
+**Source boundary:** SQLite opening and HA Config Flow uniqueness are official facts, but the proposed CREATE_NEW_HISTORY consent, journal and unique staging protocol remain unimplemented and untested. No server-side file evidence from the user's actual HA OS has been collected.
