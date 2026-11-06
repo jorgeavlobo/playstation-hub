@@ -61,3 +61,6 @@ Review process: compare source revisions, update affected protocol document, upd
 
 
 **2026-11-06 — Supervisor backup source-chain verification:** Extended the shared-services audit with pinned Supervisor commit 69848689. Followed Supervisor store_homeassistant -> HomeAssistant.backup -> begin_backup/end_backup -> WebSocket backup/start/end -> Core BackupManager pre/post integration platform handlers, corroborated by pinned Core 2026.11.0 tests. Confirmed Supervisor's default archive filters do not exclude arbitrary app-specific SQLite DB and WAL. Refined Bible to 0.43.1 and the SPEC-009/ADR-0008 evidence boundaries: framework callbacks are source-confirmed, while live HA OS snapshot/restore validity remains untested. Documentation only.
+
+
+**2026-11-06 — Runtime-data ordering correction:** Compared candidate multi-entry initialization flow to official Home Assistant Config Entries and runtime_data documentation; fixed the design to assign typed entry.runtime_data *before* async_forward_entry_setups. To prevent persistence writes with an inactive lease, monitor observation starts only after lease promotion to ACTIVE. Updated source audit §18, SPEC-009 §12, Bible v0.43.2. No code or tests.
