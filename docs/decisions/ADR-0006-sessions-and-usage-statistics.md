@@ -507,3 +507,15 @@ Only the interval from 11:00 to 11:00:30 is bounded by accepted samples under th
 The [multi-console ConfigEntry/coordinator audit](../research/ha-core-2026-11-multi-console-runtime-source-audit.md) and [SPEC-008](../specifications/SPEC-008-multi-console-runtime-and-coordinator-lifecycle.md) add a requirement to ADR-0006: multi-year session evidence must not stop merely because the HA sidebar is closed or a power sensor is disabled. Core's normal DataUpdateCoordinator periodic refresh is listener-dependent; the source collection owner must have an explicit ConfigEntry lifetime, disabled-polling behavior and one probe lane per physical console.
 
 If a user disables automatic polling, HA stops, the console becomes unreachable or the durable writer fails, session continuity must conservatively stop at the most recent persisted checkpoint or mark a gap under the approved policy. No time may be backfilled on reconnection. Monitoring cadence, source TTL and session continuity gap are separate quantities and still require real measurement. No ledger algorithm or storage choice was implemented by this research.
+
+
+## Crash recovery and ambiguous COMMIT acknowledgement research — 2026-11-06
+
+**Status unchanged: PROPOSED, no tested claims.** See [recovery source audit](../research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](../specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md).
+
+- An accepted LAN sample and an **authoritatively committed historical duration** are different facts. Persist observation UUID, accepted source evidence, bounded segment/gap revisions, per-owner checkpoint and global durable cursor atomically.
+- A caller losing COMMIT acknowledgement after successful commit must query for the original observation UUID and reuse its receipt; never repeat an additive "seconds" update under a new ID for the same observation.
+- After unexpected restart, initialize a new runtime generation; older monotonic timestamps cannot be subtracted across process lifetimes. Existing previous-run segments close only at last durably supported evidence and leave an UNKNOWN gap until newly observed evidence.
+- An older backup, even if internally consistent, has historical coverage only until its committed cursor. The restored-to-new-session gap is unknown; do not claim that a console continued gaming while Home Assistant was absent or after the old backup was made.
+- Forward/backward UTC clock adjustments and new physical identity at an old IP require uncertainty/identity handling rather than false elapsed time. Derived daily/weekly/monthly sums continue to use half-open intervals and deterministic union/deduplication.
+- Archived but unconfigured consoles may have readable historical reports only under an explicitly approved archive-access policy. No runtime monitoring or control is implied by an archival record.
