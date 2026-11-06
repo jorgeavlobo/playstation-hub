@@ -1,7 +1,7 @@
 # PlayStation Hub — Architecture & Standards Guide
 
 > **Status:** Planning / living specification  
-> **Document version:** 0.43.3 — 2026-11-06  
+> **Document version:** 0.44.0 — 2026-11-06  
 > **Repository:** https://github.com/jorgeavlobo/playstation-hub  
 > **Public name:** PlayStation Hub  
 > **Integration domain:** `playstation_hub` (planned; verify before release)  
@@ -18,6 +18,9 @@
 
 
 > **Shared-services lifecycle checkpoint (2026-11-06):** The [pinned Core/SQLite shared-services audit](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md) and [SPEC-009 (56 unrun tests)](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md) refine SPEC-008. Each Config Entry has its own setup lock, so shared initialization, migrations, writer ownership, leases, query/snapshot lifetimes and final shutdown need a separately serialized integration-wide controller. Official WebSocket registration can replace handlers by command name and frontend panel registration rejects duplicate routes; one-time registration and collision ownership checks must be explicit. **Important new blocker:** the generic Core backup path supports pre/post integration hooks, but HA OS uses Supervisor backup machinery and consistent custom SQLite backup/restore is not verified. No code or testing occurred; all dependent ADRs remain proposed.
+
+
+> **Crash recovery / restoration provenance checkpoint (2026-11-06):** The [SQLite, Supervisor and archive-access source audit](docs/research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010 (56 NOT_RUN tests, 14 open gates)](docs/specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md) identify the **2026 SQLite WAL-reset bug**, ambiguous COMMIT acknowledgements, and the possibility that an older staged snapshot is mistaken for a restore after a normal HA restart. Pinned Supervisor full/partial Core configuration restores can replace app-owned files; its database-exclusion setting targets the Recorder DB, not arbitrary custom SQLite. Do not automatically apply snapshots simply because they exist. Runtime linked SQLite version, safe backup source selection, restore intent, exact HA OS filesystem path and archive-only menu behavior remain OPEN. Existing ADRs remain Proposed; no code/tests.
 
 ## 1. Purpose and non-negotiable principles
 
@@ -2801,3 +2804,19 @@ Official Home Assistant contributors documentation requires assigning typed entr
 ### Global Home Assistant shutdown ordering — 2026-11-06
 
 In pinned Core 2026.11.0, **hass.async_add_shutdown_job** is called before EVENT_HOMEASSISTANT_STOP and before Home Assistant automatically cancels background tasks. Its shutdown phase currently has a 20-second global timeout; subsequent stop, final-write and close phases have distinct bounded waits. The proposed integration-wide HubController should register **one** idempotent pre-stop shutdown job, fence new console/SQL work, cooperatively stop monitors, drain or explicitly fail pending commits and close shared SQLite before background-task cancellation. Never assume a Core phase timeout proves durability or completed termination. See [shared-services research §19](docs/research/ha-core-2026-11-shared-services-lifecycle-and-sqlite-audit.md#19-global-home-assistant-shutdown-ordering--pinned-core-2026110) and [SPEC-009 §13](docs/specifications/SPEC-009-shared-service-lifecycle-concurrency-and-sqlite.md#13-global-graceful-shutdown-checkpoint--2026-11-06). No test/implementation performed.
+
+
+## SQLite crash recovery, backup provenance and archive-only product decision — 2026-11-06
+
+**Authority boundary:** Supplement to the 2026-11-06 shared-runtime audit, not an approval of ADR-0006/0008/0010. See the [source research](docs/research/sqlite-crash-restore-provenance-and-archive-access-2026-11.md) and [SPEC-010](docs/specifications/SPEC-010-crash-recovery-restore-provenance-and-archive-access.md).
+
+1. **New P0 WAL gate.** Official SQLite documents a rare WAL-reset corruption race affecting versions through 3.51.2, fixed in 3.51.3+ and backports 3.44.6/3.50.7. The actual SQLite C library linked to Python on the future supported Home Assistant OS installation must be identified; Core/Python version alone is insufficient. One controlled writer/checkpointer must be tested, and a non-WAL alternative must remain possible if the platform is affected.
+2. **Crash recovery and double-counting.** A COMMIT may succeed even if its asyncio caller loses the acknowledgement. Each accepted observation, session/gap effect, revision and durable cursor must commit as one idempotent SQL transaction; a retry reuses an observation ID and stored receipt. On restart, let SQLite recover its own WAL and close previous-runtime segments only at last durable evidence, never at restart time. No crossing monotonic time bases.
+3. **Snapshot is not restoration intent.** A valid staged snapshot from an old backup can remain in the live directory after newer commits. Restoring it on an ordinary restart would silently destroy recent history. **Fail closed:** use a healthy live ledger at normal startup, preserve corrupt originals, and require a verified one-time restore intent or explicit user-authorized import before replacing it. A checksum proves matching bytes, not freshness or authenticity.
+4. **Pinned Supervisor restore semantics.** The Supervisor may clear and repopulate the Home Assistant config tree on full/selected partial restore; its exclude_database filter targets the HA Recorder DB. Do not claim that this switch excludes PlayStation Hub history. Custom live DB and WAL files might both be archived without a consistent snapshot guarantee.
+5. **Backup designs remain alternatives.** Candidate A pauses app writes, checkpoints/closes every SQLite connection and holds source immutability through archive creation; safer to reason about but may lose monitoring coverage. Candidate B stages a validated Online Backup API snapshot and manifest, but requires proving restoration provenance and handling live DB copies. Neither has passed a Home Assistant OS test.
+6. **Integrity and privacy.** Restore acceptance requires agreed schema/ledger UUID/durable cursor, cryptographic digest for accidental mismatch, SQLite integrity_check and foreign_key_check, plus explicit session-identity correctness. Backups may expose game usage history and must never include separate Sony credentials by accident.
+7. **Archive-only UX remains a product decision.** Removing the final configured console must not silently purge retained history. A panel without a permanent Config Entry may disappear after HA restart. Compare initial panel-when-configured policy with a separate explicit Hub/Archive Config Entry, or a user-confirmed offline import/export path.
+8. **No implementation stage transition.** SPEC-010 adds 56 unrun cases and 14 open gates on top of SPEC-008 (46) and SPEC-009 (56). These 158 listed scenarios have intentional overlap; they are not 158 unique executable tests. All storage and restore choices are pending explicit approval and later evidence.
+
+**Next research gate:** verify actual installed HA OS SQLite binary and Supervisor release, inspect backup member inclusion and a trusted restore-intent API, then determine whether the first supported version should choose a write-quiescence design or a staged snapshot with unambiguous recovery. These steps require future authorized test execution; do not silently mark them done.
