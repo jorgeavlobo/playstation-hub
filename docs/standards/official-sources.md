@@ -441,3 +441,24 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://cryptography.io/en/50.0.2/hazmat/decrepit/ — PyCA legacy AES-CFB mode, not Python stdlib.
 
 **Boundary:** The proprietary wire grammar is community-observed and unverified against user hardware. Sony officially describes pairing UX, not the packet format. No PlayStation code, crypto tables, account access or commands were imported/executed. No runtime package or new numbered ADR/SPEC is authorized.
+
+## Deep PS5 crypto derivation, versions and alternative-backend safety — 2026-11-07
+
+**New primary research:** [PS5 Remote Play cryptographic derivation/version and source-safety audit](../research/ps5-remote-play-crypto-derivation-versions-and-security-source-audit-2026-11-07.md). **Status:** Source observed, no implementation/real PS5 test, no approvals for external crypto libraries or copied key tables.
+
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/crypto/base.ts — HMAC SHA256 of nonce || uint64BE counter, first 16 IV; AES-128-CFB.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/crypto/modern.ts — PS5 seed, aeropause, auth nonce and key transformations; do not copy key tables.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/model.ts — PS5 RP-Version=1.0 separate from physical firmware and PS4 8/9/10 targets.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/codec.ts — header-only frames and separate outgoing/incoming cipher counters.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/rpcrypt.c — both OpenSSL and optional Mbed TLS CFB128 implementation, full-size SHA256 digest safety discrepancy in optional branch (not reproduced).
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/test/rpcrypt.c — PS5 registration IV/bright source tests; inspected encryption/decryption examples mainly PS4 pre10.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/CMakeLists.txt — Mbed TLS disabled by default but can be selected for platform-specific builds.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/src/ps5_remoteplay/crypto.py — Python Playactor-port AES-CFB, HMAC and source transforms, no independent hardware proof.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/tests/test_crypto.py — source test explicitly named `test_generate_iv_playactor_case`; vectors derived from upstream implementation.
+- https://cryptography.io/en/50.0.2/hazmat/decrepit/ — official PyCA 50.0.2 CFB legacy mode, third-party even when already HA-pinned and **not approved** for direct import.
+- https://cryptography.io/en/50.0.2/hazmat/primitives/symmetric-encryption/ — official PyCA Cipher/AES API, warns that encryption by itself lacks authenticity.
+- https://mbed-tls.readthedocs.io/projects/api/en/v3.5.0/api/file/sha256_8h/ — official SHA256 finish requires 32-byte digest-output buffer, unlike a 16-byte IV destination.
+- https://mbed-tls.readthedocs.io/projects/api/en/v3.5.2/api/file/md_8h/ — official HMAC finish writes the full configured digest to caller-provided output.
+- https://github.com/home-assistant/core/blob/2026.11.0/pyproject.toml — HA Core ships PyCA 50.0.2; presence does NOT waive maintainer external-library ban.
+
+**Caution:** No upstream vulnerability was proven; potential Mbed TLS branch underallocation is a static finding, not exploit execution. Never copy GPL/AGPL lookup tables or key vectors without rights review. RP version does not identify firmware, and shared mathematical test vectors are not independent live-device tests. All CRY trace cases NOT_RUN.
