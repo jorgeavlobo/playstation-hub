@@ -113,3 +113,15 @@ These are **design-level component names**, not files created. Distinguish remot
 No provider PSN API, open-source codebase or Home Assistant component automatically supplies a cryptographically accepted hardware identity. The *first-party integration* should degrade visibly when control cannot be offered, without pretending it supports standby or copying a third-party implementation.
 
 **Outcome:** A scoped, testable, independently implementable architecture contract for **when controls are authorized and cryptographic prerequisites resolved**. Not a working Remote Play client, not a release promise, not an automatic dependency grant and not a hardware test.
+
+## 8. Cryptographic source/rights audit addendum (2026-11-07)
+
+**Current source authority:** [Deep PS5 derivation, protocol-version, independent-vector and source-safety audit](../research/ps5-remote-play-crypto-derivation-versions-and-security-source-audit-2026-11-07.md). The operation/credential state machines above are still **PROPOSED / NOT IMPLEMENTED**.
+
+The cryptographic unit requires four separately justified activities: **(1)** stdlib HMAC-SHA256 and 64-bit-BE counter to produce a full 32-byte digest then a 16-byte IV; **(2)** PS5 version-specific PIN and server-nonce/seed transforms with independent legally reusable key-table provenance; **(3)** a vetted **CFB128** AES primitive (not CFB8/CBC, not own AES), which would require a narrow express exception to import HA-pinned PyCA; **(4)** per-direction transactional cipher context/counter ownership so HTTP encrypted fields, server-type header and binary payloads cannot silently desynchronize.
+
+RP-Version 1.0 and Sony **firmware version** are different. The source's 480-byte ASCII-'A' local registration preface yields fixed lookup selector positions 1 and 8; this is an observed implementation choice, not a universal firmware/security guarantee. Modern PS5 test oracles must be independent of Playactor-derived Python vectors and must not copy AGPL/GPL tables/fixture data into the distributable integration.
+
+**Unrelated upstream risk:** Chiaki's optional Mbed TLS path appears to give a 16-byte target buffer to a full SHA256 HMAC output routine; a **possible** source-level memory-safety concern, not compiled or reproduced. Do not replicate it. Crypto primitives must allocate their full digest output before truncation, check lengths, reject invalid counters, and never log secrets.
+
+**No gate lifted:** AES primitive exception, table/rights provenance, authorized identity and real PS5 pairing are all OPEN. No crypto source, test runner, branch, device interaction or package was created.
