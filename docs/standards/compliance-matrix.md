@@ -311,3 +311,20 @@ Keep new-app first-time ledger genesis, versioned forward migrations AFTER actua
 | Sony PSN access is optional and authorization-gated, no SDK | REQUIRED PRIVACY/AUTH CONSTRAINT / BLOCKED_PROVIDER_AUTHORIZATION | Authorized app credentials, rate/error handling, access tests |
 
 Native HA functions may use transitive platform packages. This is not a claim of literally zero third-party code inside Home Assistant; it is **zero extra runtime installations plus independently owned PlayStation behavior**. All tests NOT_RUN and no dependency/code created by documentation alone.
+
+## PS5 Remote Play cryptographic source-compatibility guard — 2026-11-07
+
+**Source-audit reference:** [PS5 Remote Play derivation/version, rights and safety report](../research/ps5-remote-play-crypto-derivation-versions-and-security-source-audit-2026-11-07.md), Guide v0.66.0. The PlayStation-specific implementation must be ours, with no imported PlayStation client, copied AGPL/GPL tables, unmanaged crypto or new pip runtime dependency. A direct import of HA-preinstalled PyCA still needs **explicit maintainer approval**.
+
+| Requirement | Status / release evidence |
+| --- | --- |
+| PS5 AES-128-CFB128 (not CFB8/CBC) plus IV HMAC SHA256 full 32-byte digest truncated to 16-byte IV | SOURCE-VERIFIED / NOT_IMPLEMENTED; byte/crypto test required |
+| Pairing PIN, 480-byte preface, PS5-specific lookup key tables and lawful reuse rights | SOURCE-VERIFIED PARTIAL / RIGHTS_UNRESOLVED |
+| Outbound/inbound per-encrypted-payload counter correctness and zero-payload frame behavior | SOURCE-VERIFIED / TESTS_NOT_RUN |
+| RP-Version 1.0 does not represent PS5 firmware version | SOURCE-VERIFIED / firmware matrix NOT_RUN |
+| Modern PS5 independent known-answer vectors and real device handshake | BLOCKED_PENDING_APPROVAL_AND_DEVICE |
+| Alternative Mbed TLS SHA256 HMAC output sizing | UPSTREAM_STATIC_CONCERN / NOT_COMPILED_OR_EXPLOITED; do not copy |
+| HA-preinstalled cryptography PyCA AES primitive exception | UNAPPROVED; must not import before maintainer choice |
+| Sony account provisioning and protocol table provenance | BLOCKED_PROVIDER_AND_RIGHTS_REVIEW |
+
+`CRY-01..20` are descriptive future test traces inside existing SPEC-002, **not executed** or a new numbered SPEC. LAN status/title/archiving unaffected.
