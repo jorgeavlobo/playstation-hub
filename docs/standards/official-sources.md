@@ -462,3 +462,25 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://github.com/home-assistant/core/blob/2026.11.0/pyproject.toml — HA Core ships PyCA 50.0.2; presence does NOT waive maintainer external-library ban.
 
 **Caution:** No upstream vulnerability was proven; potential Mbed TLS branch underallocation is a static finding, not exploit execution. Never copy GPL/AGPL lookup tables or key vectors without rights review. RP version does not identify firmware, and shared mathematical test vectors are not independent live-device tests. All CRY trace cases NOT_RUN.
+
+## Verifiable PS5 lookup source lineage, legal interoperability boundaries and independent standard oracles — 2026-11-07
+
+**New research:** [Exact 8192-byte table equality, source provenance, Portuguese/EU rights and independent tests](../research/ps5-remote-play-lookup-table-provenance-rights-and-independent-oracles-2026-11-07.md), source-reviewed without committing any literal tables or hex vectors.
+
+- https://github.com/chiaki-ng/chiaki-ng/commit/20a7e9d12335faf82209f8010ebb4a073ea844fe — 2020-12-11 first two 512-byte PS5 tables, matching current.
+- https://github.com/chiaki-ng/chiaki-ng/commit/aa9939e93c77f815e41fe6c6652f9b0541ca8c4f — 2020-12-16 all four current PS5 tables present and equal.
+- https://github.com/dhleong/playactor/commit/f71f27e5b1d85baaa7988c0ec12eebdd2094ce91 — 2021-03-23 first two Playactor tables matching earlier Chiaki.
+- https://github.com/dhleong/playactor/pull/16 — author explicitly acknowledges PS5 Remote Play implementation built on Chiaki.
+- https://github.com/dhleong/playactor/commit/435482d36c96bc73996caa580e99d804a48de25f — 2021-03-31 all four Playactor PS5 tables, and source package declares ISC.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/package.json — current `license: ISC` package metadata, not proof of every earlier source table's rights.
+- https://github.com/iharosi/ps5-remoteplay/commit/b74f3b3ae5e60a5753da13ff7452bc18b1689470 — 2026-09-15 port, `keys.py` generated from Playactor.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/src/ps5_remoteplay/keys.py — generated-table declaration; all 8192 bytes equal, not independent.
+- https://eur-lex.europa.eu/legal-content/en/TXT/?uri=CELEX%3A32009L0024 — EU 2009/24/EC Articles 1,5,6 program expression and restricted study/interoperability rights.
+- https://diariodarepublica.pt/dr/legislacao-consolidada/decreto-lei/1994-34555675 — Portuguese DL 252/94 Arts 2,6,7, legal observation/study and interoperability constraints.
+- https://eur-lex.europa.eu/legal-content/EN/SUM/?uri=celex%3A62010CJ0406 — CJEU C-406/10 SAS vs WPL distinguishes functionality from expressive program copyright.
+- https://www.rfc-editor.org/info/rfc4231/ — independent standardized HMAC SHA256 test vectors, not Sony Remote Play tables.
+- https://csrc.nist.gov/pubs/sp/800/38/a/final — NIST SP800-38A AES-CFB operation, standardized mathematical conformance only.
+- https://www.nist.gov/publications/advanced-encryption-standard-aes — NIST FIPS 197 AES algorithm standard.
+- https://pypi.org/project/cryptography/50.0.2/ — PyCA 50.0.2 package metadata declares Apache-2.0 OR BSD-3-Clause; even HA-preinstalled use requires explicit user exception.
+
+**Legal boundary:** The above is technical and publicly accessible legal source information, NOT a legal opinion that shared protocol constants are automatically protected, automatically unprotected, properly sublicensed or infringing. Do not redistribute raw table bytes/copy AGPL source or bypass user's no-external-library requirement without a separate rights/technical decision. All future original tests NOT_RUN.
