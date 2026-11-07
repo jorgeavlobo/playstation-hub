@@ -484,3 +484,29 @@ The [direct legacy develop audit](../research/legacy-develop-to-native-migration
 - https://pypi.org/project/cryptography/50.0.2/ — PyCA 50.0.2 package metadata declares Apache-2.0 OR BSD-3-Clause; even HA-preinstalled use requires explicit user exception.
 
 **Legal boundary:** The above is technical and publicly accessible legal source information, NOT a legal opinion that shared protocol constants are automatically protected, automatically unprotected, properly sublicensed or infringing. Do not redistribute raw table bytes/copy AGPL source or bypass user's no-external-library requirement without a separate rights/technical decision. All future original tests NOT_RUN.
+
+## Source-verified Sony Account ID local pairing and first-party data export — 2026-11-07
+
+**Technical + official Sony source review:** [Account ID numeric/LE8/Base64, local pairing and OAuth trust report](../research/first-party-psn-account-id-provisioning-and-pairing-trust-audit-2026-11-07.md), and [first-party ID/provisioning contract](../architecture/first-party-psn-account-identity-and-pairing-provisioning-contract.md).
+
+- https://www.playstation.com/pt-pt/legal/privacy-policy/ — Sony official: unique numeric Account ID separate from PSN Online ID username; account/device/usage identifiers are personal data.
+- https://www.playstation.com/pt-pt/support/games/remote-play-settings/ — Sony official Pair Device, per-user enablement and same-LAN manual number; does not publish low-level wire format or Account ID generation.
+- https://www.playstation.com/pt-pt/support/account/data-request/ — Sony official personal account-data Excel export and separate EU Data Act device data request. Community reports Account Detail includes Account ID, NOT guaranteed by official published schema.
+- https://www.playstation.com/pt-pt/support/account/manage-authorized-apps/ — Sony official user-granted application access and revocation; not an OAuth client-registration grant.
+- https://www.playstation.com/pt-pt/legal/terms-of-service/ — current Sony Portuguese terms (April 2026) account/security restrictions; subject to mandatory applicable local consumer law.
+- https://partners.playstation.net/ — official PlayStation Partners developer program; general Sony PSN OAuth client access for this HA project NOT verified.
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/credentials/oauth/requester.ts — account `user_id` decimal string to uint64 LE8/Base64, separately obtains it through copied Sony Remote Play client credentials (do NOT reproduce OAuth app values).
+- https://github.com/dhleong/playactor/blob/a9e72d67a3930a8f06455927edb547a1754ef0ac/src/remoteplay/registration.ts — local registration accepts pre-provisioned account ID and Pair Device PIN, separated from OAuth lookup.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/gui/src/psnaccountid.cpp — source GUI numeric `user_id` converted to 8-byte little-endian/Base64.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/include/chiaki/regist.h — PSN account ID exactly 8 bytes, source account vs older PS4 online ID.
+- https://github.com/chiaki-ng/chiaki-ng/blob/43728af2e639fecb8a7af1cd68c29820a40de973/lib/src/regist.c — source registration inserts Base64 `Np-AccountId` into encrypted request.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/src/ps5_remoteplay/registration.py — local `register(host,account_id,pin)`, no Sony OAuth call in this function.
+- https://github.com/iharosi/ps5-remoteplay/blob/61e1f7dc065a77f7e8b1de5057889a08b0208d9d/src/ps5_remoteplay/wake.py — wake credential derived from registered PS5-RegistKey, not Sony Account ID.
+- https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/user/getProfileFromUserName.ts — unofficial provider account-id lookup uses authorized request context, privacy limits, not safe anonymous proof of owner.
+- https://github.com/achievements-app/psn-api/blob/1e9d9a806fcd884a4ddee8086bfe92594611da9f/src/authenticate/exchangeNpssoForAccessCode.ts — unofficial NPSSO/mobile OAuth context, not approved for our project.
+- https://www.reddit.com/r/remoteplay/comments/xwj5li/guide_on_getting_your_psn_account_id_easy_way_no/ — community describes Account Detail in Sony personal-data export and browser-own-session profile network response; not Sony API guarantee.
+- https://www.reddit.com/r/remoteplay/comments/1svzzhp/help_getting_psn_account_id/ — 2026 user reports of account-data export for Chiaki numeric ID, independent of SDK requirement.
+- https://support.microsoft.com/pt-pt/excel/keeping-leading-zeros-and-large-numbers — Microsoft official: numeric Excel cells lose precision beyond 15 digits; cannot restore originally rounded long identifier merely by changing cell format.
+- https://support.microsoft.com/pt-pt/excel/excel-specifications-and-limits — Microsoft official Excel numeric precision 15 digits.
+
+**Security boundary:** Account ID is a personal identifier, not a bearer token or proof of user ownership. No official public Sony endpoint for automatic Account ID retrieval with our unregistered client was confirmed; never embed borrowed client IDs/secrets or ask for NPSSO, passwords, token/URL captures, entire XLSX data exports, or console jailbreak data. A manual account ID is a potential local registration INPUT, not guaranteed offline firmware pairing. No real identity or Sony APIs were accessed.
