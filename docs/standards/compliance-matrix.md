@@ -345,3 +345,22 @@ Native HA functions may use transitive platform packages. This is not a claim of
 | ORIGIN-09 no unauthorized copied tables/SDKs | NOT_RUN release check | Source/SBOM/fixture/license scan, no PlayStation runtime dependency |
 
 Conservative policy stays `NO_TABLE_COPY` until explicit lawful provenance and maintainer approval; AES backend, Sony account identity and real device tests independently gate Remote Play. Passive LAN unaffected. No new numbered ADR/SPEC and no shipped source code.
+
+## Sony Account ID self-provisioning and exact 64-bit handling — 2026-11-07
+
+[Source/official Sony account identity audit](../research/first-party-psn-account-id-provisioning-and-pairing-trust-audit-2026-11-07.md) and [proposed provisioning contract](../architecture/first-party-psn-account-identity-and-pairing-provisioning-contract.md) define test and privacy gates without any PlayStation library or new OAuth dependency.
+
+| Gate | Status | Future release evidence |
+| --- | --- | --- |
+| PSN account `user_id` vs online ID/email/host ID distinction | Sony privacy + upstream code SOURCE_CONFIRMED | Strictly typed separate identities |
+| `uint64` → 8-byte little-endian → Base64 12 ASCII chars with one `=` | Upstream multiple source programs SOURCE_CONFIRMED | Own Python pure conversion and canonical roundtrip tests NOT_RUN |
+| Manual Account ID and PS5 Pair Device PIN accepted by local registration without client-side OAuth call | PINNED_SOURCE only | Own source/hardware tests NOT_RUN |
+| Sony personal-data export acquisition | Official Sony help CONFIRMED; ID field only COMMUNITY_REPORTED | No full Excel import, user-provided scalar only |
+| 16–19 digit numeric ID precision | Official Microsoft Excel max 15 digits | Original text and Python int; never JS Number/sheet numeric conversion |
+| Sony OAuth client registration for our HA integration | NOT VERIFIED | No borrowed Sony app Client ID/secret, NPSSO or token harvesting |
+| User ID format vs Sony account ownership | DISTINCT; no provider assertion | USER_ASSERTED ≠ CONSOLE_ACCEPTED_PAIRING ≠ SONY_VERIFIED |
+| Registered wake credential vs Account ID | Upstream source separate credential fields | Wake not available without accepted RP registration |
+| Multi-console/account pairing and secret retention | PROPOSED | ACL/secret isolation, failed/revoked/replaced device tests |
+| AES primitive and lawful key-table rights | BLOCKED/UNAPPROVED | No encrypted pairing feature release without both gates |
+
+All `IDP-01..24` are source-derived future checks added to existing SPEC-002/003, not executed tests. LAN discovery and source-based history remain standalone and unaffected.
