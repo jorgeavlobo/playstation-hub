@@ -328,3 +328,20 @@ Native HA functions may use transitive platform packages. This is not a claim of
 | Sony account provisioning and protocol table provenance | BLOCKED_PROVIDER_AND_RIGHTS_REVIEW |
 
 `CRY-01..20` are descriptive future test traces inside existing SPEC-002, **not executed** or a new numbered SPEC. LAN status/title/archiving unaffected.
+
+## Exact PS5 cryptographic table provenance and independent-oracle compliance — 2026-11-07
+
+[Source/rights analysis](../research/ps5-remote-play-lookup-table-provenance-rights-and-independent-oracles-2026-11-07.md) gives a reproducible no-byte-copy finding: Chiaki, Playactor and the Python port carry identical **8192 PS5 lookup bytes**, and historical/authored provenance places Chiaki 2020 → Playactor 2021 (explicit Chiaki credit) → Python 2026 (explicit Playactor generation). This is NOT multiple independent device tests and not an automatic license/permission to redistribute constants.
+
+| Gate | Status | Future evidence before release |
+| --- | --- | --- |
+| ORIGIN-01 all 8192 bytes full-array equivalence | SOURCE_CONFIRMED | No raw binary keys copied; revisions logged |
+| ORIGIN-02 temporal and attribution chain | SOURCE_CONFIRMED | Historical Chiaki/Playactor/Python commits and PR #16 |
+| ORIGIN-03 lawful status/rights of numeric table reuse | OPEN | Expert review of source expression/data rights, license notices, Sony terms; Portuguese/EU interoperability limits |
+| ORIGIN-05 preinstalled PyCA AES library exception | NOT APPROVED | Explicit user decision; zero new pip requirement does not mean no third-party import |
+| ORIGIN-06 public crypto standards tests | NOT_RUN | RFC4231 HMAC plus NIST SP800-38A CFB math, labelled non-Sony |
+| ORIGIN-07 own original fake console | NOT_RUN | Byte framing/counter/HTTP tests authored from scratch; no copied fixtures |
+| ORIGIN-08 authenticated retail PS5 interop | BLOCKED/NOT_RUN | Legitimate account/console, safety permissions and approved firmware protocol testing |
+| ORIGIN-09 no unauthorized copied tables/SDKs | NOT_RUN release check | Source/SBOM/fixture/license scan, no PlayStation runtime dependency |
+
+Conservative policy stays `NO_TABLE_COPY` until explicit lawful provenance and maintainer approval; AES backend, Sony account identity and real device tests independently gate Remote Play. Passive LAN unaffected. No new numbered ADR/SPEC and no shipped source code.
